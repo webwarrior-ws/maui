@@ -252,9 +252,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
-		[Obsolete("OnSizeRequest is obsolete as of version 2.2.0. Please use OnMeasure instead.")]
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		protected override SizeRequest OnSizeRequest(double widthConstraint, double heightConstraint)
+		protected override SizeRequest OnMeasure(double widthConstraint, double heightConstraint)
 		{
 			if (Content == null)
 				return new SizeRequest();
@@ -279,7 +277,7 @@ namespace Microsoft.Maui.Controls
 
 			SizeRequest contentRequest;
 
-			if (Content is IFrameworkElement fe && fe.Handler != null)
+			if (Content is IView fe && fe.Handler != null)
 			{
 				contentRequest = fe.Measure(widthConstraint, heightConstraint);
 			}
@@ -365,7 +363,19 @@ namespace Microsoft.Maui.Controls
 			CheckTaskCompletionSource();
 			ScrollToRequested?.Invoke(this, e);
 
-			Handler?.Invoke(nameof(IScrollView.RequestScrollTo), e.ToRequest());
+			Handler?.Invoke(nameof(IScrollView.RequestScrollTo), ConvertRequestMode(e).ToRequest());
+		}
+
+		ScrollToRequestedEventArgs ConvertRequestMode(ScrollToRequestedEventArgs args)
+		{
+			if (args.Mode == ScrollToMode.Element && args.Element is VisualElement visualElement)
+			{
+				var point = GetScrollPositionForElement(visualElement, args.Position);
+				var result = new ScrollToRequestedEventArgs(point.X, point.Y, args.ShouldAnimate);
+				return result;
+			}
+
+			return args;
 		}
 	}
 }

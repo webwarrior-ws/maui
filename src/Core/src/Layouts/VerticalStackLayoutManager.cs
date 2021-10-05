@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.Layouts
@@ -35,8 +34,8 @@ namespace Microsoft.Maui.Layouts
 			measuredHeight += padding.VerticalThickness;
 			measuredWidth += padding.HorizontalThickness;
 
-			var finalHeight = ResolveConstraints(heightConstraint, Stack.Height, measuredHeight);
-			var finalWidth = ResolveConstraints(widthConstraint, Stack.Width, measuredWidth);
+			var finalHeight = ResolveConstraints(heightConstraint, Stack.Height, measuredHeight, Stack.MinimumHeight, Stack.MaximumHeight);
+			var finalWidth = ResolveConstraints(widthConstraint, Stack.Width, measuredWidth, Stack.MinimumWidth, Stack.MaximumWidth);
 
 			return new Size(finalWidth, finalHeight);
 		}
@@ -45,8 +44,8 @@ namespace Microsoft.Maui.Layouts
 		{
 			var padding = Stack.Padding;
 
-			double stackHeight = padding.Top;
-			double left = padding.Left;
+			double stackHeight = padding.Top + bounds.Y;
+			double left = padding.Left + bounds.X;
 			double width = bounds.Width - padding.HorizontalThickness;
 
 			for (int n = 0; n < Stack.Count; n++)

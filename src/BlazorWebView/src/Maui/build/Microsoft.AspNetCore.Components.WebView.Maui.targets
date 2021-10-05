@@ -9,14 +9,25 @@
        as RazorComponent instead of Content. -->
   <ItemGroup Condition="'$(DesignTimeBuild)' != 'true'">
     <Content Remove="**\*.razor" />
-    <RazorComponent Include="**\*.razor" />
+    <RazorComponent Include="**\*.razor" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
   </ItemGroup>
 
   <PropertyGroup>
     <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
-    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+    <StaticWebAssetProjectMode>Root</StaticWebAssetProjectMode>
   </PropertyGroup>
 
+  <Target Name="ConvertStaticWebAssetsToMauiAssets" BeforeTargets="GetMauiItems;ResizetizeCollectItems" DependsOnTargets="StaticWebAssetsPrepareForRun;StaticWebAssetsPrepareForPublish;LoadStaticWebAssetsPublishManifest">
+    <ComputeStaticWebAssetsTargetPaths Assets="@(StaticWebAsset)" PathPrefix="wwwroot">
+      <Output TaskParameter="AssetsWithTargetPath" ItemName="_MauiStaticWebAssetWithTargetPath" />
+    </ComputeStaticWebAssetsTargetPaths>
+    <ItemGroup>
+      <MauiAsset Include="%(_MauiStaticWebAssetWithTargetPath.Identity)">
+        <Link>%(_MauiStaticWebAssetWithTargetPath.TargetPath)</Link>
+        <TargetPath>%(_MauiStaticWebAssetWithTargetPath.TargetPath)</TargetPath>
+      </MauiAsset>
+    </ItemGroup>
+  </Target>
 
   <!-- Targets temporarily remove Content items in the wwwroot folder so that they don't conflict with iOS/MacCatalyst SDK tasks -->
   <Target Name="HideContentFromBundleResources" BeforeTargets="_CollectBundleResources">
@@ -37,57 +48,4 @@
     </ItemGroup>
   </Target>
 
-  <!-- Targets for converting Static Web Assets to embedded resources -->
-  <Target Name="CopyStaticWebAssetsToOutputFolder" BeforeTargets="GetCopyToOutputDirectoryItems" DependsOnTargets="ResolveStaticWebAssetsInputs">
-    <ItemGroup>
-      <AllItemsFullPathWithTargetPath Include="%(StaticWebAsset.Identity)" Condition="'%(StaticWebAsset.SourceType)' != ''">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        <TargetPath>$([System.String]::Copy('wwwroot\%(StaticWebAsset.BasePath)\%(StaticWebAsset.RelativePath)').Replace('/','\').Replace('\\\','\').Replace('\\','\'))</TargetPath>
-      </AllItemsFullPathWithTargetPath>
-      <AllItemsFullPathWithTargetPath Include="%(StaticWebAsset.Identity)" Condition="'%(StaticWebAsset.SourceType)' == ''">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        <TargetPath>wwwroot\%(StaticWebAsset.RelativePath)</TargetPath>
-      </AllItemsFullPathWithTargetPath>
-    </ItemGroup>
-  </Target>
-
-  <Target Name="ConvertToEmbeddedFilesManifestItems" DependsOnTargets="ResolveStaticWebAssetsInputs" BeforeTargets="SplitResourcesByCulture">
-    <ItemGroup>
-      <!-- Prevent any previously-existing embedded resources from being included in the manifest. We want only
-           StaticWebAssets to be included in the manifest. -->
-      <EmbeddedResource>
-        <ExcludeFromManifest>true</ExcludeFromManifest>
-      </EmbeddedResource>      
-    </ItemGroup>
-
-    <ComputeStaticWebAssetsTargetPaths Assets="@(StaticWebAsset)" PathPrefix="wwwroot">
-      <Output TaskParameter="AssetsWithTargetPath" ItemName="_MauiStaticWebAssetWithTargetPath" />
-    </ComputeStaticWebAssetsTargetPaths>
-
-    <ItemGroup>
-      <EmbeddedResource
-        Include="%(_MauiStaticWebAssetWithTargetPath.Identity)"
-        Link="%(_MauiStaticWebAssetWithTargetPath.TargetPath)"
-        TargetPath="%(_MauiStaticWebAssetWithTargetPath.TargetPath)"
-        OriginalItemSpec="%(_MauiStaticWebAssetWithTargetPath.OriginalItemSpec)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="EnsureBundles" BeforeTargets="CoreCompile" DependsOnTargets="BundleScopedCssFiles" />
-
-  <Target Name="_FixUpMauiReference"
-    BeforeTargets="ComputeReferencedProjectsPublishAssets"
-    AfterTargets="LoadStaticWebAssetsBuildManifest">
-
-    <ItemGroup>
-      <_MauiManifestsToUpdate Include="@(StaticWebAssetManifest)" Condition="'%(ManifestType)' == 'Publish'" />
-      <_MauiManifestsToUpdate>
-       <AdditionalPublishPropertiesToRemove Condition="$([System.String]::Copy('%(_MauiManifestsToUpdate.AdditionalPublishProperties)').Contains('TargetFramework')) == 'false'">@(_MauiManifestsToUpdate->'%(AdditionalPublishPropertiesToRemove)');TargetFramework</AdditionalPublishPropertiesToRemove>      
-      </_MauiManifestsToUpdate>
-
-      <StaticWebAssetManifest Remove="@(_MauiManifestsToUpdate)" />
-      <StaticWebAssetManifest Include="@(_MauiManifestsToUpdate)" />
-    </ItemGroup>
-
-  </Target>
 </Project>

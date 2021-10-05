@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Layouts;
+using Microsoft.Maui.Primitives;
 using NSubstitute;
 using Xunit;
 using static Microsoft.Maui.UnitTests.Layouts.LayoutTestHelpers;
@@ -36,6 +38,13 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			}
 
 			var grid = Substitute.For<IGridLayout>();
+
+			grid.Height.Returns(Dimension.Unset);
+			grid.Width.Returns(Dimension.Unset);
+			grid.MinimumHeight.Returns(Dimension.Minimum);
+			grid.MinimumWidth.Returns(Dimension.Minimum);
+			grid.MaximumHeight.Returns(Dimension.Maximum);
+			grid.MaximumWidth.Returns(Dimension.Maximum);
 
 			grid.RowSpacing.Returns(rowSpacing);
 			grid.ColumnSpacing.Returns(colSpacing);
@@ -119,11 +128,11 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			grid.GetColumnSpan(view).Returns(colSpan);
 		}
 
-		Size MeasureAndArrange(IGridLayout grid, double widthConstraint = double.PositiveInfinity, double heightConstraint = double.PositiveInfinity)
+		Size MeasureAndArrange(IGridLayout grid, double widthConstraint = double.PositiveInfinity, double heightConstraint = double.PositiveInfinity, double left = 0, double top = 0)
 		{
 			var manager = new GridLayoutManager(grid);
 			var measuredSize = manager.Measure(widthConstraint, heightConstraint);
-			manager.ArrangeChildren(new Rectangle(Point.Zero, measuredSize));
+			manager.ArrangeChildren(new Rectangle(new Point(left, top), measuredSize));
 
 			return measuredSize;
 		}
@@ -362,6 +371,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			Assert.Equal(100 + 100 + 10, measure.Height);
 		}
 
+		[Category(GridSpacing)]
 		[Fact(DisplayName = "Column spacing shouldn't affect a single-column grid")]
 		public void SingleColumnIgnoresColumnSpacing()
 		{
@@ -374,6 +384,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			AssertArranged(view, 0, 0, 100, 100);
 		}
 
+		[Category(GridSpacing)]
 		[Fact(DisplayName = "Two columns should include the column spacing once")]
 		public void TwoColumnsWithSpacing()
 		{
@@ -489,8 +500,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			AssertArranged(view1, 100, 25, 50, 75);
 		}
 
-		[Category(GridSpan)]
-		[Category(GridSpacing)]
+		[Category(GridSpacing, GridSpan)]
 		[Fact(DisplayName = "Row spanning with row spacing")]
 		public void RowSpanningShouldAccountForSpacing()
 		{
@@ -509,9 +519,15 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			Assert.Equal(150, measuredSize.Width);
 			Assert.Equal(50 + 50 + 5, measuredSize.Height);
 
-			AssertArranged(view0, 0, 0, 100, 100);
+			// Starts a Y = 0
 			AssertArranged(view1, 100, 0, 50, 50);
+
+			// Starts at the first row's height + the row spacing value, so Y = 50 + 5 = 55
 			AssertArranged(view2, 100, 55, 50, 50);
+
+			// We expect the height for the view spanning the rows to include the space between the rows,
+			// so 50 + 5 + 50 = 105
+			AssertArranged(view0, 0, 0, 100, 105);
 		}
 
 		[Category(GridSpan)]
@@ -555,9 +571,14 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			Assert.Equal(50 + 50 + 5, measuredSize.Width);
 			Assert.Equal(100 + 50, measuredSize.Height);
 
-			AssertArranged(view0, 0, 0, 100, 100);
+			// Starts a X = 0
 			AssertArranged(view1, 0, 100, 50, 50);
+			// Starts at the first column's width + the column spacing, so X = 50 + 5 = 55
 			AssertArranged(view2, 55, 100, 50, 50);
+
+			// We expect the width for the view spanning the columns to include the space between the columns,
+			// so 50 + 5 + 50 = 105
+			AssertArranged(view0, 0, 0, 105, 100);
 		}
 
 		[Category(GridSpan)]
@@ -1180,6 +1201,329 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			manager.ArrangeChildren(new Rectangle(Point.Zero, measuredSize));
 
 			AssertArranged(grid[0], padding.Left, padding.Top, viewWidth, viewHeight);
+		}
+
+		[Category(GridStarSizing)]
+		[Fact]
+		public void StarValuesAreMeasuredTwiceWhenConstraintsAreInfinite()
+		{
+			// A one-row, one-column grid
+			var grid = CreateGridLayout();
+
+			// A 100x100 IView
+			var view = CreateTestView(new Size(100, 100));
+
+			// Set up the grid to have a single child
+			SubstituteChildren(grid, view);
+
+			// Set up the row/column values and spans
+			SetLocation(grid, view);
+
+			MeasureAndArrange(grid, double.PositiveInfinity, double.PositiveInfinity);
+
+			// View must be measured to figure out the Auto value
+			view.Received().Measure(Arg.Is(double.PositiveInfinity), Arg.Is(double.PositiveInfinity));
+
+			// And again at the final size
+			view.Received().Measure(Arg.Is<double>(100), Arg.Is<double>(100));
+		}
+
+		[Category(GridAbsoluteSizing)]
+		[Fact]
+		public void GridMeasureShouldUseExplicitHeight()
+		{
+			var grid = CreateGridLayout();
+			var view = CreateTestView(new Size(10, 10));
+			SubstituteChildren(grid, view);
+			SetLocation(grid, view);
+
+			grid.Height.Returns(50);
+
+			var gridLayoutManager = new GridLayoutManager(grid);
+			var measure = gridLayoutManager.Measure(double.PositiveInfinity, double.PositiveInfinity);
+
+			Assert.Equal(50, measure.Height);
+		}
+
+		[Category(GridAbsoluteSizing)]
+		[Fact]
+		public void GridMeasureShouldUseExplicitWidth()
+		{
+			var grid = CreateGridLayout();
+			var view = CreateTestView(new Size(10, 10));
+			SubstituteChildren(grid, view);
+			SetLocation(grid, view);
+
+			grid.Width.Returns(50);
+
+			var gridLayoutManager = new GridLayoutManager(grid);
+			var measure = gridLayoutManager.Measure(double.PositiveInfinity, double.PositiveInfinity);
+
+			Assert.Equal(50, measure.Width);
+		}
+
+		[Theory]
+		// at 0, 0
+		[InlineData(1, 1, 0, 0, 0, 0)]
+		[InlineData(1, 2, 0, 0, 0, 0)]
+		[InlineData(2, 1, 0, 0, 0, 0)]
+		[InlineData(2, 2, 0, 0, 0, 0)]
+		// at 1, 0
+		[InlineData(1, 1, 1, 0, 0, 0)]
+		[InlineData(1, 2, 1, 0, 0, 0)]
+		[InlineData(2, 1, 1, 0, 1, 0)]
+		[InlineData(2, 2, 1, 0, 1, 0)]
+		// at 0, 1
+		[InlineData(1, 1, 0, 1, 0, 0)]
+		[InlineData(1, 2, 0, 1, 0, 1)]
+		[InlineData(2, 1, 0, 1, 0, 0)]
+		[InlineData(2, 2, 0, 1, 0, 1)]
+		// at 1, 1
+		[InlineData(1, 1, 1, 1, 0, 0)]
+		[InlineData(1, 2, 1, 1, 0, 1)]
+		[InlineData(2, 1, 1, 1, 1, 0)]
+		[InlineData(2, 2, 1, 1, 1, 1)]
+		public void ViewOutsideRowsAndColsClampsToGrid(int rows, int cols, int row, int col, int actualRow, int actualCol)
+		{
+			var r = string.Join(",", Enumerable.Repeat("100", rows));
+			var c = string.Join(",", Enumerable.Repeat("100", cols));
+
+			var grid = CreateGridLayout(rows: r, columns: c);
+			var view0 = CreateTestView(new Size(10, 10));
+			SubstituteChildren(grid, view0);
+			SetLocation(grid, view0, row, col);
+
+			MeasureAndArrange(grid, 100 * cols, 100 * rows);
+
+			AssertArranged(view0, 100 * actualCol, 100 * actualRow, 100, 100);
+		}
+
+		[Theory]
+		// normal
+		[InlineData(0, 0, 1, 1, 0, 0, 1, 1)]
+		[InlineData(1, 1, 1, 1, 1, 1, 1, 1)]
+		[InlineData(1, 1, 2, 1, 1, 1, 2, 1)]
+		// negative origin
+		[InlineData(-1, 0, 1, 1, 0, 0, 1, 1)]
+		[InlineData(0, -1, 1, 1, 0, 0, 1, 1)]
+		[InlineData(-1, -1, 1, 1, 0, 0, 1, 1)]
+		// negative span
+		[InlineData(1, 1, -1, 0, 1, 1, 1, 1)]
+		[InlineData(1, 1, 0, -1, 1, 1, 1, 1)]
+		[InlineData(1, 1, -1, -1, 1, 1, 1, 1)]
+		// positive origin
+		[InlineData(5, 0, 1, 1, 3, 0, 1, 1)]
+		[InlineData(0, 5, 1, 1, 0, 3, 1, 1)]
+		[InlineData(5, 5, 1, 1, 3, 3, 1, 1)]
+		// positive span
+		[InlineData(0, 0, 1, 5, 0, 0, 1, 4)]
+		[InlineData(0, 0, 5, 1, 0, 0, 4, 1)]
+		[InlineData(0, 0, 5, 5, 0, 0, 4, 4)]
+		// normal origin + positive span
+		[InlineData(1, 1, 1, 5, 1, 1, 1, 3)]
+		[InlineData(1, 1, 5, 1, 1, 1, 3, 1)]
+		[InlineData(1, 1, 5, 5, 1, 1, 3, 3)]
+		// positive origin + positive span
+		[InlineData(5, 5, 1, 5, 3, 3, 1, 1)]
+		[InlineData(5, 5, 5, 1, 3, 3, 1, 1)]
+		[InlineData(5, 5, 5, 5, 3, 3, 1, 1)]
+		public void SpansOutsideRowsAndColsClampsToGrid(int row, int col, int rowSpan, int colSpan, int actualRow, int actualCol, int actualRowSpan, int actualColSpan)
+		{
+			const int GridSize = 4;
+			var r = string.Join(",", Enumerable.Repeat("100", GridSize));
+			var c = string.Join(",", Enumerable.Repeat("100", GridSize));
+
+			var grid = CreateGridLayout(rows: r, columns: c);
+			var view0 = CreateTestView(new Size(10, 10));
+			SubstituteChildren(grid, view0);
+			SetLocation(grid, view0, row, col, rowSpan, colSpan);
+
+			MeasureAndArrange(grid, 100 * GridSize, 100 * GridSize);
+
+			AssertArranged(
+				view0,
+				100 * actualCol,
+				100 * actualRow,
+				100 * actualColSpan,
+				100 * actualRowSpan);
+		}
+
+		[Fact]
+		public void ArrangeRespectsBounds()
+		{
+			var grid = CreateGridLayout();
+			var view = CreateTestView(new Size(100, 100));
+
+			SubstituteChildren(grid, view);
+			SetLocation(grid, view);
+
+			var measure = MeasureAndArrange(grid, double.PositiveInfinity, double.PositiveInfinity, 10, 15);
+
+			var expectedRectangle = new Rectangle(10, 15, measure.Width, measure.Height);
+
+			view.Received().Arrange(Arg.Is(expectedRectangle));
+		}
+
+		[Category(GridAbsoluteSizing)]
+		[Theory]
+		[InlineData(50, 100, 50)]
+		[InlineData(100, 100, 100)]
+		[InlineData(100, 50, 50)]
+		[InlineData(0, 50, 0)]
+		[InlineData(-1, 50, 50)]
+		public void MeasureRespectsMaxHeight(double maxHeight, double viewHeight, double expectedHeight)
+		{
+			var grid = CreateGridLayout();
+			var view = CreateTestView(new Size(100, viewHeight));
+			SubstituteChildren(grid, view);
+			SetLocation(grid, view);
+
+			grid.MaximumHeight.Returns(maxHeight);
+
+			var layoutManager = new GridLayoutManager(grid);
+			var measure = layoutManager.Measure(double.PositiveInfinity, double.PositiveInfinity);
+
+			Assert.Equal(expectedHeight, measure.Height);
+		}
+
+		[Category(GridAbsoluteSizing)]
+		[Theory]
+		[InlineData(50, 100, 50)]
+		[InlineData(100, 100, 100)]
+		[InlineData(100, 50, 50)]
+		[InlineData(0, 50, 0)]
+		[InlineData(-1, 50, 50)]
+		public void MeasureRespectsMaxWidth(double maxWidth, double viewWidth, double expectedWidth)
+		{
+			var grid = CreateGridLayout();
+			var view = CreateTestView(new Size(viewWidth, 100));
+			SubstituteChildren(grid, view);
+			SetLocation(grid, view);
+
+			grid.MaximumWidth.Returns(maxWidth);
+
+			var layoutManager = new GridLayoutManager(grid);
+			var measure = layoutManager.Measure(double.PositiveInfinity, double.PositiveInfinity);
+
+			Assert.Equal(expectedWidth, measure.Width);
+		}
+
+		[Category(GridAbsoluteSizing)]
+		[Theory]
+		[InlineData(50, 10, 50)]
+		[InlineData(100, 100, 100)]
+		[InlineData(10, 50, 50)]
+		[InlineData(-1, 50, 50)]
+		public void MeasureRespectsMinHeight(double minHeight, double viewHeight, double expectedHeight)
+		{
+			var grid = CreateGridLayout();
+			var view = CreateTestView(new Size(100, viewHeight));
+			SubstituteChildren(grid, view);
+			SetLocation(grid, view);
+
+			grid.MinimumHeight.Returns(minHeight);
+
+			var layoutManager = new GridLayoutManager(grid);
+			var measure = layoutManager.Measure(double.PositiveInfinity, double.PositiveInfinity);
+
+			Assert.Equal(expectedHeight, measure.Height);
+		}
+
+		[Category(GridAbsoluteSizing)]
+		[Theory]
+		[InlineData(50, 10, 50)]
+		[InlineData(100, 100, 100)]
+		[InlineData(10, 50, 50)]
+		[InlineData(-1, 50, 50)]
+		public void MeasureRespectsMinWidth(double minWidth, double viewWidth, double expectedWidth)
+		{
+			var grid = CreateGridLayout();
+			var view = CreateTestView(new Size(viewWidth, 100));
+			SubstituteChildren(grid, view);
+			SetLocation(grid, view);
+
+			grid.MinimumWidth.Returns(minWidth);
+
+			var layoutManager = new GridLayoutManager(grid);
+			var measure = layoutManager.Measure(double.PositiveInfinity, double.PositiveInfinity);
+
+			Assert.Equal(expectedWidth, measure.Width);
+		}
+
+		[Fact]
+		[Category(GridAbsoluteSizing)]
+		public void MaxWidthDominatesWidth()
+		{
+			var grid = CreateGridLayout();
+			var view = CreateTestView(new Size(100, 100));
+			SubstituteChildren(grid, view);
+			SetLocation(grid, view);
+
+			grid.Width.Returns(75);
+			grid.MaximumWidth.Returns(50);
+
+			var layoutManager = new GridLayoutManager(grid);
+			var measure = layoutManager.Measure(double.PositiveInfinity, double.PositiveInfinity);
+
+			// The maximum value beats out the explicit value
+			Assert.Equal(50, measure.Width);
+		}
+
+		[Fact]
+		[Category(GridAbsoluteSizing)]
+		public void MinWidthDominatesMaxWidth()
+		{
+			var grid = CreateGridLayout();
+			var view = CreateTestView(new Size(100, 100));
+			SubstituteChildren(grid, view);
+			SetLocation(grid, view);
+
+			grid.MinimumWidth.Returns(75);
+			grid.MaximumWidth.Returns(50);
+
+			var layoutManager = new GridLayoutManager(grid);
+			var measure = layoutManager.Measure(double.PositiveInfinity, double.PositiveInfinity);
+
+			// The minimum value should beat out the maximum value
+			Assert.Equal(75, measure.Width);
+		}
+
+		[Fact]
+		[Category(GridAbsoluteSizing)]
+		public void MaxHeightDominatesHeight()
+		{
+			var grid = CreateGridLayout();
+			var view = CreateTestView(new Size(100, 100));
+			SubstituteChildren(grid, view);
+			SetLocation(grid, view);
+
+			grid.Height.Returns(75);
+			grid.MaximumHeight.Returns(50);
+
+			var layoutManager = new GridLayoutManager(grid);
+			var measure = layoutManager.Measure(double.PositiveInfinity, double.PositiveInfinity);
+
+			// The maximum value beats out the explicit value
+			Assert.Equal(50, measure.Height);
+		}
+
+		[Fact]
+		[Category(GridAbsoluteSizing)]
+		public void MinHeightDominatesMaxHeight()
+		{
+			var grid = CreateGridLayout();
+			var view = CreateTestView(new Size(100, 100));
+			SubstituteChildren(grid, view);
+			SetLocation(grid, view);
+
+			grid.MinimumHeight.Returns(75);
+			grid.MaximumHeight.Returns(50);
+
+			var layoutManager = new GridLayoutManager(grid);
+			var measure = layoutManager.Measure(double.PositiveInfinity, double.PositiveInfinity);
+
+			// The minimum value should beat out the maximum value
+			Assert.Equal(75, measure.Height);
 		}
 	}
 }

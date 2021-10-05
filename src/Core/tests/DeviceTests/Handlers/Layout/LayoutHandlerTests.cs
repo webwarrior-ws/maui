@@ -36,6 +36,14 @@ namespace Microsoft.Maui.DeviceTests.Handlers.Layout
 
 			var handler = await CreateHandlerAsync(layout);
 
+			var children = await InvokeOnMainThreadAsync(() =>
+			{
+				return GetNativeChildren(handler);
+			});
+
+			Assert.Equal(1, children.Count);
+			Assert.Same(slider.Handler.NativeView, children[0]);
+
 			var count = await InvokeOnMainThreadAsync(() =>
 			{
 				handler.Remove(slider);
@@ -56,11 +64,101 @@ namespace Microsoft.Maui.DeviceTests.Handlers.Layout
 
 			var count = await InvokeOnMainThreadAsync(() =>
 			{
+				var nativeView = layout.Handler.NativeView;
 				layout.Handler.DisconnectHandler();
+				return GetNativeChildCount(nativeView);
+			});
+
+			Assert.Equal(0, count);
+		}
+
+		[Fact]
+		public async Task ClearRemovesChildrenFromNativeLayout()
+		{
+			var layout = new LayoutStub();
+			var slider = new SliderStub();
+			var button = new ButtonStub();
+
+			layout.Add(slider);
+			layout.Add(button);
+
+			var handler = await CreateHandlerAsync(layout);
+
+			var children = await InvokeOnMainThreadAsync(() =>
+			{
+				return GetNativeChildren(handler);
+			});
+
+			Assert.Equal(2, children.Count);
+			Assert.Same(slider.Handler.NativeView, children[0]);
+			Assert.Same(button.Handler.NativeView, children[1]);
+
+			var count = await InvokeOnMainThreadAsync(() =>
+			{
+				handler.Clear();
 				return GetNativeChildCount(handler);
 			});
 
 			Assert.Equal(0, count);
+		}
+
+		[Fact]
+		public async Task InsertAddsChildToNativeLayout()
+		{
+			var layout = new LayoutStub();
+			var slider = new SliderStub();
+			var button = new ButtonStub();
+
+			layout.Add(slider);
+
+			var handler = await CreateHandlerAsync(layout);
+
+			var children = await InvokeOnMainThreadAsync(() =>
+			{
+				return GetNativeChildren(handler);
+			});
+
+			Assert.Equal(1, children.Count);
+			Assert.Same(slider.Handler.NativeView, children[0]);
+
+			children = await InvokeOnMainThreadAsync(() =>
+			{
+				handler.Insert(0, button);
+				return GetNativeChildren(handler);
+			});
+
+			Assert.Equal(2, children.Count);
+			Assert.Same(button.Handler.NativeView, children[0]);
+			Assert.Same(slider.Handler.NativeView, children[1]);
+		}
+
+		[Fact]
+		public async Task UpdateNativeLayout()
+		{
+			var layout = new LayoutStub();
+			var slider = new SliderStub();
+			var button = new ButtonStub();
+
+			layout.Add(slider);
+
+			var handler = await CreateHandlerAsync(layout);
+
+			var children = await InvokeOnMainThreadAsync(() =>
+			{
+				return GetNativeChildren(handler);
+			});
+
+			Assert.Equal(1, children.Count);
+			Assert.Same(slider.Handler.NativeView, children[0]);
+
+			children = await InvokeOnMainThreadAsync(() =>
+			{
+				handler.Update(0, button);
+				return GetNativeChildren(handler);
+			});
+
+			Assert.Equal(1, children.Count);
+			Assert.Same(button.Handler.NativeView, children[0]);
 		}
 	}
 }

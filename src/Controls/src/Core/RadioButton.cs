@@ -210,7 +210,6 @@ namespace Microsoft.Maui.Controls
 
 		void HandleFontChanged()
 		{
-			_font = null;
 			InvalidateMeasureInternal(InvalidationTrigger.MeasureChanged);
 		}
 
@@ -456,7 +455,7 @@ namespace Microsoft.Maui.Controls
 				MarginProperty, OpacityProperty, RotationProperty, ScaleProperty, ScaleXProperty, ScaleYProperty,
 				TranslationYProperty, TranslationXProperty, VerticalOptionsProperty);
 
-			var grid = new Compatibility.Grid
+			var grid = new Grid
 			{
 				RowSpacing = 0,
 				ColumnDefinitions = new ColumnDefinitionCollection {
@@ -503,9 +502,9 @@ namespace Microsoft.Maui.Controls
 			contentPresenter.SetBinding(BackgroundColorProperty, new Binding(BackgroundColorProperty.PropertyName,
 				source: RelativeBindingSource.TemplatedParent));
 
-			grid.Children.Add(normalEllipse);
-			grid.Children.Add(checkMark);
-			grid.Children.Add(contentPresenter, 1, 0);
+			grid.Add(normalEllipse);
+			grid.Add(checkMark);
+			grid.Add(contentPresenter, 1, 0);
 
 			frame.Content = grid;
 

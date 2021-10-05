@@ -63,7 +63,7 @@ namespace Microsoft.Maui
 
 			if (!widthConstrained && !heightConstrained)
 			{
-				// https://developer.gnome.org/gtk3/stable/GtkWidget.html#gtk-widget-get-preferred-size
+				// https://docs.gtk.org/gtk3/method.Widget.get_preferred_size.html
 				nativeView.GetPreferredSize(out var minimumSize, out var req);
 
 				return new SizeRequest(req.ToSize(), minimumSize.ToSize());
@@ -217,6 +217,22 @@ namespace Microsoft.Maui
 					break;
 			}
 		}
+
+		[MissingMapper]
+		public static void UpdateMinimumHeight(this Widget nativeView, IView view)
+		{ }
+
+		[MissingMapper]
+		public static void UpdateMinimumWidth(this Widget nativeView, IView view)
+		{ }
+
+		[MissingMapper]
+		public static void UpdateMaximumHeight(this Widget nativeView, IView view)
+		{ }
+
+		[MissingMapper]
+		public static void UpdateMaximumWidth(this Widget nativeView, IView view)
+		{ }
 
 	}
 

@@ -30,9 +30,9 @@ namespace Microsoft.Maui.Controls
 
 		protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
 		{
-			if (Content is IFrameworkElement frameworkElement)
+			if (Content is IView view)
 			{
-				frameworkElement.Measure(widthConstraint, heightConstraint);
+				view.Measure(widthConstraint, heightConstraint);
 			}
 
 			return new Size(widthConstraint, heightConstraint);
@@ -40,9 +40,32 @@ namespace Microsoft.Maui.Controls
 
 		protected override Size ArrangeOverride(Rectangle bounds)
 		{
-			// Update the Bounds (Frame) for this page
-			Layout(bounds);
+			Frame = this.ComputeFrame(bounds);
+
+			if (Content is IView view)
+			{
+				_ = view.Arrange(Frame);
+			}
+
 			return Frame.Size;
+		}
+
+		IElementHandler _previousHandler;
+		protected override void OnHandlerChanged()
+		{
+			// Because the navigation handler is shimmed we disconnect from it so it disposes
+			if (_previousHandler?.VirtualView == this)
+				_previousHandler?.DisconnectHandler();
+
+			_previousHandler = null;
+			base.OnHandlerChanged();
+		}
+
+		private protected override void OnHandlerChangingCore(HandlerChangingEventArgs args)
+		{
+			base.OnHandlerChangingCore(args);
+
+			_previousHandler = args.OldHandler;
 		}
 
 		void INavigationView.InsertPageBefore(IView page, IView before)
@@ -53,11 +76,8 @@ namespace Microsoft.Maui.Controls
 		Task<IView> INavigationView.PopAsync() =>
 			(this as INavigationView).PopAsync(true);
 
-		async Task<IView> INavigationView.PopAsync(bool animated)
-		{
-			var thing = await this.PopAsync(animated);
-			return thing;
-		}
+		async Task<IView> INavigationView.PopAsync(bool animated) =>
+			await this.PopAsync(animated);
 
 		Task<IView> INavigationView.PopModalAsync()
 		{
@@ -92,8 +112,7 @@ namespace Microsoft.Maui.Controls
 			throw new NotImplementedException();
 		}
 
-		IFrameworkElement Content =>
-			this.CurrentPage;
+		IView Content => this.CurrentPage;
 
 		IReadOnlyList<IView> INavigationView.ModalStack => throw new NotImplementedException();
 

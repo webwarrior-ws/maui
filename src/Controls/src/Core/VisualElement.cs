@@ -203,7 +203,7 @@ namespace Microsoft.Maui.Controls
 
 		public static readonly BindableProperty OpacityProperty = BindableProperty.Create("Opacity", typeof(double), typeof(VisualElement), 1d, coerceValue: (bindable, value) => ((double)value).Clamp(0, 1));
 
-		public static readonly BindableProperty BackgroundColorProperty = BindableProperty.Create("BackgroundColor", typeof(Color), typeof(VisualElement), null);
+		public static readonly BindableProperty BackgroundColorProperty = BindableProperty.Create(nameof(BackgroundColor), typeof(Color), typeof(VisualElement), null);
 
 		public static readonly BindableProperty BackgroundProperty = BindableProperty.Create(nameof(Background), typeof(Brush), typeof(VisualElement), Brush.Default,
 			propertyChanging: (bindable, oldvalue, newvalue) =>
@@ -272,13 +272,17 @@ namespace Microsoft.Maui.Controls
 		public static readonly BindableProperty TriggersProperty = TriggersPropertyKey.BindableProperty;
 
 
-		public static readonly BindableProperty WidthRequestProperty = BindableProperty.Create("WidthRequest", typeof(double), typeof(VisualElement), -1d, propertyChanged: OnRequestChanged);
+		public static readonly BindableProperty WidthRequestProperty = BindableProperty.Create(nameof(WidthRequest), typeof(double), typeof(VisualElement), -1d, propertyChanged: OnRequestChanged);
 
-		public static readonly BindableProperty HeightRequestProperty = BindableProperty.Create("HeightRequest", typeof(double), typeof(VisualElement), -1d, propertyChanged: OnRequestChanged);
+		public static readonly BindableProperty HeightRequestProperty = BindableProperty.Create(nameof(HeightRequest), typeof(double), typeof(VisualElement), -1d, propertyChanged: OnRequestChanged);
 
-		public static readonly BindableProperty MinimumWidthRequestProperty = BindableProperty.Create("MinimumWidthRequest", typeof(double), typeof(VisualElement), -1d, propertyChanged: OnRequestChanged);
+		public static readonly BindableProperty MinimumWidthRequestProperty = BindableProperty.Create(nameof(MinimumWidthRequest), typeof(double), typeof(VisualElement), -1d, propertyChanged: OnRequestChanged);
 
-		public static readonly BindableProperty MinimumHeightRequestProperty = BindableProperty.Create("MinimumHeightRequest", typeof(double), typeof(VisualElement), -1d, propertyChanged: OnRequestChanged);
+		public static readonly BindableProperty MinimumHeightRequestProperty = BindableProperty.Create(nameof(MinimumHeightRequest), typeof(double), typeof(VisualElement), -1d, propertyChanged: OnRequestChanged);
+
+		public static readonly BindableProperty MaximumWidthRequestProperty = BindableProperty.Create(nameof(MaximumWidthRequest), typeof(double), typeof(VisualElement), double.PositiveInfinity, propertyChanged: OnRequestChanged);
+
+		public static readonly BindableProperty MaximumHeightRequestProperty = BindableProperty.Create(nameof(MaximumHeightRequest), typeof(double), typeof(VisualElement), double.PositiveInfinity, propertyChanged: OnRequestChanged);
 
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public static readonly BindablePropertyKey IsFocusedPropertyKey = BindableProperty.CreateReadOnly("IsFocused",
@@ -290,6 +294,7 @@ namespace Microsoft.Maui.Controls
 
 		IFlowDirectionController FlowController => this;
 
+		[System.ComponentModel.TypeConverter(typeof(FlowDirectionConverter))]
 		public FlowDirection FlowDirection
 		{
 			get { return (FlowDirection)GetValue(FlowDirectionProperty); }
@@ -433,6 +438,18 @@ namespace Microsoft.Maui.Controls
 		{
 			get { return (double)GetValue(MinimumWidthRequestProperty); }
 			set { SetValue(MinimumWidthRequestProperty, value); }
+		}
+
+		public double MaximumHeightRequest
+		{
+			get { return (double)GetValue(MaximumHeightRequestProperty); }
+			set { SetValue(MaximumHeightRequestProperty, value); }
+		}
+
+		public double MaximumWidthRequest
+		{
+			get { return (double)GetValue(MaximumWidthRequestProperty); }
+			set { SetValue(MaximumWidthRequestProperty, value); }
 		}
 
 		public double Opacity
@@ -682,9 +699,7 @@ namespace Microsoft.Maui.Controls
 
 		public event EventHandler<FocusEventArgs> Focused;
 
-		[Obsolete("OnSizeRequest is obsolete as of version 2.2.0. Please use OnMeasure instead.")]
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public virtual SizeRequest GetSizeRequest(double widthConstraint, double heightConstraint)
+		SizeRequest GetSizeRequest(double widthConstraint, double heightConstraint)
 		{
 			var constraintSize = new Size(widthConstraint, heightConstraint);
 			if (_measureCache.TryGetValue(constraintSize, out SizeRequest cachedResult))
@@ -735,7 +750,7 @@ namespace Microsoft.Maui.Controls
 			return r;
 		}
 
-		public SizeRequest Measure(double widthConstraint, double heightConstraint, MeasureFlags flags = MeasureFlags.None)
+		public virtual SizeRequest Measure(double widthConstraint, double heightConstraint, MeasureFlags flags = MeasureFlags.None)
 		{
 			bool includeMargins = (flags & MeasureFlags.IncludeMargins) != 0;
 			Thickness margin = default(Thickness);
@@ -746,9 +761,8 @@ namespace Microsoft.Maui.Controls
 				widthConstraint = Math.Max(0, widthConstraint - margin.HorizontalThickness);
 				heightConstraint = Math.Max(0, heightConstraint - margin.VerticalThickness);
 			}
-#pragma warning disable 0618 // retain until GetSizeRequest removed
+
 			SizeRequest result = GetSizeRequest(widthConstraint, heightConstraint);
-#pragma warning restore 0618
 
 			if (includeMargins && !margin.IsEmpty)
 			{
@@ -803,23 +817,15 @@ namespace Microsoft.Maui.Controls
 
 		protected virtual SizeRequest OnMeasure(double widthConstraint, double heightConstraint)
 		{
-#pragma warning disable 0618 // retain until OnSizeRequest removed
-			return OnSizeRequest(widthConstraint, heightConstraint);
-#pragma warning restore 0618
-		}
 
-		protected virtual void OnSizeAllocated(double width, double height)
-		{
-		}
-
-		[Obsolete("OnSizeRequest is obsolete as of version 2.2.0. Please use OnMeasure instead.")]
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		protected virtual SizeRequest OnSizeRequest(double widthConstraint, double heightConstraint)
-		{
 			if (!IsPlatformEnabled)
 				return new SizeRequest(new Size(-1, -1));
 
 			return Device.PlatformServices.GetNativeSize(this, widthConstraint, heightConstraint);
+		}
+
+		protected virtual void OnSizeAllocated(double width, double height)
+		{
 		}
 
 		protected void SizeAllocated(double width, double height) => OnSizeAllocated(width, height);
@@ -896,9 +902,9 @@ namespace Microsoft.Maui.Controls
 
 		internal virtual void OnIsVisibleChanged(bool oldValue, bool newValue)
 		{
-			if (this is IFrameworkElement fe)
+			if (this is IView fe)
 			{
-				fe.Handler?.UpdateValue(nameof(IFrameworkElement.Visibility));
+				fe.Handler?.UpdateValue(nameof(IView.Visibility));
 			}
 
 			InvalidateMeasureInternal(InvalidationTrigger.Undefined);
@@ -1044,10 +1050,14 @@ namespace Microsoft.Maui.Controls
 
 			element.SelfConstraint = constraint;
 
-			if (element is IFrameworkElement fe)
+			if (element is IView fe)
 			{
-				fe.Handler?.UpdateValue(nameof(IFrameworkElement.Width));
-				fe.Handler?.UpdateValue(nameof(IFrameworkElement.Height));
+				fe.Handler?.UpdateValue(nameof(IView.Width));
+				fe.Handler?.UpdateValue(nameof(IView.Height));
+				fe.Handler?.UpdateValue(nameof(IView.MinimumHeight));
+				fe.Handler?.UpdateValue(nameof(IView.MinimumWidth));
+				fe.Handler?.UpdateValue(nameof(IView.MaximumHeight));
+				fe.Handler?.UpdateValue(nameof(IView.MaximumWidth));
 			}
 
 			((VisualElement)bindable).InvalidateMeasureInternal(InvalidationTrigger.SizeRequestChanged);
@@ -1059,7 +1069,7 @@ namespace Microsoft.Maui.Controls
 
 		void IPropertyPropagationController.PropagatePropertyChanged(string propertyName)
 		{
-			PropertyPropagationExtensions.PropagatePropertyChanged(propertyName, this, LogicalChildren);
+			PropertyPropagationExtensions.PropagatePropertyChanged(propertyName, this, ((IElementController)this).LogicalChildren);
 		}
 
 		void SetSize(double width, double height)

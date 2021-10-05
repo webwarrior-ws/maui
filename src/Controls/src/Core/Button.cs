@@ -256,7 +256,6 @@ namespace Microsoft.Maui.Controls
 
 		void HandleFontChanged()
 		{
-			_font = null;
 			InvalidateMeasureInternal(InvalidationTrigger.MeasureChanged);
 		}
 
@@ -380,7 +379,6 @@ namespace Microsoft.Maui.Controls
 			public override string ToString() => $"Image Position = {Position}, Spacing = {Spacing}";
 		}
 
-		[Xaml.TypeConversion(typeof(ButtonContentLayout))]
 		public sealed class ButtonContentTypeConverter : TypeConverter
 		{
 			public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)

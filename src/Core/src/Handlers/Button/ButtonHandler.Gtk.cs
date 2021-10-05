@@ -5,7 +5,7 @@ using Microsoft.Maui.Graphics.Native.Gtk;
 namespace Microsoft.Maui.Handlers
 {
 
-	// https://developer.gnome.org/gtk3/stable/GtkButton.html
+	// https://docs.gtk.org/gtk3/class.Button.html
 
 	public partial class ButtonHandler : ViewHandler<IButton, Button>
 	{
@@ -46,6 +46,9 @@ namespace Microsoft.Maui.Handlers
 				nativeView.Attributes = nativeView.Attributes.AttrListFor(button.CharacterSpacing);
 			}
 		}
+
+		[MissingMapper]
+		public static void MapImageSource(ButtonHandler handler, IButton image) { }
 
 		public static void MapFont(ButtonHandler handler, IButton button)
 		{

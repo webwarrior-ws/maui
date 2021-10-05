@@ -498,6 +498,16 @@ namespace Microsoft.Maui.Controls
 			return _navigationManager.GoToAsync(state, animate, false);
 		}
 
+		public Task GoToAsync(ShellNavigationState state, IDictionary<string, object> parameters)
+		{
+			return _navigationManager.GoToAsync(state, null, false, parameters: new ShellRouteParameters(parameters));
+		}
+
+		public Task GoToAsync(ShellNavigationState state, bool animate, IDictionary<string, object> parameters)
+		{
+			return _navigationManager.GoToAsync(state, animate, false, parameters: new ShellRouteParameters(parameters));
+		}
+
 		public void AddLogicalChild(Element element)
 		{
 			if (element == null)
@@ -589,7 +599,7 @@ namespace Microsoft.Maui.Controls
 
 		ObservableCollection<Element> _logicalChildren = new ObservableCollection<Element>();
 
-		internal override ReadOnlyCollection<Element> LogicalChildrenInternal =>
+		internal override IReadOnlyList<Element> LogicalChildrenInternal =>
 			new ReadOnlyCollection<Element>(_logicalChildren);
 
 		public Shell()
@@ -603,6 +613,31 @@ namespace Microsoft.Maui.Controls
 			Route = Routing.GenerateImplicitRoute("shell");
 			Initialize();
 			InternalChildren.CollectionChanged += OnInternalChildrenCollectionChanged;
+
+			if (Application.Current != null)
+			{
+				this.SetAppThemeColor(Shell.FlyoutBackgroundColorProperty, Colors.White, Colors.Black);
+				this.SetOnAppTheme<Brush>(Shell.FlyoutBackgroundProperty, Brush.White, Brush.Black);
+			}
+		}
+
+		private protected override void OnHandlerChangingCore(HandlerChangingEventArgs args)
+		{
+			base.OnHandlerChangingCore(args);
+
+			if (Application.Current == null)
+				return;
+
+			if (args.NewHandler == null)
+				Application.Current.RequestedThemeChanged -= OnRequestedThemeChanged;
+
+			if (args.NewHandler != null && args.OldHandler == null)
+				Application.Current.RequestedThemeChanged += OnRequestedThemeChanged;
+		}
+
+		private void OnRequestedThemeChanged(object sender, AppThemeChangedEventArgs e)
+		{
+			ShellController.AppearanceChanged(CurrentPage, false);
 		}
 
 		void Initialize()
@@ -1215,7 +1250,7 @@ namespace Microsoft.Maui.Controls
 
 		void IPropertyPropagationController.PropagatePropertyChanged(string propertyName)
 		{
-			PropertyPropagationExtensions.PropagatePropertyChanged(propertyName, this, LogicalChildren);
+			PropertyPropagationExtensions.PropagatePropertyChanged(propertyName, this, ((IElementController)this).LogicalChildren);
 			if (FlyoutHeaderView != null)
 				PropertyPropagationExtensions.PropagatePropertyChanged(propertyName, this, new[] { FlyoutHeaderView });
 			if (FlyoutFooterView != null)
