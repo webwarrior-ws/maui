@@ -181,16 +181,14 @@ string monoVersion = "";
 
 if(releaseChannel == ReleaseChannel.Stable)
 {
-    if(IsXcodeVersionAtLeast("12.0"))
-    {
-    }
-    else
-    {
+    // only required xcode on a mac since it is not support in any other place
+    if (Context.IsRunningOnMacOs ())
+        if(IsXcodeVersionAtLeast("12.0"))
+            return;
         monoMajorVersion = "";
         monoPatchVersion = "";
         iOSSDK_macos = $"https://bosstoragemirror.blob.core.windows.net/wrench/jenkins/d16-7-xcode11.7/3016ffe2b0ee27bf4a2d61e6161430d6bbd62f78/7/package/notarized/xamarin.ios-13.20.3.5.pkg";
-    	macSDK_macos = $"https://bosstoragemirror.blob.core.windows.net/wrench/jenkins/d16-7-xcode11.7/3016ffe2b0ee27bf4a2d61e6161430d6bbd62f78/7/package/notarized/xamarin.mac-6.20.3.5.pkg";
-    }
+      macSDK_macos = $"https://bosstoragemirror.blob.core.windows.net/wrench/jenkins/d16-7-xcode11.7/3016ffe2b0ee27bf4a2d61e6161430d6bbd62f78/7/package/notarized/xamarin.mac-6.20.3.5.pkg";
 }
 
 if(String.IsNullOrWhiteSpace(monoSDK_macos))
