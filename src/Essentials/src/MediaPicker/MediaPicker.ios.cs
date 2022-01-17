@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Foundation;
 using MobileCoreServices;
+using ObjCRuntime;
 using Photos;
 using UIKit;
 
@@ -37,7 +38,7 @@ namespace Microsoft.Maui.Essentials
 			if (!UIImagePickerController.AvailableMediaTypes(sourceType).Contains(mediaType))
 				throw new FeatureNotSupportedException();
 
-			if (!photo)
+			if (!photo && !pickExisting)
 				await Permissions.EnsureGrantedAsync<Permissions.Microphone>();
 
 			// Check if picking existing or not and ensure permission accordingly as they can be set independently from each other
@@ -65,22 +66,22 @@ namespace Microsoft.Maui.Essentials
 			var tcs = new TaskCompletionSource<FileResult>(picker);
 			picker.Delegate = new PhotoPickerDelegate
 			{
-				CompletedHandler = info => GetFileResult(info, tcs)
+				CompletedHandler = async info =>
+				{
+					GetFileResult(info, tcs);
+					await vc.DismissViewControllerAsync(true);
+				}
 			};
 
 			if (picker.PresentationController != null)
 			{
-				picker.PresentationController.Delegate = new PhotoPickerPresentationControllerDelegate
-				{
-					CompletedHandler = info => GetFileResult(info, tcs)
-				};
+				picker.PresentationController.Delegate =
+					new Platform.UIPresentationControllerDelegate(() => GetFileResult(null, tcs));
 			}
 
 			await vc.PresentViewControllerAsync(picker, true);
 
 			var result = await tcs.Task;
-
-			await vc.DismissViewControllerAsync(true);
 
 			picker?.Dispose();
 			picker = null;
@@ -164,14 +165,6 @@ namespace Microsoft.Maui.Essentials
 				CompletedHandler?.Invoke(info);
 
 			public override void Canceled(UIImagePickerController picker) =>
-				CompletedHandler?.Invoke(null);
-		}
-
-		class PhotoPickerPresentationControllerDelegate : UIAdaptivePresentationControllerDelegate
-		{
-			public Action<NSDictionary> CompletedHandler { get; set; }
-
-			public override void DidDismiss(UIPresentationController presentationController) =>
 				CompletedHandler?.Invoke(null);
 		}
 	}

@@ -1,9 +1,10 @@
-using CoreGraphics;
-using Foundation;
-using Microsoft.Maui.Graphics;
 using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using CoreGraphics;
+using Foundation;
+using Microsoft.Maui.Graphics;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
@@ -116,7 +117,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 		public override void ItemDeselected(UICollectionView collectionView, NSIndexPath indexPath)
 		{
-			if(CollectionView.CellForItem(indexPath) is ShellSectionHeaderCell cell)
+			if (CollectionView.CellForItem(indexPath) is ShellSectionHeaderCell cell)
 				cell.Label.TextColor = _unselectedColor.ToUIColor();
 		}
 

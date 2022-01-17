@@ -34,7 +34,7 @@ namespace Microsoft.Maui.Essentials
 
 		static DevicePlatform GetPlatform() =>
 #if __IOS__
-            DevicePlatform.iOS;
+			DevicePlatform.iOS;
 #elif __TVOS__
             DevicePlatform.tvOS;
 #elif __WATCHOS__
@@ -62,7 +62,11 @@ namespace Microsoft.Maui.Essentials
 #endif
 		}
 
-		static DeviceType GetDeviceType()
-			=> Runtime.Arch == Arch.DEVICE ? DeviceType.Physical : DeviceType.Virtual;
+		static DeviceType GetDeviceType() =>
+#if !(MACCATALYST || MACOS)
+			Runtime.Arch == Arch.DEVICE ? DeviceType.Physical : DeviceType.Virtual;
+#else
+			DeviceType.Physical;
+#endif
 	}
 }

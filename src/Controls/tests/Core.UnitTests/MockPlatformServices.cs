@@ -1,19 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO.IsolatedStorage;
-using System.Reflection;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Maui.Animations;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Core.UnitTests;
-using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Graphics;
-using FileAccess = System.IO.FileAccess;
-using FileMode = System.IO.FileMode;
-using FileShare = System.IO.FileShare;
-using Stream = System.IO.Stream;
 
 [assembly: Dependency(typeof(MockDeserializer))]
 [assembly: Dependency(typeof(MockResourcesProvider))]
@@ -22,38 +15,18 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 {
 	internal class MockPlatformServices : Internals.IPlatformServices
 	{
-		Action<Action> invokeOnMainThread;
-		Action<Uri> openUriAction;
-		Func<Uri, CancellationToken, Task<Stream>> getStreamAsync;
+		readonly IDispatcher _dispatcher;
 		Func<VisualElement, double, double, SizeRequest> getNativeSizeFunc;
 		readonly bool useRealisticLabelMeasure;
-		readonly bool _isInvokeRequired;
 
-		public MockPlatformServices(Action<Action> invokeOnMainThread = null, Action<Uri> openUriAction = null,
-			Func<Uri, CancellationToken, Task<Stream>> getStreamAsync = null,
+		public MockPlatformServices(
+			IDispatcher dispatcher = null,
 			Func<VisualElement, double, double, SizeRequest> getNativeSizeFunc = null,
-			bool useRealisticLabelMeasure = false, bool isInvokeRequired = false)
+			bool useRealisticLabelMeasure = false)
 		{
-			this.invokeOnMainThread = invokeOnMainThread;
-			this.openUriAction = openUriAction;
-			this.getStreamAsync = getStreamAsync;
+			_dispatcher = dispatcher ?? new MockDispatcher();
 			this.getNativeSizeFunc = getNativeSizeFunc;
 			this.useRealisticLabelMeasure = useRealisticLabelMeasure;
-			_isInvokeRequired = isInvokeRequired;
-		}
-
-		public string GetHash(string input)
-		{
-			return Internals.Crc64.GetHash(input);
-		}
-
-		string IPlatformServices.GetMD5Hash(string input) => GetHash(input);
-
-		static int hex(int v)
-		{
-			if (v < 10)
-				return '0' + v;
-			return 'a' + v - 10;
 		}
 
 		public double GetNamedSize(NamedSize size, Type targetElement, bool useOldSizes)
@@ -83,46 +56,20 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				case "SystemBlue":
 					return Color.FromRgb(0, 122, 255);
 				case "SystemChromeHighColor":
-					return Color.FromHex("#FF767676");
+					return Color.FromArgb("#FF767676");
 				case "HoloBlueBright":
-					return Color.FromHex("#ff00ddff");
+					return Color.FromArgb("#ff00ddff");
 				default:
 					return null;
 			}
 		}
 
-		public void OpenUriAction(Uri uri)
-		{
-			if (openUriAction != null)
-				openUriAction(uri);
-			else
-				throw new NotImplementedException();
-		}
-
-		public bool IsInvokeRequired
-		{
-			get { return _isInvokeRequired; }
-		}
-
 		public string RuntimePlatform { get; set; }
-
-		public void BeginInvokeOnMainThread(Action action)
-		{
-			if (invokeOnMainThread == null)
-				action();
-			else
-				invokeOnMainThread(action);
-		}
-
-		public Internals.Ticker CreateTicker()
-		{
-			return new MockTicker();
-		}
 
 		public void StartTimer(TimeSpan interval, Func<bool> callback)
 		{
 			Timer timer = null;
-			TimerCallback onTimeout = o => BeginInvokeOnMainThread(() =>
+			TimerCallback onTimeout = o => _dispatcher.Dispatch(() =>
 			{
 				if (callback())
 					return;
@@ -130,70 +77,6 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				timer.Dispose();
 			});
 			timer = new Timer(onTimeout, null, interval, interval);
-		}
-
-		public Task<Stream> GetStreamAsync(Uri uri, CancellationToken cancellationToken)
-		{
-			if (getStreamAsync == null)
-				throw new NotImplementedException();
-			return getStreamAsync(uri, cancellationToken);
-		}
-
-		public Assembly[] GetAssemblies()
-		{
-			return AppDomain.CurrentDomain.GetAssemblies();
-		}
-
-		public Internals.IIsolatedStorageFile GetUserStoreForApplication()
-		{
-			return new MockIsolatedStorageFile(IsolatedStorageFile.GetUserStoreForAssembly());
-		}
-
-		public class MockIsolatedStorageFile : Internals.IIsolatedStorageFile
-		{
-			readonly IsolatedStorageFile isolatedStorageFile;
-			public MockIsolatedStorageFile(IsolatedStorageFile isolatedStorageFile)
-			{
-				this.isolatedStorageFile = isolatedStorageFile;
-			}
-
-			public Task<bool> GetDirectoryExistsAsync(string path)
-			{
-				return Task.FromResult(isolatedStorageFile.DirectoryExists(path));
-			}
-
-			public Task CreateDirectoryAsync(string path)
-			{
-				isolatedStorageFile.CreateDirectory(path);
-				return Task.FromResult(true);
-			}
-
-			public Task<Stream> OpenFileAsync(string path, FileMode mode, FileAccess access)
-			{
-				Stream stream = isolatedStorageFile.OpenFile(path, mode, access);
-				return Task.FromResult(stream);
-			}
-
-			public Task<Stream> OpenFileAsync(string path, FileMode mode, FileAccess access, FileShare share)
-			{
-				Stream stream = isolatedStorageFile.OpenFile(path, mode, access, share);
-				return Task.FromResult(stream);
-			}
-
-			public Task<bool> GetFileExistsAsync(string path)
-			{
-				return Task.FromResult(isolatedStorageFile.FileExists(path));
-			}
-
-			public Task<DateTimeOffset> GetLastWriteTimeAsync(string path)
-			{
-				return Task.FromResult(isolatedStorageFile.GetLastWriteTime(path));
-			}
-		}
-
-		public void QuitApplication()
-		{
-
 		}
 
 		public SizeRequest GetNativeSize(VisualElement view, double widthConstraint, double heightConstraint)
@@ -271,28 +154,40 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 	public class MockApplication : Application
 	{
+		public static UnitTestLogger MockLogger;
+
 		public MockApplication()
 		{
 		}
 	}
 
-	internal class MockTicker : Internals.Ticker
+	internal class MockTicker : Ticker
 	{
 		bool _enabled;
 
-		protected override void EnableTimer()
+		public override void Start()
 		{
 			_enabled = true;
 
 			while (_enabled)
 			{
-				SendSignals(16);
+				this.Fire?.Invoke();
 			}
 		}
-
-		protected override void DisableTimer()
+		public override void Stop()
 		{
 			_enabled = false;
+		}
+	}
+
+	class MockDispatcher : IDispatcher
+	{
+		public bool IsDispatchRequired => false;
+
+		public bool Dispatch(Action action)
+		{
+			action();
+			return true;
 		}
 	}
 }

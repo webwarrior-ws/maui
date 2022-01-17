@@ -1,11 +1,14 @@
 using System.Collections;
 using System.Linq;
 using Microsoft.Maui.Graphics;
+using NSubstitute;
 using NUnit.Framework;
 
 
 namespace Microsoft.Maui.Controls.Core.UnitTests
 {
+	using StackLayout = Microsoft.Maui.Controls.Compatibility.StackLayout;
+
 	[TestFixture]
 	public class StackLayoutUnitTests : BaseTestFixture
 	{
@@ -43,7 +46,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				}
 			};
 
-			var r = stack.GetSizeRequest(100, 100);
+			var r = stack.Measure(100, 100);
 
 			Assert.AreEqual(new SizeRequest(new Size(20, 20)), r);
 		}
@@ -97,7 +100,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			Assert.AreEqual(new Rectangle(0, 0, 100, 60), child1.Bounds);
 			Assert.AreEqual(new Rectangle(0, 60, 100, 40), child2.Bounds);
 
-			stack.GetSizeRequest(100, 100);
+			stack.Measure(100, 100);
 			stack.Layout(new Rectangle(0, 0, 100, 500));
 
 			Assert.AreEqual(new Rectangle(0, 0, 100, 460), child1.Bounds);
@@ -191,7 +194,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				}
 			};
 
-			var size = stack.GetSizeRequest(double.PositiveInfinity, double.PositiveInfinity).Request;
+			var size = stack.Measure(double.PositiveInfinity, double.PositiveInfinity).Request;
 			Assert.AreEqual(new Size(30, 56), size);
 		}
 
@@ -208,7 +211,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				}
 			};
 
-			var size = stack.GetSizeRequest(double.PositiveInfinity, double.PositiveInfinity).Request;
+			var size = stack.Measure(double.PositiveInfinity, double.PositiveInfinity).Request;
 			Assert.AreEqual(new Size(56, 30), size);
 		}
 
@@ -232,9 +235,9 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			stack.Layout(new Rectangle(0, 0, 200, 200));
 
-			Assert.AreEqual(new Rectangle(0, 0, 20, 30), stack.Children[0].Bounds);
-			Assert.AreEqual(new Rectangle(90, 36, 20, 30), stack.Children[1].Bounds);
-			Assert.AreEqual(new Rectangle(180, 72, 20, 30), stack.Children[2].Bounds);
+			Assert.AreEqual(new Rectangle(0, 0, 20, 30), stack.Children[0].Frame);
+			Assert.AreEqual(new Rectangle(90, 36, 20, 30), stack.Children[1].Frame);
+			Assert.AreEqual(new Rectangle(180, 72, 20, 30), stack.Children[2].Frame);
 		}
 
 		[Test]
@@ -274,9 +277,9 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			stack.Layout(new Rectangle(0, 0, 100, 250));
 
-			Assert.That(stack.Children.ToArray()[0].Bounds, Is.EqualTo(new Rectangle(0, 0, 100, 100)));
-			Assert.That(stack.Children.ToArray()[1].Bounds, Is.EqualTo(new Rectangle(0, 110, 100, 100)));
-			Assert.That(stack.Children.ToArray()[2].Bounds, Is.EqualTo(new Rectangle(0, 220, 100, 30)));
+			Assert.That(stack.Children.ToArray()[0].Frame, Is.EqualTo(new Rectangle(0, 0, 100, 100)));
+			Assert.That(stack.Children.ToArray()[1].Frame, Is.EqualTo(new Rectangle(0, 110, 100, 100)));
+			Assert.That(stack.Children.ToArray()[2].Frame, Is.EqualTo(new Rectangle(0, 220, 100, 30)));
 		}
 
 		[Test]
@@ -296,9 +299,9 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			stack.Layout(new Rectangle(0, 0, 250, 100));
 
-			Assert.That(stack.Children.ToArray()[0].Bounds, Is.EqualTo(new Rectangle(0, 0, 100, 100)));
-			Assert.That(stack.Children.ToArray()[1].Bounds, Is.EqualTo(new Rectangle(110, 0, 100, 100)));
-			Assert.That(stack.Children.ToArray()[2].Bounds, Is.EqualTo(new Rectangle(220, 0, 30, 100)));
+			Assert.That(stack.Children.ToArray()[0].Frame, Is.EqualTo(new Rectangle(0, 0, 100, 100)));
+			Assert.That(stack.Children.ToArray()[1].Frame, Is.EqualTo(new Rectangle(110, 0, 100, 100)));
+			Assert.That(stack.Children.ToArray()[2].Frame, Is.EqualTo(new Rectangle(220, 0, 30, 100)));
 		}
 
 		[Test]
@@ -315,7 +318,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				}
 			};
 
-			var result = stack.GetSizeRequest(double.PositiveInfinity, double.PositiveInfinity);
+			var result = stack.Measure(double.PositiveInfinity, double.PositiveInfinity);
 			Assert.That(result.Minimum, Is.EqualTo(new Size(100, 230)));
 		}
 
@@ -334,7 +337,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				}
 			};
 
-			var result = stack.GetSizeRequest(double.PositiveInfinity, double.PositiveInfinity);
+			var result = stack.Measure(double.PositiveInfinity, double.PositiveInfinity);
 			Assert.That(result.Minimum, Is.EqualTo(new Size(230, 100)));
 		}
 
@@ -351,19 +354,26 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				}
 			};
 
+			var handler = Substitute.For<IViewHandler>();
+			stack.Handler = handler;
+
 			stack.Layout(new Rectangle(0, 0, 100, 100));
 
-			var size = stack.GetSizeRequest(double.PositiveInfinity, double.PositiveInfinity).Request;
+			var size = stack.Measure(double.PositiveInfinity, double.PositiveInfinity).Request;
 			Assert.AreEqual(new Rectangle(0, 0, 100, 20), child1.Bounds);
 			Assert.AreEqual(new Rectangle(0, 26, 100, 20), child2.Bounds);
 			Assert.AreEqual(new Size(100, 46), size);
 
 			child1.IsVisible = false;
+
+			// Verify that the visibility change invalidated the layout, and simulate a native layout update 
+			AssertInvalidated(handler);
+			stack.ForceLayout();
+
 			Assert.False(child1.IsVisible);
 			Assert.AreEqual(new Rectangle(0, 0, 100, 20), child2.Bounds);
-			size = stack.GetSizeRequest(double.PositiveInfinity, double.PositiveInfinity).Request;
+			size = stack.Measure(double.PositiveInfinity, double.PositiveInfinity).Request;
 			Assert.AreEqual(new Size(100, 20), size);
-
 		}
 
 		[Test]
@@ -384,7 +394,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				MinimumHeightRequest = 10
 			});
 
-			var result = stack.GetSizeRequest(double.PositiveInfinity, double.PositiveInfinity);
+			var result = stack.Measure(double.PositiveInfinity, double.PositiveInfinity);
 			Assert.AreEqual(new Size(10, 10), result.Minimum);
 		}
 
@@ -655,7 +665,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				Children = { child }
 			};
 
-			var outterLayout = new StackLayout
+			var outerLayout = new StackLayout
 			{
 				HorizontalOptions = LayoutOptions.FillAndExpand,
 				VerticalOptions = LayoutOptions.FillAndExpand,
@@ -663,9 +673,18 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				Children = { innerStack }
 			};
 
-			outterLayout.Layout(new Rectangle(0, 0, 100, 100));
+
+			var handler = Substitute.For<IViewHandler>();
+			outerLayout.Handler = handler;
+
+			outerLayout.Layout(new Rectangle(0, 0, 100, 100));
 			var beforeSize = innerStack.Bounds.Size;
 			innerStack.Padding = new Thickness(30);
+
+			// Verify that the Padding change invalidated the layout, and simulate a native layout update 
+			AssertInvalidated(handler);
+			outerLayout.ForceLayout();
+
 			var afterSize = innerStack.Bounds.Size;
 			Assert.AreNotEqual(beforeSize, afterSize, "Padding was grow, so Size should be bigger");
 		}
@@ -701,6 +720,12 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			innerStack.Padding = new Thickness(30);
 			var after = child.Bounds;
 			Assert.AreNotEqual(before, after, "child should be moved within padding size");
+		}
+
+		void AssertInvalidated(IViewHandler handler)
+		{
+			handler.Received().Invoke(Arg.Is(nameof(IView.InvalidateMeasure)), Arg.Any<object>());
+			handler.ClearReceivedCalls();
 		}
 	}
 }

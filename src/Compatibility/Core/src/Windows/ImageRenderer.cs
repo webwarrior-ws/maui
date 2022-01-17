@@ -3,6 +3,8 @@ using System.ComponentModel;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Controls.Platform;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
@@ -87,13 +89,13 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				ImageElementManager.RefreshImage(this);
 			}
 
-			Element?.SetIsLoading(false);
+			((IImageController)Element)?.SetIsLoading(false);
 		}
 
 		protected virtual void OnImageFailed(object sender, ExceptionRoutedEventArgs exceptionRoutedEventArgs)
 		{
-			Log.Warning("Image Loading", $"Image failed to load: {exceptionRoutedEventArgs.ErrorMessage}");
-			Element?.SetIsLoading(false);
+			Application.Current?.FindMauiContext()?.CreateLogger<ImageRenderer>()?.LogWarning("Image failed to load: {exceptionRoutedEventArgs.ErrorMessage}", exceptionRoutedEventArgs.ErrorMessage);
+			((IImageController)Element)?.SetIsLoading(false);
 		}
 
 		protected virtual async Task TryUpdateSource()
@@ -108,7 +110,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			}
 			catch (Exception ex)
 			{
-				Log.Warning(nameof(ImageRenderer), "Error loading image: {0}", ex);
+				Application.Current?.FindMauiContext()?.CreateLogger<ImageRenderer>()?.LogWarning(ex, "Error loading image");
 			}
 			finally
 			{
@@ -129,8 +131,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			}
 			catch (Exception exception)
 			{
-				Log.Warning("Update image source after app resume", 
-					$"ImageSource failed to update after app resume: {exception.Message}");				
+				Application.Current?.FindMauiContext()?.CreateLogger<ImageRenderer>()?.LogWarning(exception, "ImageSource failed to update after app resume");
 			}
 		}
 

@@ -2,19 +2,20 @@ using System.ComponentModel;
 using Microsoft.Maui.Graphics;
 using Microsoft.UI.Xaml;
 using WBrush = Microsoft.UI.Xaml.Media.Brush;
+using Microsoft.Maui.Controls.Platform;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
 	public class CheckBoxRenderer : ViewRenderer<CheckBox, FormsCheckBox>
 	{
-		static WBrush _tintDefaultBrush = Colors.Blue.ToBrush();
+		static WBrush _tintDefaultBrush = Colors.Blue.ToNative();
 		bool _disposed = false;
 
 		protected virtual FormsCheckBox CreateNativeControl()
 		{
 			return new FormsCheckBox()
 			{
-				Style = Microsoft.UI.Xaml.Application.Current.Resources["FormsCheckBoxStyle"] as Microsoft.UI.Xaml.Style,			
+				Style = Microsoft.UI.Xaml.Application.Current.Resources["FormsCheckBoxStyle"] as Microsoft.UI.Xaml.Style,
 			};
 		}
 

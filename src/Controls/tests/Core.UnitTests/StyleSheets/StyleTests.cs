@@ -6,6 +6,8 @@ using NUnit.Framework;
 
 namespace Microsoft.Maui.Controls.StyleSheets.UnitTests
 {
+	using StackLayout = Microsoft.Maui.Controls.Compatibility.StackLayout;
+
 	[TestFixture]
 	public class StyleTests
 	{
@@ -14,6 +16,7 @@ namespace Microsoft.Maui.Controls.StyleSheets.UnitTests
 		{
 			Device.PlatformServices = new MockPlatformServices();
 			Internals.Registrar.RegisterAll(new Type[0]);
+			ApplicationExtensions.CreateAndSetMockApplication();
 		}
 
 		[TearDown]
@@ -96,7 +99,7 @@ namespace Microsoft.Maui.Controls.StyleSheets.UnitTests
 			{
 				Content = new Label()
 			};
-			app.MainPage = page;
+			app.LoadPage(page);
 			Assert.That((page.Content as Label).TextColor, Is.EqualTo(Colors.Red));
 		}
 
@@ -110,7 +113,7 @@ namespace Microsoft.Maui.Controls.StyleSheets.UnitTests
 				Content = new Label()
 			};
 			page.Resources.Add(StyleSheet.FromString("label{ color: red; }"));
-			app.MainPage = page;
+			app.LoadPage(page);
 			Assert.That((page.Content as Label).TextColor, Is.EqualTo(Colors.Red));
 			Assert.That((page.Content as Label).BackgroundColor, Is.EqualTo(Colors.Blue));
 		}
@@ -124,7 +127,7 @@ namespace Microsoft.Maui.Controls.StyleSheets.UnitTests
 				Content = new Label()
 			};
 			page.Resources.Add(StyleSheet.FromString("label{ color: red; }"));
-			app.MainPage = page;
+			app.LoadPage(page);
 			Assert.That((page.Content as Label).TextColor, Is.EqualTo(Colors.Red));
 
 			app.Resources.Add(StyleSheet.FromString("label{ color: white; background-color: blue; }"));
@@ -145,7 +148,7 @@ namespace Microsoft.Maui.Controls.StyleSheets.UnitTests
 				Content = label
 			};
 			page.Resources.Add(StyleSheet.FromString("label{ color: red; }"));
-			app.MainPage = page;
+			app.LoadPage(page);
 			Assert.That((page.Content as Label).TextColor, Is.EqualTo(Colors.Yellow));
 		}
 

@@ -1,4 +1,5 @@
 using System;
+using ObjCRuntime;
 using UIKit;
 using RectangleF = CoreGraphics.CGRect;
 
@@ -17,24 +18,28 @@ namespace Microsoft.Maui.Handlers
 
 		protected override void ConnectHandler(UISwitch nativeView)
 		{
+			base.ConnectHandler(nativeView);
+
 			nativeView.ValueChanged += OnControlValueChanged;
 		}
 
 		protected override void DisconnectHandler(UISwitch nativeView)
 		{
+			base.DisconnectHandler(nativeView);
+
 			nativeView.ValueChanged -= OnControlValueChanged;
 		}
 
-		protected override void SetupDefaults(UISwitch nativeView)
+		void SetupDefaults(UISwitch nativeView)
 		{
 			DefaultOnTrackColor = UISwitch.Appearance.OnTintColor;
 			DefaultOffTrackColor = nativeView.GetOffTrackColor();
 			DefaultThumbColor = UISwitch.Appearance.ThumbTintColor;
 		}
 
-		public static void MapIsToggled(SwitchHandler handler, ISwitch view)
+		public static void MapIsOn(SwitchHandler handler, ISwitch view)
 		{
-			handler.NativeView?.UpdateIsToggled(view);
+			handler.NativeView?.UpdateIsOn(view);
 		}
 
 		public static void MapTrackColor(SwitchHandler handler, ISwitch view)
@@ -53,7 +58,7 @@ namespace Microsoft.Maui.Handlers
 				return;
 
 			if (NativeView != null)
-				VirtualView.IsToggled = NativeView.On;
+				VirtualView.IsOn = NativeView.On;
 		}
 	}
 }

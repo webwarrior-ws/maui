@@ -1,12 +1,11 @@
 using System;
 using Android.Graphics;
-using Microsoft.Maui;
 using AColor = Android.Graphics.Color;
 using AColorFilter = Android.Graphics.ColorFilter;
 using ADrawable = Android.Graphics.Drawables.Drawable;
 using ADrawableCompat = AndroidX.Core.Graphics.Drawable.DrawableCompat;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public static class DrawableExtensions
 	{

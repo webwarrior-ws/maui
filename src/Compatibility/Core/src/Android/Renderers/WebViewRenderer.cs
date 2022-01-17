@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Android.Content;
 using Android.Webkit;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific;
 using Microsoft.Maui.Graphics;
 using AWebView = Android.Webkit.WebView;
@@ -46,6 +47,11 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			if (!fireNavigatingCanceled || !SendNavigatingCanceled(url))
 			{
 				_eventState = WebNavigationEvent.NewPage;
+				if (url != null && !url.StartsWith('/') && !Uri.IsWellFormedUriString(url, UriKind.Absolute))
+				{
+					// URLs like "index.html" can't possibly load, so try "file:///android_asset/index.html"
+					url = AssetBaseUrl + url;
+				}
 				Control.LoadUrl(url);
 			}
 		}
@@ -136,13 +142,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 				_webChromeClient = GetFormsWebChromeClient();
 				_webChromeClient.SetContext(Context);
 				webView.SetWebChromeClient(_webChromeClient);
-
-				if (Context.IsDesignerContext())
-				{
-					SetNativeControl(webView);
-					return;
-				}
-
 				webView.Settings.JavaScriptEnabled = true;
 				webView.Settings.DomStorageEnabled = true;
 				SetNativeControl(webView);
@@ -385,7 +384,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 
 		void UpdateMixedContentMode()
 		{
-			if (Control != null && ((int)Forms.SdkInt >= 21))
+			if (Control != null)
 			{
 				Control.Settings.MixedContentMode = (MixedContentHandling)Element.OnThisPlatform().MixedContentMode();
 			}

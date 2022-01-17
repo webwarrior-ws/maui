@@ -6,7 +6,7 @@ using Microsoft.Maui.Controls.StyleSheets;
 
 namespace Microsoft.Maui.Controls
 {
-	public class MenuItem : BaseMenuItem, IMenuItemController, IStyleSelectable
+	public partial class MenuItem : BaseMenuItem, IMenuItemController, IStyleSelectable
 	{
 		public static readonly BindableProperty AcceleratorProperty = BindableProperty.CreateAttached(nameof(Accelerator), typeof(Accelerator), typeof(MenuItem), null);
 
@@ -74,14 +74,14 @@ namespace Microsoft.Maui.Controls
 			set => SetValue(IsEnabledPropertyKey, value);
 		}
 
-		[TypeConverter(typeof(ListStringTypeConverter))]
+		[System.ComponentModel.TypeConverter(typeof(ListStringTypeConverter))]
 		public IList<string> StyleClass
 		{
 			get { return @class; }
 			set { @class = value; }
 		}
 
-		[TypeConverter(typeof(ListStringTypeConverter))]
+		[System.ComponentModel.TypeConverter(typeof(ListStringTypeConverter))]
 		public IList<string> @class
 		{
 			get { return _mergedStyle.StyleClass; }

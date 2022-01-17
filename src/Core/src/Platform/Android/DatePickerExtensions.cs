@@ -1,7 +1,8 @@
 ﻿using System;
 using Android.App;
+using Android.Content.Res;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public static class DatePickerExtensions
 	{
@@ -13,6 +14,28 @@ namespace Microsoft.Maui
 		public static void UpdateDate(this MauiDatePicker nativeDatePicker, IDatePicker datePicker)
 		{
 			nativeDatePicker.SetText(datePicker);
+		}
+
+		public static void UpdateTextColor(this MauiDatePicker nativeDatePicker, IDatePicker datePicker)
+		{
+			nativeDatePicker.UpdateTextColor(datePicker, null);
+		}
+
+		public static void UpdateTextColor(this MauiDatePicker nativeDatePicker, IDatePicker datePicker, ColorStateList? defaultTextColor)
+		{
+			var textColor = datePicker.TextColor;
+
+			if (textColor == null)
+			{
+				if (defaultTextColor != null)
+					nativeDatePicker.SetTextColor(defaultTextColor);
+			}
+			else
+			{
+				var androidColor = textColor.ToNative();
+				if (!nativeDatePicker.TextColors.IsOneColor(ColorStates.EditText, androidColor))
+					nativeDatePicker.SetTextColor(ColorStateListExtensions.CreateEditText(androidColor));
+			}
 		}
 
 		public static void UpdateMinimumDate(this MauiDatePicker nativeDatePicker, IDatePicker datePicker)

@@ -5,8 +5,10 @@ using Android.Graphics;
 using Android.Graphics.Drawables;
 using Android.Views;
 using AndroidX.AppCompat.Widget;
+using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Compatibility.Platform.Android.FastRenderers;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific;
 using Microsoft.Maui.Graphics;
 using AColor = Android.Graphics.Color;
@@ -42,7 +44,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		void IVisualElementRenderer.UpdateLayout() => _tracker?.UpdateLayout();
 		VisualElement IVisualElementRenderer.Element => Element;
 		AView IVisualElementRenderer.View => this;
-		ViewGroup IVisualElementRenderer.ViewGroup => null;
 		VisualElementTracker IVisualElementRenderer.Tracker => _tracker;
 		bool IDisposedState.IsDisposed => ((IImageRendererController)this).IsDisposed;
 
@@ -109,9 +110,9 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 
 				if (Element != null)
 				{
-					if (AppCompat.Platform.GetRenderer(Element) == this)
+					if (Platform.GetRenderer(Element) == this)
 					{
-						Element.ClearValue(AppCompat.Platform.RendererProperty);
+						Element.ClearValue(Platform.RendererProperty);
 					}
 
 					Element = null;
@@ -211,7 +212,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 
 			if (Drawable != null)
 			{
-				if ((int)Forms.SdkInt >= 18 && backgroundDrawable != null)
+				if (backgroundDrawable != null)
 				{
 					var outlineBounds = backgroundDrawable.GetPaddingBounds(canvas.Width, canvas.Height);
 					var width = (float)canvas.Width;
@@ -220,7 +221,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 					var heightRatio = 1f;
 
 					if (Element.Aspect == Aspect.AspectFill && OnThisPlatform().GetIsShadowEnabled())
-						Internals.Log.Warning(nameof(ImageButtonRenderer), "AspectFill isn't fully supported when using shadows. Image may be clipped incorrectly to Border");
+						Application.Current?.FindMauiContext()?.CreateLogger<ImageButtonRenderer>()?.LogWarning("AspectFill isn't fully supported when using shadows. Image may be clipped incorrectly to Border");
 
 					switch (Element.Aspect)
 					{
@@ -322,7 +323,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		float IBorderVisualElementRenderer.ShadowRadius => Context.ToPixels(OnThisPlatform().GetShadowRadius());
 		float IBorderVisualElementRenderer.ShadowDx => Context.ToPixels(OnThisPlatform().GetShadowOffset().Width);
 		float IBorderVisualElementRenderer.ShadowDy => Context.ToPixels(OnThisPlatform().GetShadowOffset().Height);
-		AColor IBorderVisualElementRenderer.ShadowColor => OnThisPlatform().GetShadowColor().ToAndroid();
+		AColor IBorderVisualElementRenderer.ShadowColor => OnThisPlatform().GetShadowColor().ToAndroid(Colors.Black);
 		bool IBorderVisualElementRenderer.IsShadowEnabled() => OnThisPlatform().GetIsShadowEnabled();
 		bool IBorderVisualElementRenderer.UseDefaultPadding() => false;
 		bool IBorderVisualElementRenderer.UseDefaultShadow() => false;

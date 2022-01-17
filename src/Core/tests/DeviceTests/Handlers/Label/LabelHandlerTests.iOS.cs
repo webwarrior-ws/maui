@@ -5,7 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.DeviceTests.Stubs;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
-using Microsoft.Maui.Platform.iOS;
+using Microsoft.Maui.Platform;
+using ObjCRuntime;
 using UIKit;
 using Xunit;
 
@@ -13,31 +14,6 @@ namespace Microsoft.Maui.DeviceTests
 {
 	public partial class LabelHandlerTests
 	{
-		[Theory(DisplayName = "Font Family Initializes Correctly")]
-		[InlineData(null)]
-		[InlineData("Times New Roman")]
-		[InlineData("Dokdo")]
-		public async Task FontFamilyInitializesCorrectly(string family)
-		{
-			var label = new LabelStub()
-			{
-				Text = "Test",
-				Font = Font.OfSize(family, 10)
-			};
-
-			var (services, nativeFont) = await GetValueAsync(label, handler => (handler.Services, GetNativeLabel(handler).Font));
-
-			var fontManager = services.GetRequiredService<IFontManager>();
-
-			var expectedNativeFont = fontManager.GetFont(Font.OfSize(family, 0.0));
-
-			Assert.Equal(expectedNativeFont.FamilyName, nativeFont.FamilyName);
-			if (string.IsNullOrEmpty(family))
-				Assert.Equal(fontManager.DefaultFont.FamilyName, nativeFont.FamilyName);
-			else
-				Assert.NotEqual(fontManager.DefaultFont.FamilyName, nativeFont.FamilyName);
-		}
-
 		[Fact(DisplayName = "Horizontal TextAlignment Updates Correctly")]
 		public async Task HorizontalTextAlignmentInitializesCorrectly()
 		{
@@ -174,6 +150,33 @@ namespace Microsoft.Maui.DeviceTests
 			attributedText.AssertHasUnderline();
 		}
 
+		[Theory(DisplayName = "HorizontalTextAlignment adjusts for FlowDirection")]
+		[InlineData(TextAlignment.Start, FlowDirection.LeftToRight, UITextAlignment.Left)]
+		[InlineData(TextAlignment.End, FlowDirection.LeftToRight, UITextAlignment.Right)]
+		[InlineData(TextAlignment.Start, FlowDirection.RightToLeft, UITextAlignment.Right)]
+		[InlineData(TextAlignment.End, FlowDirection.RightToLeft, UITextAlignment.Left)]
+		public async Task HorizontalTextAlignmentAdjustsForFlowDirection(TextAlignment alignment, FlowDirection flowDirection, UITextAlignment expected)
+		{
+			var label = new LabelStub
+			{
+				Text = "This is TEXT!",
+				HorizontalTextAlignment = alignment,
+				FlowDirection = flowDirection
+			};
+
+
+			var values = await GetValueAsync(label, (handler) =>
+			{
+				return new
+				{
+					ViewValue = label.HorizontalTextAlignment,
+					NativeViewValue = GetNativeHorizontalTextAlignment(handler)
+				};
+			});
+
+			Assert.Equal(expected, values.NativeViewValue);
+		}
+
 		UILabel GetNativeLabel(LabelHandler labelHandler) =>
 			(UILabel)labelHandler.NativeView;
 
@@ -182,15 +185,6 @@ namespace Microsoft.Maui.DeviceTests
 
 		Color GetNativeTextColor(LabelHandler labelHandler) =>
 			GetNativeLabel(labelHandler).TextColor.ToColor();
-
-		double GetNativeUnscaledFontSize(LabelHandler labelHandler) =>
-			GetNativeLabel(labelHandler).Font.PointSize;
-
-		bool GetNativeIsBold(LabelHandler labelHandler) =>
-			GetNativeLabel(labelHandler).Font.FontDescriptor.SymbolicTraits.HasFlag(UIFontDescriptorSymbolicTraits.Bold);
-
-		bool GetNativeIsItalic(LabelHandler labelHandler) =>
-			GetNativeLabel(labelHandler).Font.FontDescriptor.SymbolicTraits.HasFlag(UIFontDescriptorSymbolicTraits.Italic);
 
 		int GetNativeMaxLines(LabelHandler labelHandler) =>
  			(int)GetNativeLabel(labelHandler).Lines;
@@ -214,14 +208,6 @@ namespace Microsoft.Maui.DeviceTests
 		UITextAlignment GetNativeHorizontalTextAlignment(LabelHandler labelHandler) =>
 			GetNativeLabel(labelHandler).TextAlignment;
 
-		Task ValidateNativeBackgroundColor(ILabel label, Color color)
-		{
-			return InvokeOnMainThreadAsync(() =>
-			{
-				return GetNativeLabel(CreateHandler(label)).AssertContainsColor(color);
-			});
-		}
-
 		UILineBreakMode GetNativeLineBreakMode(LabelHandler labelHandler) =>
 			GetNativeLabel(labelHandler).LineBreakMode;
 
@@ -238,6 +224,16 @@ namespace Microsoft.Maui.DeviceTests
 				return new nfloat(-1.0f);
 
 			return paragraphStyle.LineHeightMultiple;
+		}
+
+		Task ValidateHasColor(ILabel label, Color color, Action action = null)
+		{
+			return InvokeOnMainThreadAsync(() =>
+			{
+				var nativeLabel = GetNativeLabel(CreateHandler(label));
+				action?.Invoke();
+				nativeLabel.AssertContainsColor(color);
+			});
 		}
 	}
 }

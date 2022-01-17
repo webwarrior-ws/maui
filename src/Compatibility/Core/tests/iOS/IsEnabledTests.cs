@@ -1,11 +1,13 @@
 using System.Collections;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using ObjCRuntime;
 using UIKit;
+using CategoryAttribute = NUnit.Framework.CategoryAttribute;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 {
-	public class IsEnabledTests : PlatformTestFixture 
+	public class IsEnabledTests : PlatformTestFixture
 	{
 		static IEnumerable TestCases
 		{
@@ -33,7 +35,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 		[Description("VisualElement enabled should match renderer enabled")]
 		public async Task EnabledConsistent(View view)
 		{
-			await Device.InvokeOnMainThreadAsync(() => {
+			await Device.InvokeOnMainThreadAsync(() =>
+			{
 				using (var renderer = GetRenderer(view))
 				{
 					var expected = view.IsEnabled;

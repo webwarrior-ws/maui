@@ -3,6 +3,7 @@ using Android.Content;
 using Android.Content.PM;
 using Android.Content.Res;
 using Android.OS;
+using Android.Views;
 using Microsoft.Maui.LifecycleEvents;
 
 namespace Microsoft.Maui
@@ -18,26 +19,28 @@ namespace Microsoft.Maui
 
 		public override void OnBackPressed()
 		{
-			var preventBack = false;
-
-			MauiApplication.Current?.Services?.InvokeLifecycleEvents<AndroidLifecycle.OnPressingBack>(del =>
+			var preventBackPropagation = false;
+			MauiApplication.Current?.Services?.InvokeLifecycleEvents<AndroidLifecycle.OnBackPressed>(del =>
 			{
-				preventBack = del(this) || preventBack;
+				preventBackPropagation = del(this) || preventBackPropagation;
 			});
 
-			if (!preventBack)
-			{
-				MauiApplication.Current?.Services?.InvokeLifecycleEvents<AndroidLifecycle.OnBackPressed>(del => del(this));
-
+			if (!preventBackPropagation)
 				base.OnBackPressed();
-			}
 		}
 
 		public override void OnConfigurationChanged(Configuration newConfig)
 		{
 			base.OnConfigurationChanged(newConfig);
 
-			MauiApplication.Current?.Services?.InvokeLifecycleEvents<AndroidLifecycle.OnConfigurationChanged>(del => del(this, newConfig));
+			var mauiApp = MauiApplication.Current;
+
+			if (mauiApp != null)
+			{
+				mauiApp.Application?.ThemeChanged();
+
+				mauiApp.Services?.InvokeLifecycleEvents<AndroidLifecycle.OnConfigurationChanged>(del => del(this, newConfig));
+			}
 		}
 
 		protected override void OnNewIntent(Intent? intent)

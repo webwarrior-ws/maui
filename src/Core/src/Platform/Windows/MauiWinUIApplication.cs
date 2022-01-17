@@ -1,79 +1,49 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Microsoft.Maui;
+using Microsoft.Maui.Handlers;
 using Microsoft.Maui.Hosting;
 using Microsoft.Maui.LifecycleEvents;
-using Microsoft.UI.Xaml.Controls;
+using Microsoft.Maui.Platform;
 
 namespace Microsoft.Maui
 {
-	public class MauiWinUIApplication<TStartup> : MauiWinUIApplication
-		where TStartup : IStartup, new()
-	{
-		protected override void OnLaunched(UI.Xaml.LaunchActivatedEventArgs args)
-		{
-			LaunchActivatedEventArgs = args;
-
-			// TODO: This should not be here. CreateWindow should do it.
-			MainWindow = new MauiWinUIWindow();
-
-			var startup = new TStartup();
-
-			var host = startup
-				.CreateAppHostBuilder()
-				.ConfigureServices(ConfigureNativeServices)
-				.ConfigureUsing(startup)
-				.Build();
-
-			Services = host.Services;
-			Application = Services.GetRequiredService<IApplication>();
-
-			var mauiContext = new MauiContext(Services);
-
-			var activationState = new ActivationState(mauiContext, args);
-			var window = Application.CreateWindow(activationState);
-			window.MauiContext = mauiContext;
-
-			var content = (window.Page as IView) ?? window.Page.View;
-
-			var canvas = CreateRootContainer();
-
-			canvas.Children.Add(content.ToNative(window.MauiContext));
-
-			MainWindow.Content = canvas;
-
-			MainWindow.Activate();
-
-			Current.Services?.InvokeLifecycleEvents<WindowsLifecycle.OnLaunched>(del => del(this, args));
-		}
-
-		Canvas CreateRootContainer()
-		{
-			// TODO WINUI should this be some other known constant or via some mechanism? Or done differently?
-			Resources.TryGetValue("RootContainerStyle", out object style);
-
-			return new Canvas
-			{
-				Style = style as UI.Xaml.Style
-			};
-		}
-
-		void ConfigureNativeServices(HostBuilderContext ctx, IServiceCollection services)
-		{
-		}
-	}
-
 	public abstract class MauiWinUIApplication : UI.Xaml.Application
 	{
-		protected MauiWinUIApplication()
+		protected abstract MauiApp CreateMauiApp();
+
+		protected override void OnLaunched(UI.Xaml.LaunchActivatedEventArgs args)
 		{
+			// Windows running on a different thread will "launch" the app again
+			if (Application != null)
+			{
+				Services.InvokeLifecycleEvents<WindowsLifecycle.OnLaunching>(del => del(this, args));
+				Services.InvokeLifecycleEvents<WindowsLifecycle.OnLaunched>(del => del(this, args));
+				return;
+			}
+			
+			var mauiApp = CreateMauiApp();
+
+			var rootContext = new MauiContext(mauiApp.Services);
+
+			var applicationContext = rootContext.MakeApplicationScope(this);
+
+			Services = applicationContext.Services;
+
+			Services.InvokeLifecycleEvents<WindowsLifecycle.OnLaunching>(del => del(this, args));
+
+			Application = Services.GetRequiredService<IApplication>();
+
+			this.SetApplicationHandler(Application, applicationContext);
+
+			this.CreateNativeWindow(Application, args);
+
+			Services.InvokeLifecycleEvents<WindowsLifecycle.OnLaunched>(del => del(this, args));
 		}
 
 		public static new MauiWinUIApplication Current => (MauiWinUIApplication)UI.Xaml.Application.Current;
 
 		public UI.Xaml.LaunchActivatedEventArgs LaunchActivatedEventArgs { get; protected set; } = null!;
-
-		public MauiWinUIWindow MainWindow { get; protected set; } = null!;
 
 		public IServiceProvider Services { get; protected set; } = null!;
 

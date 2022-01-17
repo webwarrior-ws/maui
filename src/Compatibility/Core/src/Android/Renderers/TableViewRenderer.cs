@@ -1,6 +1,7 @@
 using Android.Content;
 using Android.Views;
 using AndroidX.Core.Widget;
+using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Graphics;
 using AListView = Android.Widget.ListView;
 
@@ -54,7 +55,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		{
 			base.OnAttachedToWindow();
 
-			if (Forms.IsLollipopOrNewer && Control != null)
+			if (Control != null)
 				Control.NestedScrollingEnabled = (Parent.GetParentOfType<NestedScrollView>() != null);
 		}
 

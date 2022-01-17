@@ -2,10 +2,13 @@
 using System.ComponentModel;
 using CoreGraphics;
 using Foundation;
-using UIKit;
+using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;
+using Microsoft.Maui.Essentials;
 using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Platform.iOS;
+using Microsoft.Maui.Platform;
+using ObjCRuntime;
+using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
@@ -32,6 +35,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 		}
 
+		[PortHandler]
 		protected override void Dispose(bool disposing)
 		{
 			if (disposing)
@@ -51,6 +55,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			base.Dispose(disposing);
 		}
 
+		[PortHandler]
 		protected override void OnElementChanged(ElementChangedEventArgs<SearchBar> e)
 		{
 			if (e.NewElement != null)
@@ -131,13 +136,13 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				UpdateVerticalTextAlignment();
 			else if (e.PropertyName == VisualElement.FlowDirectionProperty.PropertyName)
 				UpdateHorizontalTextAlignment();
-			else if(e.PropertyName == Microsoft.Maui.Controls.InputView.MaxLengthProperty.PropertyName)
+			else if (e.PropertyName == Microsoft.Maui.Controls.InputView.MaxLengthProperty.PropertyName)
 				UpdateMaxLength();
-			else if(e.PropertyName == Microsoft.Maui.Controls.InputView.KeyboardProperty.PropertyName)
+			else if (e.PropertyName == Microsoft.Maui.Controls.InputView.KeyboardProperty.PropertyName)
 				UpdateKeyboard();
-			else if(e.PropertyName == Microsoft.Maui.Controls.InputView.IsSpellCheckEnabledProperty.PropertyName)
+			else if (e.PropertyName == Microsoft.Maui.Controls.InputView.IsSpellCheckEnabledProperty.PropertyName)
 				UpdateKeyboard();
-			else if(e.PropertyName == PlatformConfiguration.iOSSpecific.SearchBar.SearchBarStyleProperty.PropertyName)
+			else if (e.PropertyName == PlatformConfiguration.iOSSpecific.SearchBar.SearchBarStyleProperty.PropertyName)
 				UpdateSearchBarStyle();
 		}
 
@@ -152,7 +157,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			{
 				_defaultTintColor = Control.BarTintColor;
 			}
-			
+
 			Control.BarTintColor = color.ToUIColor(_defaultTintColor);
 
 			Control.SetBackgroundImage(new UIImage(), UIBarPosition.Any, UIBarMetrics.Default);
@@ -175,7 +180,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 		public override CoreGraphics.CGSize SizeThatFits(CoreGraphics.CGSize size)
 		{
 			if (nfloat.IsInfinity(size.Width))
-				size.Width = (nfloat)(Element?.Parent is VisualElement parent ? parent.Width : Device.Info.ScaledScreenSize.Width);
+				size.Width = (nfloat)(Element?.Parent is VisualElement parent ? parent.Width : DeviceDisplay.MainDisplayInfo.GetScaledScreenSize().Width);
 
 			var sizeThatFits = Control.SizeThatFits(size);
 
@@ -249,6 +254,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			_textField.TextAlignment = Element.HorizontalTextAlignment.ToNativeTextAlignment(((IVisualElementController)Element).EffectiveFlowDirection);
 		}
 
+		[PortHandler]
 		void UpdateVerticalTextAlignment()
 		{
 			_textField = _textField ?? Control.FindDescendantView<UITextField>();
@@ -322,7 +328,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				// Placeholder default color is 70% gray
 				// https://developer.apple.com/library/prerelease/ios/documentation/UIKit/Reference/UITextField_Class/index.html#//apple_ref/occ/instp/UITextField/placeholder
 
-				var color = Element.IsEnabled && targetColor != null 
+				var color = Element.IsEnabled && targetColor != null
 					? targetColor : ColorExtensions.PlaceholderColor.ToColor();
 
 				_textField.AttributedPlaceholder = formatted.ToAttributed(Element, color);
@@ -331,7 +337,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			}
 			else
 			{
-				_textField.AttributedPlaceholder = formatted.ToAttributed(Element, targetColor == null 
+				_textField.AttributedPlaceholder = formatted.ToAttributed(Element, targetColor == null
 					? ColorExtensions.PlaceholderColor.ToColor() : targetColor);
 				_textField.AttributedPlaceholder.WithCharacterSpacing(Element.CharacterSpacing);
 			}
@@ -348,7 +354,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			// other changes to Element.Text.
 			if (!_textWasTyped)
 				Control.Text = Element.UpdateFormsText(Element.Text, Element.TextTransform);
-			
+
 			UpdateCancelButton();
 		}
 

@@ -1,4 +1,5 @@
 using System;
+using ObjCRuntime;
 using UIKit;
 using PointF = CoreGraphics.CGPoint;
 
@@ -37,7 +38,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 			var parent = _renderer.Element.Parent;
 
-			while (!Application.IsApplicationOrNull(parent))
+			while (!Application.IsApplicationOrWindowOrNull(parent))
 			{
 				if (parent is ScrollView || parent is ListView || parent is TableView || parent is CollectionView)
 					break;
@@ -72,7 +73,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				var newBounds = _scrollView.AdjustedContentInset.InsetRect(_scrollView.Bounds).ToRectangle();
 				newBounds.X = 0;
 				newBounds.Y = 0;
-				if(_renderer.Element is ScrollView scrollView)
+				if (_renderer.Element is ScrollView scrollView)
 					scrollView.LayoutAreaOverride = newBounds;
 			}
 		}
@@ -154,7 +155,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			// If we can't bounce in that case you may not be able to expose the handler.
 			// Also the hiding behavior only depends on scroll on iOS 11. In 10 and below
 			// the search goes in the TitleView so there is nothing to collapse/expand.
-			if (!Forms.IsiOS11OrNewer || 
+			if (!Forms.IsiOS11OrNewer ||
 				(_renderer.Element is ScrollView scrollView && scrollView.Orientation == ScrollOrientation.Horizontal))
 				return;
 

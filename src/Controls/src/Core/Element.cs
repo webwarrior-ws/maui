@@ -4,12 +4,13 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.Xaml.Diagnostics;
 
 namespace Microsoft.Maui.Controls
 {
-	public abstract partial class Element : BindableObject, IElement, INameScope, IElementController
+	public abstract partial class Element : BindableObject, IElement, INameScope, IElementController, IVisualTreeElement
 	{
 		public static readonly BindableProperty MenuProperty = BindableProperty.CreateAttached(nameof(Menu), typeof(Menu), typeof(Element), null);
 
@@ -81,24 +82,6 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
-		[Obsolete("ParentView is obsolete as of version 2.1.0. Please use Parent instead.")]
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public VisualElement ParentView
-		{
-			get
-			{
-				Element parent = Parent;
-				while (parent != null)
-				{
-					var parentView = parent as VisualElement;
-					if (parentView != null)
-						return parentView;
-					parent = parent.RealParent;
-				}
-				return null;
-			}
-		}
-
 		public string StyleId
 		{
 			get { return _styleId; }
@@ -113,7 +96,8 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
-		internal virtual ReadOnlyCollection<Element> LogicalChildrenInternal => EmptyChildren;
+		internal virtual IReadOnlyList<Element> LogicalChildrenInternal => EmptyChildren;
+
 		internal IEnumerable<Element> AllChildren
 		{
 			get
@@ -128,9 +112,12 @@ namespace Microsoft.Maui.Controls
 
 		internal virtual IEnumerable<Element> ChildrenNotDrawnByThisElement => EmptyChildren;
 
+		IReadOnlyList<Element> IElementController.LogicalChildren => LogicalChildrenInternal;
 
 		[EditorBrowsable(EditorBrowsableState.Never)]
-		public ReadOnlyCollection<Element> LogicalChildren => LogicalChildrenInternal;
+		[Obsolete("Do not use! This is to be removed! Just used by Hot Reload! To be replaced with IVisualTreeElement!")]
+		public ReadOnlyCollection<Element> LogicalChildren =>
+			new ReadOnlyCollection<Element>(new TemporaryWrapper(LogicalChildrenInternal));
 
 		internal bool Owned { get; set; }
 
@@ -145,12 +132,22 @@ namespace Microsoft.Maui.Controls
 				bool emitChange = Parent != value;
 
 				if (emitChange)
+				{
 					OnPropertyChanging(nameof(Parent));
+
+					if (value != null)
+						OnParentChangingCore(Parent, value);
+					else
+						OnParentChangingCore(Parent, RealParent);
+				}
 
 				_parentOverride = value;
 
 				if (emitChange)
+				{
 					OnPropertyChanged(nameof(Parent));
+					OnParentChangedCore();
+				}
 			}
 		}
 
@@ -176,12 +173,15 @@ namespace Microsoft.Maui.Controls
 
 				OnPropertyChanging();
 
+				if (_parentOverride == null)
+					OnParentChangingCore(Parent, value);
+
 				if (RealParent != null)
 				{
 					((IElement)RealParent).RemoveResourcesChangedListener(OnParentResourcesChanged);
 
 					if (value != null && (RealParent is Layout || RealParent is IControlTemplated))
-						Log.Warning("Element", $"{this} is already a child of {RealParent}. Remove {this} from {RealParent} before adding to {value}.");
+						Application.Current?.FindMauiContext()?.CreateLogger<Element>()?.LogWarning($"{this} is already a child of {RealParent}. Remove {this} from {RealParent} before adding to {value}.");
 				}
 
 				RealParent = value;
@@ -202,6 +202,9 @@ namespace Microsoft.Maui.Controls
 				}
 
 				OnParentSet();
+
+				if (_parentOverride == null)
+					OnParentChangedCore();
 
 				OnPropertyChanged();
 			}
@@ -303,6 +306,10 @@ namespace Microsoft.Maui.Controls
 			base.SetDynamicResource(property, key);
 		}
 
+		IReadOnlyList<Maui.IVisualTreeElement> IVisualTreeElement.GetVisualChildren() => LogicalChildrenInternal;
+
+		IVisualTreeElement IVisualTreeElement.GetVisualParent() => this.Parent;
+
 		protected override void OnBindingContextChanged()
 		{
 			this.PropagateBindingContext(LogicalChildrenInternal, (child, bc) =>
@@ -357,19 +364,22 @@ namespace Microsoft.Maui.Controls
 		protected override void OnPropertyChanged([CallerMemberName] string propertyName = null)
 		{
 			base.OnPropertyChanged(propertyName);
+
+			Handler?.UpdateValue(propertyName);
+
 			foreach (var logicalChildren in ChildrenNotDrawnByThisElement)
 			{
 				if (logicalChildren is IPropertyPropagationController controller)
 					PropertyPropagationExtensions.PropagatePropertyChanged(propertyName, this, new[] { logicalChildren });
 			}
 
-			if (_effects == null || _effects.Count == 0)
-				return;
-
-			var args = new PropertyChangedEventArgs(propertyName);
-			foreach (Effect effect in _effects)
+			if (_effects?.Count > 0)
 			{
-				effect?.SendOnElementPropertyChanged(args);
+				var args = new PropertyChangedEventArgs(propertyName);
+				foreach (Effect effect in _effects)
+				{
+					effect?.SendOnElementPropertyChanged(args);
+				}
 			}
 		}
 
@@ -381,7 +391,7 @@ namespace Microsoft.Maui.Controls
 
 			while (queue.Count > 0)
 			{
-				ReadOnlyCollection<Element> children = queue.Dequeue().LogicalChildrenInternal;
+				IReadOnlyList<Element> children = queue.Dequeue().LogicalChildrenInternal;
 				for (var i = 0; i < children.Count; i++)
 				{
 					Element child = children[i];
@@ -483,7 +493,7 @@ namespace Microsoft.Maui.Controls
 
 			while (queue.Count > 0)
 			{
-				ReadOnlyCollection<Element> children = queue.Dequeue().LogicalChildrenInternal;
+				IReadOnlyList<Element> children = queue.Dequeue().LogicalChildrenInternal;
 				for (var i = 0; i < children.Count; i++)
 				{
 					var child = children[i] as VisualElement;
@@ -503,8 +513,9 @@ namespace Microsoft.Maui.Controls
 				throw new InvalidOperationException("Cannot attach Effect to multiple sources");
 
 			Effect effectToRegister = effect;
-			if (effect is RoutingEffect)
-				effectToRegister = ((RoutingEffect)effect).Inner;
+			if (effect is RoutingEffect re && re.Inner != null)
+				effectToRegister = re.Inner;
+
 			_effectControlProvider.RegisterEffect(effectToRegister);
 			effectToRegister.Element = this;
 			effect.SendAttached();
@@ -594,6 +605,65 @@ namespace Microsoft.Maui.Controls
 		void OnResourceChanged(BindableProperty property, object value)
 		{
 			SetValueCore(property, value, SetValueFlags.ClearOneWayBindings | SetValueFlags.ClearTwoWayBindings);
+		}
+
+		public event EventHandler<ParentChangingEventArgs> ParentChanging;
+		public event EventHandler ParentChanged;
+
+		protected virtual void OnParentChanging(ParentChangingEventArgs args) { }
+
+		protected virtual void OnParentChanged() { }
+
+		private protected virtual void OnParentChangedCore()
+		{
+			ParentChanged?.Invoke(this, EventArgs.Empty);
+			OnParentChanged();
+		}
+
+		private protected virtual void OnParentChangingCore(Element oldParent, Element newParent)
+		{
+			if (oldParent == newParent)
+				return;
+
+			var args = new ParentChangingEventArgs(oldParent, newParent);
+			ParentChanging?.Invoke(this, args);
+			OnParentChanging(args);
+		}
+
+		class TemporaryWrapper : IList<Element>
+		{
+			IReadOnlyList<Element> _inner;
+
+			public TemporaryWrapper(IReadOnlyList<Element> inner)
+			{
+				_inner = inner;
+			}
+
+			Element IList<Element>.this[int index] { get => _inner[index]; set => throw new NotSupportedException(); }
+
+			int ICollection<Element>.Count => _inner.Count;
+
+			bool ICollection<Element>.IsReadOnly => true;
+
+			void ICollection<Element>.Add(Element item) => throw new NotSupportedException();
+
+			void ICollection<Element>.Clear() => throw new NotSupportedException();
+
+			bool ICollection<Element>.Contains(Element item) => _inner.IndexOf(item) != -1;
+
+			void ICollection<Element>.CopyTo(Element[] array, int arrayIndex) => throw new NotSupportedException();
+
+			IEnumerator<Element> IEnumerable<Element>.GetEnumerator() => _inner.GetEnumerator();
+
+			System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => _inner.GetEnumerator();
+
+			int IList<Element>.IndexOf(Element item) => _inner.IndexOf(item);
+
+			void IList<Element>.Insert(int index, Element item) => throw new NotSupportedException();
+
+			bool ICollection<Element>.Remove(Element item) => throw new NotSupportedException();
+
+			void IList<Element>.RemoveAt(int index) => throw new NotSupportedException();
 		}
 	}
 }

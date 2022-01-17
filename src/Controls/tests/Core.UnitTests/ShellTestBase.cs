@@ -86,6 +86,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 		[QueryProperty("DoubleQueryParameter", "DoubleQueryParameter")]
 		[QueryProperty("SomeQueryParameter", "SomeQueryParameter")]
 		[QueryProperty("CancelNavigationOnBackButtonPressed", "CancelNavigationOnBackButtonPressed")]
+		[QueryProperty("ComplexObject", "ComplexObject")]
 		public class ShellTestPage : ContentPage
 		{
 			public string CancelNavigationOnBackButtonPressed { get; set; }
@@ -100,6 +101,12 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			}
 
 			public double DoubleQueryParameter
+			{
+				get;
+				set;
+			}
+
+			public object ComplexObject
 			{
 				get;
 				set;
@@ -315,6 +322,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			public TestShell()
 			{
+				_ = new Window() { Page = this };
 				Routing.RegisterRoute(nameof(TestPage1), typeof(TestPage1));
 				Routing.RegisterRoute(nameof(TestPage2), typeof(TestPage2));
 				Routing.RegisterRoute(nameof(TestPage3), typeof(TestPage3));
@@ -325,6 +333,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			public TestShell(params ShellItem[] shellItems) : this()
 			{
+				_ = new Window() { Page = this };
 				shellItems.ForEach(x => Items.Add(x));
 			}
 
@@ -355,6 +364,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 					_contentPage = contentPage;
 				}
 
+				public override Element GetOrCreate(IServiceProvider services) => _contentPage;
+
 				public override Element GetOrCreate() => _contentPage;
 			}
 
@@ -374,8 +385,6 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				OnNavigatingCount++;
 			}
 
-
-
 			public void TestNavigationArgs(ShellNavigationSource source, string from, string to)
 			{
 				TestNavigatingArgs(source, from, to);
@@ -392,6 +401,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 					Assert.AreEqual(from, this.LastShellNavigatedEventArgs.Previous.Location.ToString());
 
 				Assert.AreEqual(to, this.LastShellNavigatedEventArgs.Current.Location.ToString());
+				Assert.AreEqual(to, this.CurrentState.Location.ToString());
 			}
 
 			public void TestNavigatingArgs(ShellNavigationSource source, string from, string to)
@@ -471,5 +481,20 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 		public class TestPage1 : ContentPage { }
 		public class TestPage2 : ContentPage { }
 		public class TestPage3 : ContentPage { }
+
+		public class PageWithDependency : ContentPage
+		{
+			public Dependency TestDependency { get; set; }
+
+			public PageWithDependency(Dependency dependency)
+			{
+				TestDependency = dependency;
+			}
+		}
+
+		public class Dependency
+		{
+			public int Test { get; set; }
+		}
 	}
 }

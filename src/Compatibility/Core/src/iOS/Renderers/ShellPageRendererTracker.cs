@@ -1,11 +1,13 @@
-using CoreGraphics;
-using Foundation;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using CoreGraphics;
+using Foundation;
+using Microsoft.Extensions.Logging;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
@@ -154,7 +156,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				if (oldPage == null)
 					((IShellController)_context.Shell).AddFlyoutBehaviorObserver(this);
 			}
-			else if(newPage == null && _context?.Shell is IShellController shellController)
+			else if (newPage == null && _context?.Shell is IShellController shellController)
 			{
 				shellController.RemoveFlyoutBehaviorObserver(this);
 			}
@@ -167,7 +169,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				}
 				catch (Exception exc)
 				{
-					Controls.Internals.Log.Warning(nameof(ShellPageRendererTracker), $"Failed to update toolbar items: {exc}");
+					Forms.MauiContext?.CreateLogger<ShellPageRendererTracker>()?.LogWarning(exc, "Failed to update toolbar items");
 				}
 			}
 		}
@@ -195,17 +197,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			else
 			{
 				var view = new TitleViewContainer(titleView);
-
-				if (Forms.IsiOS11OrNewer)
-				{
-					view.TranslatesAutoresizingMaskIntoConstraints = false;
-				}
-				else
-				{
-					view.TranslatesAutoresizingMaskIntoConstraints = true;
-					view.AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth;
-				}
-
 				NavigationItem.TitleView = view;
 			}
 		}
@@ -249,7 +240,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			var command = behavior.GetPropertyIfSet<object>(BackButtonBehavior.CommandProperty, null);
 
 			UIImage icon = null;
-			
+
 			if (String.IsNullOrWhiteSpace(text) && image == null)
 			{
 				image = _context.Shell.FlyoutIcon;
@@ -319,7 +310,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				else if (controller?.ParentViewController is UINavigationController navigationController)
 					navigationController.PopViewController(true);
 			}
-			else if(_flyoutBehavior == FlyoutBehavior.Flyout)
+			else if (_flyoutBehavior == FlyoutBehavior.Flyout)
 			{
 				_context.Shell.SetValueFromRenderer(Shell.FlyoutIsPresentedProperty, true);
 			}
@@ -399,6 +390,16 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			public TitleViewContainer(View view) : base(view)
 			{
 				MatchHeight = true;
+
+				if (Forms.IsiOS11OrNewer)
+				{
+					TranslatesAutoresizingMaskIntoConstraints = false;
+				}
+				else
+				{
+					TranslatesAutoresizingMaskIntoConstraints = true;
+					AutoresizingMask = UIViewAutoresizing.FlexibleHeight | UIViewAutoresizing.FlexibleWidth;
+				}
 			}
 
 			public override CGRect Frame
@@ -424,7 +425,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 						Frame = new CGRect(Frame.X, newSuper.Bounds.Y, Frame.Width, newSuper.Bounds.Height);
 
 					Height = newSuper.Bounds.Height;
-					Width = newSuper.Bounds.Width;
 				}
 
 				base.WillMoveToSuperview(newSuper);

@@ -1,38 +1,81 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Primitives;
 
 namespace Microsoft.Maui.DeviceTests.Stubs
 {
-	public class StubBase : IFrameworkElement
+	public class StubBase : ElementStub, IView, IVisualTreeElement
 	{
+		IElementHandler IElement.Handler
+		{
+			get => Handler;
+			set => Handler = (IViewHandler)value;
+		}
+
 		public bool IsEnabled { get; set; } = true;
 
-		public Color BackgroundColor { get; set; }
+		public List<StubBase> Children { get; set; }
 
-		public Rectangle Frame { get; set; } = new Rectangle(0, 0, 20, 20);
+		public Visibility Visibility { get; set; } = Visibility.Visible;
 
-		public IViewHandler Handler { get; set; }
+		public double Opacity { get; set; } = 1.0d;
 
-		public IFrameworkElement Parent { get; set; }
+		public Paint Background { get; set; }
 
-		public Size DesiredSize { get; set; } = new Size(20, 20);
+		public Rectangle Frame { get; set; }
 
-		public bool IsMeasureValid { get; set; }
+		public new IViewHandler Handler
+		{
+			get => (IViewHandler)base.Handler;
+			set => base.Handler = value;
+		}
 
-		public bool IsArrangeValid { get; set; }
+		public IShape Clip { get; set; }
 
-		public double Width { get; set; }
+		public IShadow Shadow { get; set; }
 
-		public double Height { get; set; }
+		public Size DesiredSize { get; set; } = new Size(50, 50);
+
+		public double Width { get; set; } = 50;
+
+		public double Height { get; set; } = 50;
+
+		public double MaximumWidth { get; set; } = Primitives.Dimension.Maximum;
+
+		public double MaximumHeight { get; set; } = Primitives.Dimension.Maximum;
+
+		public double MinimumWidth { get; set; } = Primitives.Dimension.Minimum;
+
+		public double MinimumHeight { get; set; } = Primitives.Dimension.Minimum;
+
+		public double TranslationX { get; set; }
+
+		public double TranslationY { get; set; }
+
+		public double Scale { get; set; } = 1d;
+
+		public double ScaleX { get; set; } = 1d;
+
+		public double ScaleY { get; set; } = 1d;
+
+		public double Rotation { get; set; }
+
+		public double RotationX { get; set; }
+
+		public double RotationY { get; set; }
+
+		public double AnchorX { get; set; } = .5d;
+
+		public double AnchorY { get; set; } = .5d;
 
 		public Thickness Margin { get; set; }
 
 		public string AutomationId { get; set; }
 
-		public FlowDirection FlowDirection { get; set; }
+		public FlowDirection FlowDirection { get; set; } = FlowDirection.LeftToRight;
 
 		public LayoutAlignment HorizontalLayoutAlignment { get; set; }
 
@@ -40,10 +83,13 @@ namespace Microsoft.Maui.DeviceTests.Stubs
 
 		public Semantics Semantics { get; set; } = new Semantics();
 
-		public void Arrange(Rectangle bounds)
+		public int ZIndex { get; set; }
+
+		public Size Arrange(Rectangle bounds)
 		{
 			Frame = bounds;
 			DesiredSize = bounds.Size;
+			return DesiredSize;
 		}
 
 		protected bool SetProperty<T>(ref T backingStore, T value,
@@ -72,5 +118,9 @@ namespace Microsoft.Maui.DeviceTests.Stubs
 		{
 			return new Size(widthConstraint, heightConstraint);
 		}
+
+		IReadOnlyList<Maui.IVisualTreeElement> IVisualTreeElement.GetVisualChildren() => this.Children.Cast<IVisualTreeElement>().ToList().AsReadOnly();
+
+		IVisualTreeElement IVisualTreeElement.GetVisualParent() => this.Parent as IVisualTreeElement;
 	}
 }

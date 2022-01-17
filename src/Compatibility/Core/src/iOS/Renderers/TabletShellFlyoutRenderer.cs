@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using Foundation;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
@@ -15,7 +16,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 		void IShellFlyoutRenderer.AttachFlyout(IShellContext context, UIViewController content)
 		{
-			if(_context != null)
+			if (_context != null)
 				_context.Shell.PropertyChanged -= HandleShellPropertyChanged;
 
 			_context = context;
@@ -26,7 +27,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			FlyoutContent.WillDisappear += OnFlyoutContentWillDisappear;
 
 			((IShellController)_context.Shell).AddFlyoutBehaviorObserver(this);
-		
+
 			ViewControllers = new UIViewController[]
 			{
 				FlyoutContent.ViewController,

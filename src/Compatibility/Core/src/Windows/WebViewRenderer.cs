@@ -12,9 +12,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.UI.Xaml.Controls;
 using WWebView = Microsoft.UI.Xaml.Controls.WebView2;
-
-//TODO WINUI3
-//using WWebViewExecutionMode = Microsoft.UI.Xaml.Controls.WebViewExecutionMode;
+using Microsoft.Maui.Controls.Platform;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
@@ -92,7 +91,7 @@ if(bases.length == 0){
 				}
 				catch (Exception exc)
 				{
-					Internals.Log.Warning(nameof(WebViewRenderer), $"Failed to load: {uri} {exc}");
+					Application.Current?.FindMauiContext()?.CreateLogger<WebViewRenderer>()?.LogWarning(exc, "Failed to load: {uri}", uri);
 				}
 			}
 			else
@@ -104,7 +103,7 @@ if(bases.length == 0){
 				}
 				catch (Exception exc)
 				{
-					Internals.Log.Warning(nameof(WebViewRenderer), $"Failed to load: {uri} {exc}");
+					Application.Current?.FindMauiContext()?.CreateLogger<WebViewRenderer>()?.LogWarning(exc, "Failed to load: {uri}", uri);
 				}
 			}
 		}
@@ -257,7 +256,7 @@ if(bases.length == 0){
 		{
 			var uri = CreateUriForCookies(url);
 			CookieContainer existingCookies = new CookieContainer();
-			var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
+			var filter = new global::Windows.Web.Http.Filters.HttpBaseProtocolFilter();
 			var nativeCookies = filter.CookieManager.GetCookies(uri);
 			return nativeCookies;
 		}
@@ -300,7 +299,7 @@ if(bases.length == 0){
 			var cookies = myCookieJar.GetCookies(uri);
 			var retrieveCurrentWebCookies = GetCookiesFromNativeStore(url);
 
-			var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
+			var filter = new global::Windows.Web.Http.Filters.HttpBaseProtocolFilter();
 			var nativeCookies = filter.CookieManager.GetCookies(uri);
 
 			foreach (Cookie cookie in cookies)
@@ -334,7 +333,7 @@ if(bases.length == 0){
 
 			var retrieveCurrentWebCookies = GetCookiesFromNativeStore(url);
 
-			var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
+			var filter = new global::Windows.Web.Http.Filters.HttpBaseProtocolFilter();
 			foreach (Cookie cookie in cookies)
 			{
 				HttpCookie httpCookie = new HttpCookie(cookie.Name, cookie.Domain, cookie.Path);
@@ -370,7 +369,7 @@ if(bases.length == 0){
 					}
 					catch (Exception exc)
 					{
-						Log.Warning(nameof(WebView), $"Eval of script failed: {exc} Script: {eventArg.Script}");
+						Application.Current?.FindMauiContext()?.CreateLogger<WebView>()?.LogWarning(exc, "Eval of script failed Script: {eventArg.Script}", eventArg.Script);
 					}
 				});
 		}
@@ -443,7 +442,7 @@ if(bases.length == 0){
 		async void OnWebMessageReceived(WWebView sender, Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs e)
 		{
 			if (Element.OnThisPlatform().IsJavaScriptAlertEnabled())
-				await new Windows.UI.Popups.MessageDialog(e.TryGetWebMessageAsString()).ShowAsync();
+				await new global::Windows.UI.Popups.MessageDialog(e.TryGetWebMessageAsString()).ShowAsync();
 		}
 
 		void OnNavigationStarted(WWebView sender, Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)

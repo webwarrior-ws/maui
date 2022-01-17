@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using Microsoft.Maui.Controls.Xaml.Diagnostics;
+using Microsoft.Maui.Dispatching;
 
 namespace Microsoft.Maui.Controls.Internals
 {
@@ -191,7 +192,7 @@ namespace Microsoft.Maui.Controls.Internals
 		// ApplyCore  100000 (w/o INPC, w/o unnapply)	: 20ms.
 		internal void ApplyCore(object sourceObject, BindableObject target, BindableProperty property, bool fromTarget = false)
 		{
-			var isTSource = sourceObject != null && sourceObject is TSource;
+			var isTSource = sourceObject is TSource;
 			var mode = this.GetRealizedMode(property);
 			if ((mode == BindingMode.OneWay || mode == BindingMode.OneTime) && fromTarget)
 				return;
@@ -285,7 +286,7 @@ namespace Microsoft.Maui.Controls.Internals
 					return;
 
 				IDispatcher dispatcher = (sender as BindableObject)?.Dispatcher;
-				dispatcher.Dispatch(() => _binding.Apply(false));
+				dispatcher.DispatchIfRequired(() => _binding.Apply(false));
 			}
 		}
 

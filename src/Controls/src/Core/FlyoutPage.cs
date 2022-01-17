@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Essentials;
 using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.Controls
 {
-	[ContentProperty("Detail")]
-	public class FlyoutPage : Page, IFlyoutPageController, IElementConfiguration<FlyoutPage>
+	[ContentProperty(nameof(Detail))]
+	public partial class FlyoutPage : Page, IFlyoutPageController, IElementConfiguration<FlyoutPage>
 	{
 		public static readonly BindableProperty IsGestureEnabledProperty = BindableProperty.Create(nameof(IsGestureEnabled), typeof(bool), typeof(FlyoutPage), true);
 
@@ -26,6 +27,8 @@ namespace Microsoft.Maui.Controls
 
 		Rectangle _flyoutBounds;
 
+		IFlyoutPageController FlyoutPageController => this;
+
 		public Page Detail
 		{
 			get { return _detail; }
@@ -40,12 +43,25 @@ namespace Microsoft.Maui.Controls
 				if (value.RealParent != null)
 					throw new InvalidOperationException("Detail must not already have a parent.");
 
+				var previousDetail = _detail;
+				// TODO MAUI refine this to fire earlier
+				_detail?.SendNavigatingFrom(new NavigatingFromEventArgs());
+
 				OnPropertyChanging();
 				if (_detail != null)
 					InternalChildren.Remove(_detail);
 				_detail = value;
 				InternalChildren.Add(_detail);
 				OnPropertyChanged();
+
+				if (this.HasAppeared)
+				{
+					previousDetail?.SendDisappearing();
+					_detail?.SendAppearing();
+				}
+
+				previousDetail?.SendNavigatedFrom(new NavigatedFromEventArgs(_detail));
+				_detail?.SendNavigatedTo(new NavigatedToEventArgs(previousDetail));
 			}
 		}
 
@@ -78,12 +94,26 @@ namespace Microsoft.Maui.Controls
 				if (value.RealParent != null)
 					throw new InvalidOperationException("Flyout must not already have a parent.");
 
+				// TODO MAUI refine this to fire earlier
+				var previousFlyout = _flyout;
+				// TODO MAUI refine this to fire earlier
+				_flyout?.SendNavigatingFrom(new NavigatingFromEventArgs());
+
 				OnPropertyChanging();
 				if (_flyout != null)
 					InternalChildren.Remove(_flyout);
 				_flyout = value;
 				InternalChildren.Add(_flyout);
 				OnPropertyChanged();
+
+				if (this.HasAppeared)
+				{
+					previousFlyout?.SendDisappearing();
+					_flyout?.SendAppearing();
+				}
+
+				previousFlyout?.SendNavigatedFrom(new NavigatedFromEventArgs(_flyout));
+				_flyout?.SendNavigatedTo(new NavigatedToEventArgs(previousFlyout));
 			}
 		}
 
@@ -93,11 +123,9 @@ namespace Microsoft.Maui.Controls
 			set { SetValue(FlyoutLayoutBehaviorProperty, value); }
 		}
 
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public bool CanChangeIsPresented { get; set; } = true;
+		bool IFlyoutPageController.CanChangeIsPresented { get; set; } = true;
 
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public Rectangle DetailBounds
+		Rectangle IFlyoutPageController.DetailBounds
 		{
 			get { return _detailBounds; }
 			set
@@ -109,8 +137,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public Rectangle FlyoutBounds
+		Rectangle IFlyoutPageController.FlyoutBounds
 		{
 			get { return _flyoutBounds; }
 			set
@@ -122,8 +149,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public bool ShouldShowSplitMode
+		bool IFlyoutPageController.ShouldShowSplitMode
 		{
 			get
 			{
@@ -131,7 +157,7 @@ namespace Microsoft.Maui.Controls
 					return false;
 
 				FlyoutLayoutBehavior behavior = FlyoutLayoutBehavior;
-				DeviceOrientation orientation = Device.Info.CurrentOrientation;
+				var orientation = DeviceDisplay.MainDisplayInfo.Orientation;
 
 				bool isSplitOnLandscape = (behavior == FlyoutLayoutBehavior.SplitOnLandscape || behavior == FlyoutLayoutBehavior.Default) && orientation.IsLandscape();
 				bool isSplitOnPortrait = behavior == FlyoutLayoutBehavior.SplitOnPortrait && orientation.IsPortrait();
@@ -147,7 +173,7 @@ namespace Microsoft.Maui.Controls
 				return true;
 
 			FlyoutLayoutBehavior behavior = FlyoutLayoutBehavior;
-			DeviceOrientation orientation = Device.Info.CurrentOrientation;
+			var orientation = DeviceDisplay.MainDisplayInfo.Orientation;
 
 			bool isSplitOnLandscape = (behavior == FlyoutLayoutBehavior.SplitOnLandscape || behavior == FlyoutLayoutBehavior.Default) && orientation.IsLandscape();
 			bool isSplitOnPortrait = behavior == FlyoutLayoutBehavior.SplitOnPortrait && orientation.IsPortrait();
@@ -158,13 +184,19 @@ namespace Microsoft.Maui.Controls
 		{
 			if (Flyout == null || Detail == null)
 				throw new InvalidOperationException("Flyout and Detail must be set before using a FlyoutPage");
+
+#if !ANDROID
 			_flyout.Layout(_flyoutBounds);
 			_detail.Layout(_detailBounds);
+#endif
 		}
 
 		protected override void OnAppearing()
 		{
-			CanChangeIsPresented = true;
+			Flyout?.SendAppearing();
+			Detail?.SendAppearing();
+
+			FlyoutPageController.CanChangeIsPresented = true;
 			UpdateFlyoutLayoutBehavior(this);
 			base.OnAppearing();
 		}
@@ -212,11 +244,11 @@ namespace Microsoft.Maui.Controls
 
 		internal static void UpdateFlyoutLayoutBehavior(FlyoutPage page)
 		{
-			if (page.ShouldShowSplitMode)
+			if (page is IFlyoutPageController fpc && fpc.ShouldShowSplitMode)
 			{
 				page.SetValueCore(IsPresentedProperty, true);
 				if (page.FlyoutLayoutBehavior != FlyoutLayoutBehavior.Default)
-					page.CanChangeIsPresented = false;
+					fpc.CanChangeIsPresented = false;
 			}
 		}
 
@@ -225,9 +257,18 @@ namespace Microsoft.Maui.Controls
 
 		static void OnIsPresentedPropertyChanging(BindableObject sender, object oldValue, object newValue)
 		{
-			var page = (FlyoutPage)sender;
-			if (!page.CanChangeIsPresented)
-				throw new InvalidOperationException(string.Format("Can't change IsPresented when setting {0}", page.FlyoutLayoutBehavior));
+			if (sender is Maui.IElement element && element.IsShimmed())
+			{
+				if (sender is FlyoutPage fp && fp is IFlyoutPageController fpc && !fpc.CanChangeIsPresented)
+					throw new InvalidOperationException(string.Format("Can't change IsPresented when setting {0}", fp.FlyoutLayoutBehavior));
+			}
+			else
+			{
+				if ((!(bool)newValue) && sender is IFlyoutPageController fpc && fpc.ShouldShowSplitMode && sender is FlyoutPage fp)
+				{
+					throw new InvalidOperationException(string.Format("Can't change IsPresented when setting {0}", fp.FlyoutLayoutBehavior));
+				}
+			}
 		}
 
 		static void OnFlyoutLayoutBehaviorPropertyChanged(BindableObject sender, object oldValue, object newValue)
@@ -252,74 +293,5 @@ namespace Microsoft.Maui.Controls
 		{
 			return _platformConfigurationRegistry.Value.On<T>();
 		}
-	}
-
-	[Obsolete("MasterDetailPage is obsolete as of version 5.0.0. Please use FlyoutPage instead.")]
-	public class MasterDetailPage : FlyoutPage, IMasterDetailPageController
-	{
-		public static readonly BindableProperty MasterBehaviorProperty = BindableProperty.Create(nameof(MasterBehavior), typeof(MasterBehavior), typeof(MasterDetailPage), default(MasterBehavior),
-			propertyChanged: OnMasterBehaviorPropertyChanged);
-
-		static void OnMasterBehaviorPropertyChanged(BindableObject bindable, object oldValue, object newValue)
-		{
-			if ((int)bindable.GetValue(FlyoutLayoutBehaviorProperty) != (int)newValue)
-				bindable.SetValue(FlyoutLayoutBehaviorProperty, (FlyoutLayoutBehavior)((int)newValue));
-		}
-
-		public Page Master
-		{
-			get => base.Flyout;
-			set => base.Flyout = value;
-		}
-
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public Rectangle MasterBounds
-		{
-			get => base.FlyoutBounds;
-			set => FlyoutBounds = value;
-		}
-
-		public MasterBehavior MasterBehavior
-		{
-			get => (MasterBehavior)GetValue(MasterBehaviorProperty);
-			set => SetValue(MasterBehaviorProperty, value);
-		}
-
-		protected override void OnPropertyChanged([CallerMemberName] string propertyName = null)
-		{
-			base.OnPropertyChanged(propertyName);
-			if (propertyName == nameof(Flyout))
-				OnPropertyChanged(nameof(Master));
-
-			if (propertyName == nameof(FlyoutLayoutBehavior))
-				OnPropertyChanged(nameof(Flyout));
-		}
-
-		protected override void OnPropertyChanging([CallerMemberName] string propertyName = null)
-		{
-			base.OnPropertyChanging(propertyName);
-			if (propertyName == nameof(Flyout))
-				OnPropertyChanging(nameof(Master));
-
-			if (propertyName == nameof(FlyoutLayoutBehavior))
-				OnPropertyChanging(nameof(Flyout));
-		}
-
-
-		public MasterDetailPage()
-		{
-			_platformConfigurationRegistry = new Lazy<PlatformConfigurationRegistry<MasterDetailPage>>(() => new PlatformConfigurationRegistry<MasterDetailPage>(this));
-		}
-
-		readonly Lazy<PlatformConfigurationRegistry<MasterDetailPage>> _platformConfigurationRegistry;
-
-		public new IPlatformElementConfiguration<T, MasterDetailPage> On<T>() where T : IConfigPlatform
-		{
-			return _platformConfigurationRegistry.Value.On<T>();
-		}
-
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public void UpdateMasterBehavior() =>
-			(this as IFlyoutPageController).UpdateFlyoutLayoutBehavior();
 	}
 }

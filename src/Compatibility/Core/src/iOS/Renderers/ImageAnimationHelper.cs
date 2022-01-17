@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using CoreAnimation;
 using Foundation;
 using ImageIO;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
@@ -208,9 +209,9 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 		{
 			FormsCAKeyFrameAnimation animation = null;
 
-			if (imageSource?.Uri != null)
+			if (imageSource is IStreamImageSource streamImageSource)
 			{
-				using (var streamImage = await imageSource.GetStreamAsync(cancelationToken).ConfigureAwait(false))
+				using (var streamImage = await streamImageSource.GetStreamAsync(cancelationToken).ConfigureAwait(false))
 				{
 					if (streamImage != null)
 					{

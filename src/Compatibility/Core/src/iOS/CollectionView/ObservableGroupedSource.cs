@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using Foundation;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
@@ -343,7 +344,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				|| _collectionView.NumberOfSections() == 0;
 		}
 
-		void Update(Action update) 
+		void Update(Action update)
 		{
 			if (_collectionView.Hidden)
 			{

@@ -1,11 +1,14 @@
-﻿using System;
-using Android.App;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Android.App;
+using Android.Content.Res;
+using Android.Graphics.Drawables;
 
 namespace Microsoft.Maui.Handlers
 {
 	public partial class DatePickerHandler : ViewHandler<IDatePicker, MauiDatePicker>
 	{
+		Drawable? _defaultBackground;
+		ColorStateList? _defaultTextColors;
+
 		DatePickerDialog? _dialog;
 
 		protected override MauiDatePicker CreateNativeView()
@@ -26,6 +29,19 @@ namespace Microsoft.Maui.Handlers
 
 		internal DatePickerDialog? DatePickerDialog { get { return _dialog; } }
 
+		protected override void ConnectHandler(MauiDatePicker nativeView)
+		{
+			base.ConnectHandler(nativeView);
+
+			SetupDefaults(nativeView);
+		}
+
+		void SetupDefaults(MauiDatePicker nativeView)
+		{
+			_defaultBackground = nativeView.Background;
+			_defaultTextColors = nativeView.TextColors;
+		}
+
 		protected override void DisconnectHandler(MauiDatePicker nativeView)
 		{
 			if (_dialog != null)
@@ -44,9 +60,18 @@ namespace Microsoft.Maui.Handlers
 			{
 				if (VirtualView != null)
 					VirtualView.Date = e.Date;
+
+				// TODO: Update IsFocused Property
+
 			}, year, month, day);
 
 			return dialog;
+		}
+
+		// This is a Android-specific mapping
+		public static void MapBackground(DatePickerHandler handler, IDatePicker datePicker)
+		{
+			handler.NativeView?.UpdateBackground(datePicker, handler._defaultBackground);
 		}
 
 		public static void MapFormat(DatePickerHandler handler, IDatePicker datePicker)
@@ -81,16 +106,21 @@ namespace Microsoft.Maui.Handlers
 			handler.NativeView?.UpdateFont(datePicker, fontManager);
 		}
 
-		[MissingMapper]
-		public static void MapTextColor(DatePickerHandler handler, IDatePicker datePicker) { }
+		public static void MapTextColor(DatePickerHandler handler, IDatePicker datePicker)
+		{
+			handler.NativeView?.UpdateTextColor(datePicker, handler._defaultTextColors);
+		}
 
 		void ShowPickerDialog()
 		{
 			if (VirtualView == null)
 				return;
 
+			if (_dialog != null && _dialog.IsShowing)
+				return;
+
 			var date = VirtualView.Date;
-			ShowPickerDialog(date.Year, date.Month, date.Day);
+			ShowPickerDialog(date.Year, date.Month - 1, date.Day);
 		}
 
 		void ShowPickerDialog(int year, int month, int day)

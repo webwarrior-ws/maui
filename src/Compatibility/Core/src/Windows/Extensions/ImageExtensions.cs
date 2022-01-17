@@ -1,5 +1,5 @@
 using System;
-//using Microsoft.Graphics.Canvas.UI.Xaml;
+using Microsoft.Graphics.Canvas.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -11,6 +11,8 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.Maui.Controls.Internals;
 using WImageSource = Microsoft.UI.Xaml.Media.ImageSource;
+using Microsoft.Maui.Controls.Platform;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
@@ -30,15 +32,14 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 					Height = bitmap.PixelHeight
 				};
 			}
-			// WINUI
-			//else if (source is CanvasImageSource canvas)
-			//{
-			//	return new Size
-			//	{
-			//		Width = canvas.Size.Width,
-			//		Height = canvas.Size.Height
-			//	};
-			//}
+			else if (source is CanvasImageSource canvas)
+			{
+				return new Graphics.Size
+				{
+					Width = canvas.Size.Width,
+					Height = canvas.Size.Height
+				};
+			}
 
 			throw new InvalidCastException($"\"{source.GetType().FullName}\" is not supported.");
 		}
@@ -115,11 +116,14 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			}
 			catch (OperationCanceledException)
 			{
-				Log.Warning("Image loading", "Image load cancelled");
+				Application.Current?.FindMauiContext()?.CreateLogger<ImageSource>()?.LogWarning("Image load cancelled");
 			}
 			catch (Exception ex)
 			{
-				Log.Warning("Image loading", $"Image load failed: {ex}");
+				Application.Current?.FindMauiContext()?.CreateLogger<ImageSource>()?.LogWarning(ex, "Image load failed");
+#if DEBUG
+				throw;
+#endif
 			}
 
 			return null;

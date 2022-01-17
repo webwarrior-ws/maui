@@ -1,5 +1,5 @@
 using System;
-using Microsoft.Extensions.DependencyInjection;
+using System.Threading.Tasks;
 using UIKit;
 
 namespace Microsoft.Maui.Handlers
@@ -12,14 +12,24 @@ namespace Microsoft.Maui.Handlers
 		static UIColor? ButtonTextColorDefaultHighlighted;
 		static UIColor? ButtonTextColorDefaultNormal;
 
+		void SetupDefaults(UIButton nativeView)
+		{
+			ButtonTextColorDefaultNormal ??= nativeView.TitleColor(UIControlState.Normal);
+			ButtonTextColorDefaultHighlighted ??= nativeView.TitleColor(UIControlState.Highlighted);
+			ButtonTextColorDefaultDisabled ??= nativeView.TitleColor(UIControlState.Disabled);
+		}
+
 		protected override UIButton CreateNativeView()
 		{
-			SetControlPropertiesFromProxy();
-			return new UIButton(UIButtonType.System);
+			var button = new UIButton(UIButtonType.System);
+			SetControlPropertiesFromProxy(button);
+			return button;
 		}
 
 		protected override void ConnectHandler(UIButton nativeView)
 		{
+			SetupDefaults(nativeView);
+
 			nativeView.TouchUpInside += OnButtonTouchUpInside;
 			nativeView.TouchUpOutside += OnButtonTouchUpOutside;
 			nativeView.TouchDown += OnButtonTouchDown;
@@ -32,65 +42,92 @@ namespace Microsoft.Maui.Handlers
 			nativeView.TouchUpInside -= OnButtonTouchUpInside;
 			nativeView.TouchUpOutside -= OnButtonTouchUpOutside;
 			nativeView.TouchDown -= OnButtonTouchDown;
-
 			base.DisconnectHandler(nativeView);
 		}
 
-		protected override void SetupDefaults(UIButton nativeView)
+		public static void MapStrokeColor(IButtonHandler handler, IButtonStroke buttonStroke)
 		{
-			ButtonTextColorDefaultNormal = nativeView.TitleColor(UIControlState.Normal);
-			ButtonTextColorDefaultHighlighted = nativeView.TitleColor(UIControlState.Highlighted);
-			ButtonTextColorDefaultDisabled = nativeView.TitleColor(UIControlState.Disabled);
-
-			base.SetupDefaults(nativeView);
+			handler.TypedNativeView?.UpdateStrokeColor(buttonStroke);
 		}
 
-		public static void MapText(ButtonHandler handler, IButton button)
+		public static void MapStrokeThickness(IButtonHandler handler, IButtonStroke buttonStroke)
 		{
-			handler.NativeView?.UpdateText(button);
+			handler.TypedNativeView?.UpdateStrokeThickness(buttonStroke);
+		}
+
+		public static void MapCornerRadius(IButtonHandler handler, IButtonStroke buttonStroke)
+		{
+			handler.TypedNativeView?.UpdateCornerRadius(buttonStroke);
+		}
+
+		public static void MapText(IButtonHandler handler, IText button)
+		{
+			handler.TypedNativeView?.UpdateText(button);
 
 			// Any text update requires that we update any attributed string formatting
 			MapFormatting(handler, button);
 		}
 
-		public static void MapTextColor(ButtonHandler handler, IButton button)
+		public static void MapTextColor(IButtonHandler handler, ITextStyle button)
 		{
-			handler.NativeView?.UpdateTextColor(button, ButtonTextColorDefaultNormal, ButtonTextColorDefaultHighlighted, ButtonTextColorDefaultDisabled);
+			handler.TypedNativeView?.UpdateTextColor(button, ButtonTextColorDefaultNormal, ButtonTextColorDefaultHighlighted, ButtonTextColorDefaultDisabled);
 		}
 
-		public static void MapCharacterSpacing(ButtonHandler handler, IButton button)
+		public static void MapCharacterSpacing(IButtonHandler handler, ITextStyle button)
 		{
-			handler.NativeView?.UpdateCharacterSpacing(button);
+			handler.TypedNativeView?.UpdateCharacterSpacing(button);
 		}
 
-		public static void MapPadding(ButtonHandler handler, IButton button)
+		public static void MapPadding(IButtonHandler handler, IButton button)
 		{
-			handler.NativeView?.UpdatePadding(button);
+			handler.TypedNativeView?.UpdatePadding(button);
 		}
 
-		public static void MapFont(ButtonHandler handler, IButton button)
+		public static void MapFont(IButtonHandler handler, ITextStyle button)
 		{
 			var fontManager = handler.GetRequiredService<IFontManager>();
 
-			handler.NativeView?.UpdateFont(button, fontManager);
+			handler.TypedNativeView?.UpdateFont(button, fontManager);
 		}
 
-		public static void MapFormatting(ButtonHandler handler, IButton button)
+		public static void MapFormatting(IButtonHandler handler, IText button)
 		{
 			// Update all of the attributed text formatting properties
-			handler.NativeView?.UpdateCharacterSpacing(button);
+			handler.TypedNativeView?.UpdateCharacterSpacing(button);
 		}
 
-		void SetControlPropertiesFromProxy()
+		void OnSetImageSource(UIImage? image)
 		{
-			if (NativeView == null)
-				return;
+			if (image != null)
+			{
+				NativeView.SetImage(image.ImageWithRenderingMode(UIImageRenderingMode.AlwaysOriginal), UIControlState.Normal);
+			}
+			else
+			{
+				NativeView.SetImage(null, UIControlState.Normal);
+			}
+		}
 
+		public static void MapImageSource(IButtonHandler handler, IImageButton image) =>
+			MapImageSourceAsync(handler, image).FireAndForget(handler);
+
+		public static Task MapImageSourceAsync(IButtonHandler handler, IImageButton image)
+		{
+			if (image.Source == null)
+			{
+				return Task.CompletedTask;
+			}
+
+			return handler.ImageSourceLoader.UpdateImageSourceAsync();
+		}
+
+		static void SetControlPropertiesFromProxy(UIButton nativeView)
+		{
 			foreach (UIControlState uiControlState in ControlStates)
 			{
-				NativeView.SetTitleColor(UIButton.Appearance.TitleColor(uiControlState), uiControlState); // If new values are null, old values are preserved.
-				NativeView.SetTitleShadowColor(UIButton.Appearance.TitleShadowColor(uiControlState), uiControlState);
-				NativeView.SetBackgroundImage(UIButton.Appearance.BackgroundImageForState(uiControlState), uiControlState);
+				nativeView.SetTitleColor(UIButton.Appearance.TitleColor(uiControlState), uiControlState); // If new values are null, old values are preserved.
+				nativeView.SetTitleShadowColor(UIButton.Appearance.TitleShadowColor(uiControlState), uiControlState);
+				nativeView.SetBackgroundImage(UIButton.Appearance.BackgroundImageForState(uiControlState), uiControlState);
 			}
 		}
 

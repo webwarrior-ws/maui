@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Input;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.Xaml.Diagnostics;
+using Microsoft.Maui.Essentials;
 using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.Controls
@@ -121,13 +122,7 @@ namespace Microsoft.Maui.Controls
 			VisualDiagnostics.OnChildRemoved(this, element, oldLogicalIndex);
 		}
 
-#if NETSTANDARD1_0
-		ReadOnlyCollection<Element> _readOnlyLogicalChildren;
-		internal override ReadOnlyCollection<Element> LogicalChildrenInternal => _readOnlyLogicalChildren ?? 
-			(_readOnlyLogicalChildren = new ReadOnlyCollection<Element>(_logicalChildren));
-#else
-		internal override ReadOnlyCollection<Element> LogicalChildrenInternal => _logicalChildren.AsReadOnly();
-#endif
+		internal override IReadOnlyList<Element> LogicalChildrenInternal => _logicalChildren.AsReadOnly();
 
 		internal static readonly BindableProperty InternalItemsLayoutProperty =
 			BindableProperty.Create(nameof(ItemsLayout), typeof(IItemsLayout), typeof(ItemsView),
@@ -207,8 +202,9 @@ namespace Microsoft.Maui.Controls
 			// TODO hartez 2018-05-22 05:04 PM This 40,40 is what LV1 does; can we come up with something less arbitrary?
 			var minimumSize = new Size(40, 40);
 
-			var maxWidth = Math.Min(Device.Info.ScaledScreenSize.Width, widthConstraint);
-			var maxHeight = Math.Min(Device.Info.ScaledScreenSize.Height, heightConstraint);
+			var scaled = DeviceDisplay.MainDisplayInfo.GetScaledScreenSize();
+			var maxWidth = Math.Min(scaled.Width, widthConstraint);
+			var maxHeight = Math.Min(scaled.Height, heightConstraint);
 
 			Size request = new Size(maxWidth, maxHeight);
 

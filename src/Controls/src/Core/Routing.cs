@@ -47,7 +47,7 @@ namespace Microsoft.Maui.Controls
 						var page = section.Navigation.ModalStack[i];
 						RegisterImplicitPageRoute(page);
 
-						if (page is NavigationPage np)
+						if (page is INavigationPageController np)
 						{
 							foreach (var npPages in np.Pages)
 							{
@@ -105,6 +105,7 @@ namespace Microsoft.Maui.Controls
 
 		internal static void Clear()
 		{
+			s_implicitPageRoutes.Clear();
 			s_routes.Clear();
 		}
 
@@ -125,7 +126,7 @@ namespace Microsoft.Maui.Controls
 			return keys;
 		}
 
-		public static Element GetOrCreateContent(string route)
+		public static Element GetOrCreateContent(string route, IServiceProvider services = null)
 		{
 			Element result = null;
 
@@ -135,14 +136,23 @@ namespace Microsoft.Maui.Controls
 			}
 
 			if (s_routes.TryGetValue(route, out var content))
-				result = content.GetOrCreate();
+				result = content.GetOrCreate(services);
 
 			if (result == null)
 			{
 				// okay maybe its a type, we'll try that just to be nice to the user
 				var type = Type.GetType(route);
 				if (type != null)
-					result = Activator.CreateInstance(type) as Element;
+				{
+					if (services != null)
+					{
+						result = Extensions.DependencyInjection.ActivatorUtilities.GetServiceOrCreateInstance(services, type) as Element;
+					}
+					else
+					{
+						result = Activator.CreateInstance(type) as Element;
+					}
+				}
 			}
 
 			if (result != null)
@@ -235,6 +245,16 @@ namespace Microsoft.Maui.Controls
 			{
 				return (Element)Activator.CreateInstance(_type);
 			}
+
+			public override Element GetOrCreate(IServiceProvider services)
+			{
+				if (services != null)
+				{
+					return Extensions.DependencyInjection.ActivatorUtilities.GetServiceOrCreateInstance(services, _type) as Element;
+				}
+				return Activator.CreateInstance(_type) as Element;
+			}
+
 			public override bool Equals(object obj)
 			{
 				if ((obj is TypeRouteFactory typeRouteFactory))

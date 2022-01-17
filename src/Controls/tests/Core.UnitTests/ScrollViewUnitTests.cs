@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Maui.Graphics;
+using NSubstitute;
 using NUnit.Framework;
 
 namespace Microsoft.Maui.Controls.Core.UnitTests
 {
+	using StackLayout = Microsoft.Maui.Controls.Compatibility.StackLayout;
+
 	[TestFixture]
 	public class ScrollViewUnitTests : BaseTestFixture
 	{
@@ -64,7 +67,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			scrollView.Content = hLayout;
 
-			var r = scrollView.GetSizeRequest(100, 100);
+			var r = scrollView.Measure(100, 100);
 
 			Assert.AreEqual(10, r.Request.Height);
 		}
@@ -75,6 +78,10 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			View view = new View { IsPlatformEnabled = true, WidthRequest = 100, HeightRequest = 100 };
 
 			ScrollView scroll = new ScrollView { Content = view };
+
+			var handler = Substitute.For<IViewHandler>();
+			scroll.Handler = handler;
+
 			scroll.Layout(new Rectangle(0, 0, 50, 50));
 
 			Assert.AreEqual(new Size(50, 100), scroll.ContentSize);
@@ -92,6 +99,10 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			view.HeightRequest = 200;
 
+			// Verify that the HeightRequest change invalidated the layout, and simulate a native layout update 
+			AssertInvalidated(handler);
+			scroll.ForceLayout();
+
 			Assert.True(changed);
 			Assert.AreEqual(new Size(50, 200), scroll.ContentSize);
 		}
@@ -102,6 +113,10 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			View view = new View { IsPlatformEnabled = true, WidthRequest = 100, HeightRequest = 100 };
 
 			ScrollView scroll = new ScrollView { Content = view, Orientation = ScrollOrientation.Both };
+
+			var handler = Substitute.For<IViewHandler>();
+			scroll.Handler = handler;
+
 			scroll.Layout(new Rectangle(0, 0, 50, 50));
 
 			Assert.AreEqual(new Size(100, 100), scroll.ContentSize);
@@ -119,6 +134,10 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			view.HeightRequest = 200;
 
+			// Verify that the HeightRequest change invalidated the layout, and simulate a native layout update 
+			AssertInvalidated(handler);
+			scroll.ForceLayout();
+
 			Assert.True(changed);
 			Assert.AreEqual(new Size(100, 200), scroll.ContentSize);
 		}
@@ -133,6 +152,10 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				Orientation = ScrollOrientation.Horizontal,
 				Content = view
 			};
+
+			var handler = Substitute.For<IViewHandler>();
+			scroll.Handler = handler;
+
 			scroll.Layout(new Rectangle(0, 0, 50, 50));
 
 			Assert.AreEqual(new Size(100, 50), scroll.ContentSize);
@@ -150,6 +173,10 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			view.WidthRequest = 200;
 
+			// Verify that the WidthRequest change invalidated the layout, and simulate a native layout update 
+			AssertInvalidated(handler);
+			scroll.ForceLayout();
+
 			Assert.True(changed);
 			Assert.AreEqual(new Size(200, 50), scroll.ContentSize);
 		}
@@ -164,6 +191,10 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				Orientation = ScrollOrientation.Both,
 				Content = view
 			};
+
+			var handler = Substitute.For<IViewHandler>();
+			scroll.Handler = handler;
+
 			scroll.Layout(new Rectangle(0, 0, 50, 50));
 
 			Assert.AreEqual(new Size(100, 100), scroll.ContentSize);
@@ -180,6 +211,10 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			};
 
 			view.WidthRequest = 200;
+
+			// Verify that the WidthRequest change invalidated the layout, and simulate a native layout update 
+			AssertInvalidated(handler);
+			scroll.ForceLayout();
 
 			Assert.True(changed);
 			Assert.AreEqual(new Size(200, 100), scroll.ContentSize);
@@ -553,6 +588,12 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			scrollView.ScrollToAsync(0, 100, true);
 			Assert.AreEqual(y100Count, 2);
+		}
+
+		void AssertInvalidated(IViewHandler handler)
+		{
+			handler.Received().Invoke(Arg.Is(nameof(IView.InvalidateMeasure)), Arg.Any<object>());
+			handler.ClearReceivedCalls();
 		}
 	}
 }

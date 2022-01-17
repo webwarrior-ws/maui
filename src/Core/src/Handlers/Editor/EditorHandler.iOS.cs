@@ -1,9 +1,8 @@
 ﻿using System;
 using CoreGraphics;
 using Foundation;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Platform.iOS;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Handlers
@@ -12,23 +11,20 @@ namespace Microsoft.Maui.Handlers
 	{
 		static readonly int BaseHeight = 30;
 
-		static readonly UIColor DefaultPlaceholderColor = ColorExtensions.PlaceholderColor;
-
-		protected override MauiTextView CreateNativeView()
-		{
-			return new MauiTextView(CGRect.Empty);
-		}
+		protected override MauiTextView CreateNativeView() => new MauiTextView();
 
 		protected override void ConnectHandler(MauiTextView nativeView)
 		{
-			nativeView.Changed += OnChanged;
 			nativeView.ShouldChangeText += OnShouldChangeText;
+			nativeView.Ended += OnEnded;
+			nativeView.TextSetOrChanged += OnTextPropertySet;
 		}
 
 		protected override void DisconnectHandler(MauiTextView nativeView)
 		{
-			nativeView.Changed -= OnChanged;
 			nativeView.ShouldChangeText -= OnShouldChangeText;
+			nativeView.Ended -= OnEnded;
+			nativeView.TextSetOrChanged -= OnTextPropertySet;
 		}
 
 		public override Size GetDesiredSize(double widthConstraint, double heightConstraint) =>
@@ -42,35 +38,46 @@ namespace Microsoft.Maui.Handlers
 			MapFormatting(handler, editor);
 		}
 
-		public static void MapPlaceholder(EditorHandler handler, IEditor editor)
-		{
+		public static void MapTextColor(EditorHandler handler, IEditor editor) =>
+			handler.NativeView?.UpdateTextColor(editor);
+
+		public static void MapPlaceholder(EditorHandler handler, IEditor editor) =>
 			handler.NativeView?.UpdatePlaceholder(editor);
-		}
 
-		public static void MapPlaceholderColor(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdatePlaceholderColor(editor, DefaultPlaceholderColor);
-		}
+		public static void MapPlaceholderColor(EditorHandler handler, IEditor editor) =>
+			handler.NativeView?.UpdatePlaceholderColor(editor);
 
-		public static void MapCharacterSpacing(EditorHandler handler, IEditor editor)
-		{
+		public static void MapCharacterSpacing(EditorHandler handler, IEditor editor) =>
 			handler.NativeView?.UpdateCharacterSpacing(editor);
-		}
 
-		public static void MapMaxLength(EditorHandler handler, IEditor editor)
-		{
+		public static void MapMaxLength(EditorHandler handler, IEditor editor) =>
 			handler.NativeView?.UpdateMaxLength(editor);
-		}
 
-		public static void MapIsReadOnly(EditorHandler handler, IEditor editor)
-		{
+		public static void MapIsReadOnly(EditorHandler handler, IEditor editor) =>
 			handler.NativeView?.UpdateIsReadOnly(editor);
+
+		public static void MapIsTextPredictionEnabled(EditorHandler handler, IEditor editor) =>
+			handler.NativeView?.UpdateIsTextPredictionEnabled(editor);
+
+		public static void MapFont(EditorHandler handler, IEditor editor) =>
+			handler.NativeView?.UpdateFont(editor, handler.GetRequiredService<IFontManager>());
+
+		public static void MapHorizontalTextAlignment(EditorHandler handler, IEditor editor) =>
+			handler.NativeView?.UpdateHorizontalTextAlignment(editor);
+
+		[MissingMapper]
+		public static void MapVerticalTextAlignment(EditorHandler handler, IEditor editor)
+		{
 		}
 
-		public static void MapIsTextPredictionEnabled(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdatePredictiveText(editor);
-		}
+		public static void MapCursorPosition(EditorHandler handler, IEditor editor) =>
+			handler.NativeView?.UpdateCursorPosition(editor);
+
+		public static void MapSelectionLength(EditorHandler handler, IEditor editor) =>
+			handler.NativeView?.UpdateSelectionLength(editor);
+
+		public static void MapKeyboard(EditorHandler handler, IEditor editor) =>
+			handler.NativeView?.UpdateKeyboard(editor);
 
 		public static void MapFormatting(EditorHandler handler, IEditor editor)
 		{
@@ -80,43 +87,16 @@ namespace Microsoft.Maui.Handlers
 			handler.NativeView?.UpdateCharacterSpacing(editor);
 		}
 
-		void OnChanged(object? sender, System.EventArgs e) => OnTextChanged();
+		bool OnShouldChangeText(UITextView textView, NSRange range, string replacementString) =>
+			VirtualView.TextWithinMaxLength(textView.Text, range, replacementString);
 
-		void OnTextChanged()
+		void OnEnded(object? sender, EventArgs eventArgs)
 		{
-			if (NativeView == null)
-				return;
-
-			NativeView.HidePlaceholder(!string.IsNullOrEmpty(NativeView.Text));
+			// TODO: Update IsFocused property
+			VirtualView.Completed();
 		}
 
-		bool OnShouldChangeText(UITextView textView, NSRange range, string replacementString)
-		{
-			var currLength = textView?.Text?.Length ?? 0;
-
-			// fix a crash on undo
-			if (range.Length + range.Location > currLength)
-				return false;
-
-			if (VirtualView == null || NativeView == null)
-				return false;
-
-			var addLength = replacementString?.Length ?? 0;
-			var remLength = range.Length;
-
-			var newLength = currLength + addLength - remLength;
-
-			return newLength <= VirtualView.MaxLength;
-		}
-
-		public static void MapFont(EditorHandler handler, IEditor editor)
-		{
-			var fontManager = handler.GetRequiredService<IFontManager>();
-
-			handler.NativeView?.UpdateFont(editor, fontManager);
-		}
-
-		[MissingMapper]
-		public static void MapTextColor(EditorHandler handler, IEditor editor) { }
+		void OnTextPropertySet(object? sender, EventArgs e) =>
+			VirtualView.UpdateText(NativeView.Text);
 	}
 }

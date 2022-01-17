@@ -26,31 +26,20 @@ namespace Microsoft.Maui.Essentials
 			ValidateOpen(number);
 
 			var phoneNumber = string.Empty;
-#if __ANDROID_24__
-            if (Platform.HasApiLevelN)
-                phoneNumber = PhoneNumberUtils.FormatNumber(number, Java.Util.Locale.GetDefault(Java.Util.Locale.Category.Format).Country);
-            else if (Platform.HasApiLevel(BuildVersionCodes.Lollipop))
-#else
-			if (Platform.HasApiLevel(BuildVersionCodes.Lollipop))
-#endif
-
-				phoneNumber = PhoneNumberUtils.FormatNumber(number, Java.Util.Locale.Default.Country);
+			if (Platform.HasApiLevelN)
+				phoneNumber = PhoneNumberUtils.FormatNumber(number, Java.Util.Locale.GetDefault(Java.Util.Locale.Category.Format).Country) ?? phoneNumber;
 			else
-#pragma warning disable CS0618
-				phoneNumber = PhoneNumberUtils.FormatNumber(number);
-#pragma warning restore CS0618
+				phoneNumber = PhoneNumberUtils.FormatNumber(number, Java.Util.Locale.Default.Country) ?? phoneNumber;
 
 			// if we are an extension then we need to encode
 			if (phoneNumber.Contains(',') || phoneNumber.Contains(';'))
-				phoneNumber = URLEncoder.Encode(phoneNumber, "UTF-8");
+				phoneNumber = URLEncoder.Encode(phoneNumber, "UTF-8") ?? phoneNumber;
 
 			var dialIntent = ResolveDialIntent(phoneNumber);
 
 			var flags = ActivityFlags.ClearTop | ActivityFlags.NewTask;
-#if __ANDROID_24__
-            if (Platform.HasApiLevelN)
-                flags |= ActivityFlags.LaunchAdjacent;
-#endif
+			if (Platform.HasApiLevelN)
+				flags |= ActivityFlags.LaunchAdjacent;
 			dialIntent.SetFlags(flags);
 
 			Platform.AppContext.StartActivity(dialIntent);

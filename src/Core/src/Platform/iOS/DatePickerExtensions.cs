@@ -1,6 +1,7 @@
-﻿using UIKit;
+﻿using ObjCRuntime;
+using UIKit;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public static class DatePickerExtensions
 	{
@@ -17,6 +18,19 @@ namespace Microsoft.Maui
 		public static void UpdateDate(this MauiDatePicker nativeDatePicker, IDatePicker datePicker)
 		{
 			nativeDatePicker.UpdateDate(datePicker, null);
+		}
+
+		public static void UpdateTextColor(this MauiDatePicker nativeDatePicker, IDatePicker datePicker, UIColor? defaultTextColor)
+		{
+			var textColor = datePicker.TextColor;
+
+			if (textColor == null)
+				nativeDatePicker.TextColor = defaultTextColor;
+			else
+				nativeDatePicker.TextColor = textColor.ToNative();
+
+			// HACK This forces the color to update; there's probably a more elegant way to make this happen
+			nativeDatePicker.UpdateDate(datePicker);
 		}
 
 		public static void UpdateDate(this MauiDatePicker nativeDatePicker, IDatePicker datePicker, UIDatePicker? picker)

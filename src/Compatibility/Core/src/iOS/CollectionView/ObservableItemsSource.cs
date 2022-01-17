@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Specialized;
 using Foundation;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
@@ -19,7 +20,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 		{
 			_collectionViewController = collectionViewController;
 			CollectionView = _collectionViewController.CollectionView;
-		
+
 			_section = group < 0 ? 0 : group;
 			_grouped = group >= 0;
 
@@ -178,7 +179,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			}
 
 			// If we have a start index, we can be more clever about removing the item(s) (and get the nifty animations)
-			var count = args.OldItems.Count; 
+			var count = args.OldItems.Count;
 			Count -= count;
 
 			Update(() => CollectionView.DeleteItems(CreateIndexesFrom(startIndex, count)), args);
@@ -273,12 +274,12 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				return;
 			}
 
-			OnCollectionViewUpdating(args); 
-			update(); 
-			OnCollectionViewUpdated(args); 
+			OnCollectionViewUpdating(args);
+			update();
+			OnCollectionViewUpdated(args);
 		}
 
-		void OnCollectionViewUpdating(NotifyCollectionChangedEventArgs args) 
+		void OnCollectionViewUpdating(NotifyCollectionChangedEventArgs args)
 		{
 			CollectionViewUpdating?.Invoke(this, args);
 		}

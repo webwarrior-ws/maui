@@ -23,12 +23,12 @@ Implements #
 ### Additions made ###
 <!-- List all the additions made here, example:
 
- - Adds `Thickness Padding { get; }` to the `ILabel` interface
+- Adds `Thickness Padding { get; }` to the `ILabel` interface
 - Adds Padding property map to LabelHandler
-- Adds Padding mapping methods to LabelHandler for Android and iOS
-- Adds extension methods to apply Padding on Android/iOS
+- Adds Padding mapping methods to LabelHandler for WinUI, Android, and iOS
+- Adds extension methods to apply Padding on WinUI/Android/iOS
 - Adds UILabel subclass MauiLabel (to support Padding, since UILabel doesn't by default)
-- Adds DeviceTests for initial Padding values on iOS and Android
+- Adds DeviceTests for initial Padding values on WinUI, iOS, and Android
 
  -->
 
@@ -44,18 +44,19 @@ Implements #
 - [ ] Adds the property to the appropriate interface
 - [ ] Avoids any changes not essential to the handler property
 - [ ] Adds the mapping to the PropertyMapper in the handler
-- [ ] Adds the mapping method to the Android, iOS, and Standard aspects of the handler
+- [ ] Adds the mapping method to the WinUI, Android, iOS, and Standard aspects of the handler
 - [ ] Implements the actual property updates (usually in extension methods in the Platform section of Core)
 - [ ] Tags ported renderer methods with [PortHandler]
 - [ ] Adds an example of the property to the sample project (MainPage)
 - [ ] Adds the property to the stub class
 - [ ] Implements basic property tests in DeviceTests
 
-#### Does this PR touch anything that might effect accessibility?
+#### Does this PR touch anything that might affect accessibility?
+- [ ] Does this PR introduce a new control? (If yes, add an example using SemanticProperties to the SemanticsPage)
 - [ ] APIs that modify focusability?
 - [ ] APIs that modify any text property on a control?
-- [ ] Does this PR modify view nesting or view arragement in anyway?
+- [ ] Does this PR modify view nesting or view arrangement in anyway?
 - [ ] Is there the smallest possibility that your PR will change accessibility? 
 - [ ] I'm not sure, please help me
 
-If any of the above checkboxes apply to your PR then the PR will need to provide testing to demonstrate that accessibility still works. 
+If any of the above checkboxes apply to your PR, then the PR will need to provide testing to demonstrate that accessibility still works. 
