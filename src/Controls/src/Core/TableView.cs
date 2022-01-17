@@ -1,14 +1,17 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Controls.Xaml.Diagnostics;
+using Microsoft.Maui.Essentials;
 using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.Controls
 {
-	[ContentProperty("Root")]
-	public class TableView : View, ITableViewController, IElementConfiguration<TableView>
+	[ContentProperty(nameof(Root))]
+	public class TableView : View, ITableViewController, IElementConfiguration<TableView>, IVisualTreeElement
 	{
 		public static readonly BindableProperty RowHeightProperty = BindableProperty.Create("RowHeight", typeof(int), typeof(TableView), -1);
 
@@ -28,7 +31,9 @@ namespace Microsoft.Maui.Controls
 
 		public TableView(TableRoot root)
 		{
+#pragma warning disable CS0618 // Type or member is obsolete
 			VerticalOptions = HorizontalOptions = LayoutOptions.FillAndExpand;
+#pragma warning restore CS0618 // Type or member is obsolete
 			Model = _tableModel = new TableSectionModel(this, root);
 			_platformConfigurationRegistry = new Lazy<PlatformConfigurationRegistry<TableView>>(() => new PlatformConfigurationRegistry<TableView>(this));
 		}
@@ -62,8 +67,10 @@ namespace Microsoft.Maui.Controls
 				{
 					_tableModel.Root.SectionCollectionChanged -= OnSectionCollectionChanged;
 					_tableModel.Root.PropertyChanged -= OnTableModelRootPropertyChanged;
+					VisualDiagnostics.OnChildRemoved(this, _tableModel.Root, 0);
 				}
 				_tableModel.Root = value ?? new TableRoot();
+				VisualDiagnostics.OnChildAdded(this, _tableModel.Root);
 				SetInheritedBindingContext(_tableModel.Root, BindingContext);
 
 				Root.SelectMany(r => r).ForEach(cell => cell.Parent = this);
@@ -113,13 +120,12 @@ namespace Microsoft.Maui.Controls
 			ModelChanged?.Invoke(this, EventArgs.Empty);
 		}
 
-		[Obsolete("OnSizeRequest is obsolete as of version 2.2.0. Please use OnMeasure instead.")]
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		protected override SizeRequest OnSizeRequest(double widthConstraint, double heightConstraint)
+		protected override SizeRequest OnMeasure(double widthConstraint, double heightConstraint)
 		{
 			var minimumSize = new Size(40, 40);
-			double width = Math.Min(Device.Info.ScaledScreenSize.Width, Device.Info.ScaledScreenSize.Height);
-			var request = new Size(width, Math.Max(Device.Info.ScaledScreenSize.Width, Device.Info.ScaledScreenSize.Height));
+			var scaled = DeviceDisplay.MainDisplayInfo.GetScaledScreenSize();
+			double width = Math.Min(scaled.Width, scaled.Height);
+			var request = new Size(width, Math.Max(scaled.Width, scaled.Height));
 
 			return new SizeRequest(request, minimumSize);
 		}
@@ -149,6 +155,8 @@ namespace Microsoft.Maui.Controls
 			if (e.PropertyName == TableSectionBase.TitleProperty.PropertyName)
 				OnModelChanged();
 		}
+
+		IReadOnlyList<Maui.IVisualTreeElement> IVisualTreeElement.GetVisualChildren() => new List<Maui.IVisualTreeElement>() { this.Root };
 
 		internal class TableSectionModel : TableModel
 		{

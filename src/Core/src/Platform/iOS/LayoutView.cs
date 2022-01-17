@@ -1,12 +1,12 @@
 using System;
 using CoreGraphics;
-using Microsoft.Maui;
 using Microsoft.Maui.Graphics;
+using ObjCRuntime;
 using UIKit;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
-	public class LayoutView : UIView
+	public class LayoutView : MauiView
 	{
 		public override CGSize SizeThatFits(CGSize size)
 		{
@@ -20,21 +20,32 @@ namespace Microsoft.Maui
 
 			var crossPlatformSize = CrossPlatformMeasure(width, height);
 
-			return base.SizeThatFits(crossPlatformSize.ToCGSize());
+			return crossPlatformSize.ToCGSize();
 		}
 
 		public override void LayoutSubviews()
 		{
 			base.LayoutSubviews();
 
-			var width = Frame.Width;
-			var height = Frame.Height;
+			var bounds = AdjustForSafeArea(Bounds).ToRectangle();
 
-			CrossPlatformMeasure?.Invoke(width, height);
-			CrossPlatformArrange?.Invoke(Frame.ToRectangle());
+			CrossPlatformMeasure?.Invoke(bounds.Width, bounds.Height);
+			CrossPlatformArrange?.Invoke(bounds);
+		}
+
+		public override void SubviewAdded(UIView uiview)
+		{
+			base.SubviewAdded(uiview);
+			Superview?.SetNeedsLayout();
+		}
+
+		public override void WillRemoveSubview(UIView uiview)
+		{
+			base.WillRemoveSubview(uiview);
+			Superview?.SetNeedsLayout();
 		}
 
 		internal Func<double, double, Size>? CrossPlatformMeasure { get; set; }
-		internal Action<Rectangle>? CrossPlatformArrange { get; set; }
+		internal Func<Rectangle, Size>? CrossPlatformArrange { get; set; }
 	}
 }

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.DeviceTests.Stubs;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
+using ObjCRuntime;
 using UIKit;
 using Xunit;
 
@@ -33,31 +34,6 @@ namespace Microsoft.Maui.DeviceTests
 
 			Assert.Equal(xplatCharacterSpacing, values.ViewValue);
 			Assert.Equal(xplatCharacterSpacing, values.NativeViewValue);
-		}
-
-		[Theory(DisplayName = "Font Family Initializes Correctly")]
-		[InlineData(null)]
-		[InlineData("Times New Roman")]
-		[InlineData("Dokdo")]
-		public async Task FontFamilyInitializesCorrectly(string family)
-		{
-			var button = new ButtonStub
-			{
-				Text = "Test",
-				Font = Font.OfSize(family, 10)
-			};
-
-			var (services, nativeFont) = await GetValueAsync(button, handler => (handler.Services, GetNativeButton(handler).Font));
-
-			var fontManager = services.GetRequiredService<IFontManager>();
-
-			var expectedNativeFont = fontManager.GetFont(Font.OfSize(family, 0.0));
-
-			Assert.Equal(expectedNativeFont.FamilyName, nativeFont.FamilyName);
-			if (string.IsNullOrEmpty(family))
-				Assert.Equal(fontManager.DefaultFont.FamilyName, nativeFont.FamilyName);
-			else
-				Assert.NotEqual(fontManager.DefaultFont.FamilyName, nativeFont.FamilyName);
 		}
 
 		[Fact(DisplayName = "Button Padding Initializing")]
@@ -104,6 +80,9 @@ namespace Microsoft.Maui.DeviceTests
 		}
 
 
+		bool ImageSourceLoaded(ButtonHandler buttonHandler) =>
+			buttonHandler.NativeView.ImageView.Image != null;
+
 		UIButton GetNativeButton(ButtonHandler buttonHandler) =>
 			(UIButton)buttonHandler.NativeView;
 
@@ -120,15 +99,6 @@ namespace Microsoft.Maui.DeviceTests
 				GetNativeButton(CreateHandler(button)).SendActionForControlEvents(UIControlEvent.TouchUpInside);
 			});
 		}
-
-		double GetNativeUnscaledFontSize(ButtonHandler buttonHandler) =>
-			GetNativeButton(buttonHandler).TitleLabel.Font.PointSize;
-
-		bool GetNativeIsBold(ButtonHandler buttonHandler) =>
-			GetNativeButton(buttonHandler).TitleLabel.Font.FontDescriptor.SymbolicTraits.HasFlag(UIFontDescriptorSymbolicTraits.Bold);
-
-		bool GetNativeIsItalic(ButtonHandler buttonHandler) =>
-			GetNativeButton(buttonHandler).TitleLabel.Font.FontDescriptor.SymbolicTraits.HasFlag(UIFontDescriptorSymbolicTraits.Italic);
 
 		double GetNativeCharacterSpacing(ButtonHandler buttonHandler)
 		{

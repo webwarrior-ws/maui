@@ -1,11 +1,13 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Linq;
-using UIKit;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;
-using PointF = CoreGraphics.CGPoint;
 using Microsoft.Maui.Graphics;
+using ObjCRuntime;
+using UIKit;
+using PointF = CoreGraphics.CGPoint;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
@@ -28,6 +30,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 		bool _applyShadow;
 
 		Page Page => Element as Page;
+		IFlyoutPageController FlyoutPageController => FlyoutPage;
 
 
 		[Preserve(Conditional = true)]
@@ -120,6 +123,11 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 		{
 			base.ViewDidLayoutSubviews();
 
+
+			// TODO MAUI: Is this correct?
+			if (Element.Width == -1 && Element.Height == -1)
+				Element.Layout(new Rectangle(Element.X, Element.Y, View.Bounds.Width, View.Bounds.Height));
+
 			LayoutChildren(false);
 		}
 
@@ -128,8 +136,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			base.ViewDidLoad();
 
 			_tracker = new VisualElementTracker(this);
-			_events = new EventTracker(this);
-			_events.LoadEvents(View);
 
 			((FlyoutPage)Element).PropertyChanged += HandlePropertyChanged;
 
@@ -152,7 +158,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 		public override void WillRotate(UIInterfaceOrientation toInterfaceOrientation, double duration)
 		{
-			if (!FlyoutPage.ShouldShowSplitMode && _presented)
+			if (!FlyoutPageController.ShouldShowSplitMode && _presented)
 				Presented = false;
 
 			base.WillRotate(toInterfaceOrientation, duration);
@@ -295,8 +301,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				detailView.Layer.Opacity = (float)opacity;
 			}
 
-			FlyoutPage.FlyoutBounds = new Rectangle(flyoutFrame.X, 0, flyoutFrame.Width, flyoutFrame.Height);
-			FlyoutPage.DetailBounds = new Rectangle(0, 0, frame.Width, frame.Height);
+			FlyoutPageController.FlyoutBounds = new Rectangle(flyoutFrame.X, 0, flyoutFrame.Width, flyoutFrame.Height);
+			FlyoutPageController.DetailBounds = new Rectangle(0, 0, frame.Width, frame.Height);
 
 			if (Presented)
 				_clickOffView.Frame = _detailController.View.Frame;
@@ -375,7 +381,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			if (Forms.RespondsToSetNeedsUpdateOfHomeIndicatorAutoHidden)
 				SetNeedsUpdateOfHomeIndicatorAutoHidden();
 
-			detailRenderer.ViewController.View.Superview.BackgroundColor = Microsoft.Maui.Graphics.Colors.Black.ToUIColor();
+			if (detailRenderer.ViewController.View.Superview != null)
+				detailRenderer.ViewController.View.Superview.BackgroundColor = Microsoft.Maui.Graphics.Colors.Black.ToUIColor();
 
 			ToggleAccessibilityElementsHidden();
 		}
@@ -401,7 +408,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 		public override UIViewController ChildViewControllerForStatusBarHidden()
 		{
 			if (((FlyoutPage)Element).Detail != null)
-				return (UIViewController)Platform.GetRenderer(((FlyoutPage)Element).Detail);
+				return Platform.GetRenderer(((FlyoutPage)Element).Detail).ViewController;
 			else
 				return base.ChildViewControllerForStatusBarHidden();
 		}
@@ -411,7 +418,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			get
 			{
 				if (((FlyoutPage)Element).Detail != null)
-					return (UIViewController)Platform.GetRenderer(((FlyoutPage)Element).Detail);
+					return Platform.GetRenderer(((FlyoutPage)Element).Detail).ViewController;
 				else
 					return base.ChildViewControllerForStatusBarHidden();
 			}

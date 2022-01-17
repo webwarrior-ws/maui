@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Graphics;
 using NUnit.Framework;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
@@ -11,7 +12,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 	[Preserve(AllMembers = true)]
 	public class PlatformTestFixture
 	{
-		protected static UIColor EmptyBackground = new UIColor(0f,0f,0f,0f);
+		protected static UIColor EmptyBackground = new UIColor(0f, 0f, 0f, 0f);
 
 		// Sequence for generating test cases
 		protected static IEnumerable<View> BasicViews
@@ -85,7 +86,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 
 		protected async Task<TProperty> GetControlProperty<TProperty>(Label label, Func<UILabel, TProperty> getProperty)
 		{
-			return await Device.InvokeOnMainThreadAsync(() => {
+			return await Device.InvokeOnMainThreadAsync(() =>
+			{
 				using (var uiLabel = GetNativeControl(label))
 				{
 					return getProperty(uiLabel);
@@ -95,7 +97,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 
 		protected async Task<TProperty> GetControlProperty<TProperty>(VisualElement view, Func<UIView, TProperty> getProperty)
 		{
-			return await Device.InvokeOnMainThreadAsync(() => {
+			return await Device.InvokeOnMainThreadAsync(() =>
+			{
 				using (var renderer = GetNativeControl(view))
 				{
 					return getProperty(renderer);
@@ -112,7 +115,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 
 		protected async Task<TProperty> GetControlProperty<TProperty>(Entry entry, Func<UITextField, TProperty> getProperty)
 		{
-			return await Device.InvokeOnMainThreadAsync(() => {
+			return await Device.InvokeOnMainThreadAsync(() =>
+			{
 				using (var uiTextField = GetNativeControl(entry))
 				{
 					return getProperty(uiTextField);
@@ -129,7 +133,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 
 		protected async Task<TProperty> GetControlProperty<TProperty>(Editor editor, Func<UITextView, TProperty> getProperty)
 		{
-			return await Device.InvokeOnMainThreadAsync(() => {
+			return await Device.InvokeOnMainThreadAsync(() =>
+			{
 				using (var uiTextView = GetNativeControl(editor))
 				{
 					return getProperty(uiTextView);
@@ -146,7 +151,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 
 		protected async Task<TProperty> GetControlProperty<TProperty>(Button button, Func<UIButton, TProperty> getProperty)
 		{
-			return await Device.InvokeOnMainThreadAsync(() => {
+			return await Device.InvokeOnMainThreadAsync(() =>
+			{
 				using (var uiButton = GetNativeControl(button))
 				{
 					return getProperty(uiButton);
@@ -163,7 +169,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 
 		protected async Task<TProperty> GetControlProperty<TProperty>(ImageButton button, Func<UIButton, TProperty> getProperty)
 		{
-			return await Device.InvokeOnMainThreadAsync(() => {
+			return await Device.InvokeOnMainThreadAsync(() =>
+			{
 				using (var uiButton = GetNativeControl(button))
 				{
 					return getProperty(uiButton);
@@ -187,7 +194,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 
 		protected async Task<TProperty> GetControlProperty<TProperty>(DatePicker datePicker, Func<UITextField, TProperty> getProperty)
 		{
-			return await Device.InvokeOnMainThreadAsync(() => {
+			return await Device.InvokeOnMainThreadAsync(() =>
+			{
 				using (var uiTextField = GetNativeControl(datePicker))
 				{
 					return getProperty(uiTextField);
@@ -197,7 +205,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 
 		protected async Task<TProperty> GetControlProperty<TProperty>(DatePicker datePicker, Func<UIDatePicker, TProperty> getProperty)
 		{
-			return await Device.InvokeOnMainThreadAsync(() => {
+			return await Device.InvokeOnMainThreadAsync(() =>
+			{
 				using (var uiDatePicker = GetPickerControl(datePicker))
 				{
 					return getProperty(uiDatePicker);
@@ -221,7 +230,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 
 		protected async Task<TProperty> GetControlProperty<TProperty>(TimePicker timePicker, Func<UITextField, TProperty> getProperty)
 		{
-			return await Device.InvokeOnMainThreadAsync(() => {
+			return await Device.InvokeOnMainThreadAsync(() =>
+			{
 				using (var uiTextField = GetNativeControl(timePicker))
 				{
 					return getProperty(uiTextField);
@@ -231,7 +241,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 
 		protected async Task<TProperty> GetControlProperty<TProperty>(TimePicker timePicker, Func<UIDatePicker, TProperty> getProperty)
 		{
-			return await Device.InvokeOnMainThreadAsync(() => {
+			return await Device.InvokeOnMainThreadAsync(() =>
+			{
 				using (var uiDatePicker = GetPickerControl(timePicker))
 				{
 					return getProperty(uiDatePicker);
@@ -245,7 +256,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 		{
 			if (requiresLayout)
 			{
-				return await GetRendererPropertyWithLayout(view, getProperty);			
+				return await GetRendererPropertyWithLayout(view, getProperty);
 			}
 			else
 			{
@@ -256,7 +267,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 		async Task<TProperty> GetRendererProperty<TProperty>(View view,
 			Func<IVisualElementRenderer, TProperty> getProperty)
 		{
-			return await Device.InvokeOnMainThreadAsync(() => {
+			return await Device.InvokeOnMainThreadAsync(() =>
+			{
 				using (var renderer = GetRenderer(view))
 				{
 					return getProperty(renderer);
@@ -264,10 +276,11 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 			});
 		}
 
-		async Task<TProperty> GetRendererPropertyWithLayout<TProperty>(View view, 
-			Func<IVisualElementRenderer, TProperty> getRendererProperty) 
+		async Task<TProperty> GetRendererPropertyWithLayout<TProperty>(View view,
+			Func<IVisualElementRenderer, TProperty> getRendererProperty)
 		{
-			return await Device.InvokeOnMainThreadAsync(() => {
+			return await Device.InvokeOnMainThreadAsync(() =>
+			{
 
 				var page = new ContentPage() { Content = view };
 				using (var pageRenderer = GetRenderer(page))
@@ -295,7 +308,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 			c2G *= 255;
 			c2B *= 255;
 
-			var t = 
+			var t =
 				Math.Abs(c1R - c2R) < tolerance &&
 				Math.Abs(c1G - c2G) < tolerance &&
 				Math.Abs(c1B - c2B) < tolerance;
@@ -306,6 +319,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 				Math.Abs(c1B - c2B) < tolerance;
 		}
 
-		
+
 	}
 }

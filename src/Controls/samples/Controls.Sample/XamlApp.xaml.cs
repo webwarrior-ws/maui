@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using Maui.Controls.Sample.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,17 +15,23 @@ namespace Maui.Controls.Sample
 
 			Services = services;
 
-			Debug.WriteLine($"The .NET Purple color is {Resources["DotNetPurple"]}");
 			Debug.WriteLine($"The injected text service had a message: '{textService.GetText()}'");
+
+			RequestedThemeChanged += (sender, args) =>
+			{
+				// Respond to the theme change
+				Debug.WriteLine($"Requested theme changed: {args.RequestedTheme}");
+			};
+		}
+
+		// Must not use MainPage for multi-window
+		protected override Window CreateWindow(IActivationState activationState)
+		{
+			var window = new Window(Services.GetRequiredService<Page>());
+			window.Title = ".NET MAUI Samples Gallery";
+			return window;
 		}
 
 		public IServiceProvider Services { get; }
-
-		public override IWindow CreateWindow(IActivationState activationState)
-		{
-			Microsoft.Maui.Controls.Compatibility.Forms.Init(activationState);
-
-			return Services.GetRequiredService<IWindow>();
-		}
 	}
 }

@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-
-
-namespace Microsoft.Maui
+﻿namespace Microsoft.Maui
 {
 	/// <summary>
 	/// A Layout that positions child elements in a single line which can be oriented vertically or horizontally.
@@ -9,8 +6,8 @@ namespace Microsoft.Maui
 	public interface IStackLayout : ILayout
 	{
 		/// <summary>
-		/// Identifies the Spacing between childs.
+		/// Specifies the amount of space between children.
 		/// </summary>
-		int Spacing { get; }
+		double Spacing { get; }
 	}
 }

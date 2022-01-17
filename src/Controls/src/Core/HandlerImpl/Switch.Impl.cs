@@ -8,11 +8,21 @@ namespace Microsoft.Maui.Controls
 		{
 			get
 			{
+#if WINDOWS
+				return OnColor;
+#else
 				if (IsToggled)
 					return OnColor;
 
 				return null;
+#endif
 			}
+		}
+
+		bool ISwitch.IsOn
+		{
+			get => IsToggled;
+			set => IsToggled = value;
 		}
 	}
 }

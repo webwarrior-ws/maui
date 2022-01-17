@@ -5,6 +5,8 @@ using Android.App;
 using Android.Content;
 using Android.Util;
 using Android.Widget;
+using Microsoft.Maui.Controls.Platform;
+using Microsoft.Maui.Essentials;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 {
@@ -19,23 +21,19 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		public DatePickerRendererBase(Context context) : base(context)
 		{
 			AutoPackage = false;
-			if (Forms.IsLollipopOrNewer)
-				Device.Info.PropertyChanged += DeviceInfoPropertyChanged;
+			DeviceDisplay.MainDisplayInfoChanged += DeviceInfoPropertyChanged;
 		}
 
 		protected override void Dispose(bool disposing)
 		{
 			if (disposing && !_disposed)
 			{
-				if (Forms.IsLollipopOrNewer)
-					Device.Info.PropertyChanged -= DeviceInfoPropertyChanged;
+				DeviceDisplay.MainDisplayInfoChanged -= DeviceInfoPropertyChanged;
 
 				_disposed = true;
 				if (_dialog != null)
 				{
-					if (Forms.IsLollipopOrNewer)
-						_dialog.CancelEvent -= OnCancelButtonClicked;
-
+					_dialog.CancelEvent -= OnCancelButtonClicked;
 					_dialog.Hide();
 					_dialog.Dispose();
 					_dialog = null;
@@ -97,10 +95,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			{
 				_dialog.Hide();
 				((IElementController)Element).SetValueFromRenderer(VisualElement.IsFocusedPropertyKey, false);
-
-				if (Forms.IsLollipopOrNewer)
-					_dialog.CancelEvent -= OnCancelButtonClicked;
-
+				_dialog.CancelEvent -= OnCancelButtonClicked;
 				_dialog = null;
 			}
 		}
@@ -117,19 +112,15 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			return dialog;
 		}
 
-		void DeviceInfoPropertyChanged(object sender, PropertyChangedEventArgs e)
+		void DeviceInfoPropertyChanged(object sender, DisplayInfoChangedEventArgs e)
 		{
-			if (e.PropertyName == "CurrentOrientation")
+			DatePickerDialog currentDialog = _dialog;
+			if (currentDialog != null && currentDialog.IsShowing)
 			{
-				DatePickerDialog currentDialog = _dialog;
-				if (currentDialog != null && currentDialog.IsShowing)
-				{
-					currentDialog.Dismiss();
-					if (Forms.IsLollipopOrNewer)
-						currentDialog.CancelEvent -= OnCancelButtonClicked;
+				currentDialog.Dismiss();
+				currentDialog.CancelEvent -= OnCancelButtonClicked;
 
-					ShowPickerDialog(currentDialog.DatePicker.Year, currentDialog.DatePicker.Month, currentDialog.DatePicker.DayOfMonth);
-				}
+				ShowPickerDialog(currentDialog.DatePicker.Year, currentDialog.DatePicker.Month, currentDialog.DatePicker.DayOfMonth);
 			}
 		}
 
@@ -152,8 +143,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 
 			UpdateMinimumDate();
 			UpdateMaximumDate();
-			if (Forms.IsLollipopOrNewer)
-				_dialog.CancelEvent += OnCancelButtonClicked;
+			_dialog.CancelEvent += OnCancelButtonClicked;
 
 			_dialog.Show();
 		}
@@ -182,10 +172,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		[PortHandler]
 		void UpdateCharacterSpacing()
 		{
-			if (Forms.IsLollipopOrNewer)
-			{
-				EditText.LetterSpacing = Element.CharacterSpacing.ToEm();
-			}
+			EditText.LetterSpacing = Element.CharacterSpacing.ToEm();
 		}
 
 		[PortHandler]

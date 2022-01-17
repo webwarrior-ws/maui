@@ -1,5 +1,7 @@
 using System;
 using Microsoft.Maui.Controls.Core.UnitTests;
+using Microsoft.Maui.Dispatching;
+using Microsoft.Maui.UnitTests;
 using NUnit.Framework;
 
 namespace Microsoft.Maui.Controls.Xaml.UnitTests
@@ -7,24 +9,15 @@ namespace Microsoft.Maui.Controls.Xaml.UnitTests
 	[TestFixture]
 	public class Issue1554
 	{
-		[SetUp]
-		public void Setup()
-		{
-			Device.PlatformServices = new MockPlatformServices();
-		}
-
-		[TearDown]
-		public void TearDown()
-		{
-			Device.PlatformServices = null;
-		}
+		[SetUp] public void Setup() => DispatcherProvider.SetCurrent(new DispatcherProviderStub());
+		[TearDown] public void TearDown() => DispatcherProvider.SetCurrent(null);
 
 		[Test]
 		public void CollectionItemsInDataTemplate()
 		{
 			var xaml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
 				<ListView 
-					xmlns=""http://xamarin.com/schemas/2014/forms"" 
+					xmlns=""http://schemas.microsoft.com/dotnet/2021/maui"" 
 					xmlns:x=""http://schemas.microsoft.com/winfx/2009/xaml"" 
 					ItemsSource=""{Binding}"">
 			        <ListView.ItemTemplate>

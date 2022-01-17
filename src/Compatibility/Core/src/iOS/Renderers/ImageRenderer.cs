@@ -4,31 +4,16 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Foundation;
-using UIKit;
-using Microsoft.Maui.Controls.Compatibility.Internals;
-using RectangleF = CoreGraphics.CGRect;
-using PreserveAttribute = Foundation.PreserveAttribute;
+using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Graphics;
+using ObjCRuntime;
+using UIKit;
+using PreserveAttribute = Foundation.PreserveAttribute;
+using RectangleF = CoreGraphics.CGRect;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
-	public static class ImageExtensions
-	{
-		public static UIViewContentMode ToUIViewContentMode(this Aspect aspect)
-		{
-			switch (aspect)
-			{
-				case Aspect.AspectFill:
-					return UIViewContentMode.ScaleAspectFill;
-				case Aspect.Fill:
-					return UIViewContentMode.ScaleToFill;
-				case Aspect.AspectFit:
-				default:
-					return UIViewContentMode.ScaleAspectFit;
-			}
-		}
-	}
-
 	public class ImageRenderer : ViewRenderer<Image, FormsUIImageView>, IImageVisualElementRenderer
 	{
 		bool _isDisposed;
@@ -98,7 +83,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			}
 			catch (Exception ex)
 			{
-				Controls.Internals.Log.Warning(nameof(ImageRenderer), "Error loading image: {0}", ex);
+				Forms.MauiContext?.CreateLogger<ImageRenderer>()?.LogWarning(ex, "Image loading failed");
 			}
 			finally
 			{
@@ -146,7 +131,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 			if (image == null)
 			{
-				Controls.Internals.Log.Warning(nameof(FileImageSourceHandler), "Could not find image: {0}", imagesource);
+				Forms.MauiContext?.CreateLogger<FileImageSourceHandler>()?.LogWarning("Could not find image: {imagesource}", imagesource);
 			}
 
 			return Task.FromResult(image);
@@ -157,7 +142,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			FormsCAKeyFrameAnimation animation = ImageAnimationHelper.CreateAnimationFromFileImageSource(imagesource as FileImageSource);
 			if (animation == null)
 			{
-				Controls.Internals.Log.Warning(nameof(FileImageSourceHandler), "Could not find image: {0}", imagesource);
+				Forms.MauiContext?.CreateLogger<FileImageSourceHandler>()?.LogWarning("Could not find image: {imagesource}", imagesource);
 			}
 
 			return Task.FromResult(animation);
@@ -186,7 +171,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 			if (image == null)
 			{
-				Controls.Internals.Log.Warning(nameof(StreamImagesourceHandler), "Could not load image: {0}", streamsource);
+				Forms.MauiContext?.CreateLogger<StreamImagesourceHandler>()?.LogWarning("Could not find image: {streamsource}", streamsource);
 			}
 
 			return image;
@@ -197,7 +182,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			FormsCAKeyFrameAnimation animation = await ImageAnimationHelper.CreateAnimationFromStreamImageSourceAsync(imagesource as StreamImageSource, cancelationToken).ConfigureAwait(false);
 			if (animation == null)
 			{
-				Controls.Internals.Log.Warning(nameof(FileImageSourceHandler), "Could not find image: {0}", imagesource);
+				Forms.MauiContext?.CreateLogger<FileImageSourceHandler>()?.LogWarning("Could not find image: {imagesource}", imagesource);
 			}
 
 			return animation;
@@ -214,19 +199,19 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 		public async Task<UIImage> LoadImageAsync(ImageSource imagesource, CancellationToken cancelationToken = default(CancellationToken), float scale = 1f)
 		{
 			UIImage image = null;
-			var imageLoader = imagesource as UriImageSource;
-			if (imageLoader?.Uri != null)
-			{
-				using (var streamImage = await imageLoader.GetStreamAsync(cancelationToken).ConfigureAwait(false))
-				{
-					if (streamImage != null)
-						image = UIImage.LoadFromData(NSData.FromStream(streamImage), scale);
-				}
-			}
 
-			if (image == null)
+			if (imagesource is IStreamImageSource imageLoader)
 			{
-				Controls.Internals.Log.Warning(nameof(ImageLoaderSourceHandler), "Could not load image: {0}", imageLoader);
+				using var streamImage = await imageLoader.GetStreamAsync(cancelationToken).ConfigureAwait(false);
+				if (streamImage != null)
+				{
+					image = UIImage.LoadFromData(NSData.FromStream(streamImage), scale);
+
+					if (image == null)
+					{
+						Forms.MauiContext?.CreateLogger<ImageLoaderSourceHandler>()?.LogWarning("Could not load image: {imagesource}", imagesource);
+					}
+				}
 			}
 
 			return image;
@@ -237,7 +222,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			FormsCAKeyFrameAnimation animation = await ImageAnimationHelper.CreateAnimationFromUriImageSourceAsync(imagesource as UriImageSource, cancelationToken).ConfigureAwait(false);
 			if (animation == null)
 			{
-				Controls.Internals.Log.Warning(nameof(FileImageSourceHandler), "Could not find image: {0}", imagesource);
+				Forms.MauiContext?.CreateLogger<FileImageSourceHandler>()?.LogWarning("Could not find image: {imagesource}", imagesource);
 			}
 
 			return animation;
@@ -267,7 +252,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				var iconcolor = fontsource.Color ?? _defaultColor;
 				var attString = new NSAttributedString(fontsource.Glyph, font: font, foregroundColor: iconcolor.ToUIColor());
 				var imagesize = ((NSString)fontsource.Glyph).GetSizeUsingAttributes(attString.GetUIKitAttributes(0, out _));
-				
+
 				UIGraphics.BeginImageContextWithOptions(imagesize, false, 0f);
 				var ctx = new NSStringDrawingContext();
 				var boundingRect = attString.GetBoundingRect(imagesize, (NSStringDrawingOptions)0, ctx);

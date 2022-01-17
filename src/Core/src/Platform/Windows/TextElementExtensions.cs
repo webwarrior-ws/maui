@@ -1,6 +1,6 @@
 ﻿using Microsoft.UI.Xaml.Documents;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public static class TextElementExtensions
 	{
@@ -8,8 +8,9 @@ namespace Microsoft.Maui
 		{
 			nativeControl.FontSize = fontManager.GetFontSize(font);
 			nativeControl.FontFamily = fontManager.GetFontFamily(font);
-			nativeControl.FontStyle = font.FontAttributes.ToFontStyle();
-			nativeControl.FontWeight = font.FontAttributes.ToFontWeight();
+			nativeControl.FontStyle = font.ToFontStyle();
+			nativeControl.FontWeight = font.ToFontWeight();
+			nativeControl.IsTextScaleFactorEnabled = font.AutoScalingEnabled;
 		}
 	}
 }

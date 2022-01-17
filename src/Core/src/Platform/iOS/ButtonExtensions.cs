@@ -1,18 +1,36 @@
+using System;
 using UIKit;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public static class ButtonExtensions
 	{
-		public static void UpdateText(this UIButton nativeButton, IButton button) =>
+		public static void UpdateStrokeColor(this UIButton nativeButton, IButtonStroke buttonStroke)
+		{
+			if (buttonStroke.StrokeColor != null)
+				nativeButton.Layer.BorderColor = buttonStroke.StrokeColor.ToCGColor();
+		}
+
+		public static void UpdateStrokeThickness(this UIButton nativeButton, IButtonStroke buttonStroke)
+		{
+			if (buttonStroke.StrokeThickness >= 0)
+				nativeButton.Layer.BorderWidth = (float)buttonStroke.StrokeThickness;
+		}
+
+		public static void UpdateCornerRadius(this UIButton nativeButton, IButtonStroke buttonStroke)
+		{
+			if (buttonStroke.CornerRadius >= 0)
+				nativeButton.Layer.CornerRadius = buttonStroke.CornerRadius;
+		}
+
+		public static void UpdateText(this UIButton nativeButton, IText button) =>
 			nativeButton.SetTitle(button.Text, UIControlState.Normal);
 
-		public static void UpdateTextColor(this UIButton nativeButton, IButton button) =>
+		public static void UpdateTextColor(this UIButton nativeButton, ITextStyle button) =>
 			nativeButton.UpdateTextColor(button);
 
-		public static void UpdateTextColor(this UIButton nativeButton, IButton button, UIColor? buttonTextColorDefaultNormal, UIColor? buttonTextColorDefaultHighlighted, UIColor? buttonTextColorDefaultDisabled)
+		public static void UpdateTextColor(this UIButton nativeButton, ITextStyle button, UIColor? buttonTextColorDefaultNormal, UIColor? buttonTextColorDefaultHighlighted, UIColor? buttonTextColorDefaultDisabled)
 		{
-
 			if (button.TextColor == null)
 			{
 				nativeButton.SetTitleColor(buttonTextColorDefaultNormal, UIControlState.Normal);
@@ -38,7 +56,7 @@ namespace Microsoft.Maui
 
 		public static void UpdateFont(this UIButton nativeButton, ITextStyle textStyle, IFontManager fontManager)
 		{
-			nativeButton.TitleLabel.UpdateFont(textStyle, fontManager);
+			nativeButton.TitleLabel.UpdateFont(textStyle, fontManager, UIFont.ButtonFontSize);
 		}
 
 		public static void UpdatePadding(this UIButton nativeButton, IButton button)

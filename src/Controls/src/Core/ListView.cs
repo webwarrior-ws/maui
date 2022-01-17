@@ -5,15 +5,18 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows.Input;
+using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.Xaml.Diagnostics;
+using Microsoft.Maui.Essentials;
 using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.Controls
 {
-	public class ListView : ItemsView<Cell>, IListViewController, IElementConfiguration<ListView>
+	public class ListView : ItemsView<Cell>, IListViewController, IElementConfiguration<ListView>, IVisualTreeElement
 	{
 		readonly List<Element> _logicalChildren = new List<Element>();
+		IReadOnlyList<IVisualTreeElement> IVisualTreeElement.GetVisualChildren() => _logicalChildren;
 
 		internal override IEnumerable<Element> ChildrenNotDrawnByThisElement => _logicalChildren;
 
@@ -78,7 +81,9 @@ namespace Microsoft.Maui.Controls
 
 		public ListView()
 		{
+#pragma warning disable CS0618 // Type or member is obsolete
 			VerticalOptions = HorizontalOptions = LayoutOptions.FillAndExpand;
+#pragma warning restore CS0618 // Type or member is obsolete
 
 			TemplatedItems.IsGroupingEnabledProperty = IsGroupingEnabledProperty;
 			TemplatedItems.GroupHeaderTemplateProperty = GroupHeaderTemplateProperty;
@@ -356,14 +361,13 @@ namespace Microsoft.Maui.Controls
 			return textCell;
 		}
 
-		[Obsolete("OnSizeRequest is obsolete as of version 2.2.0. Please use OnMeasure instead.")]
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		protected override SizeRequest OnSizeRequest(double widthConstraint, double heightConstraint)
+		protected override SizeRequest OnMeasure(double widthConstraint, double heightConstraint)
 		{
 			var minimumSize = new Size(40, 40);
 			Size request;
 
-			double width = Math.Min(Device.Info.ScaledScreenSize.Width, Device.Info.ScaledScreenSize.Height);
+			var scaled = DeviceDisplay.MainDisplayInfo.GetScaledScreenSize();
+			double width = Math.Min(scaled.Width, scaled.Height);
 
 			var list = ItemsSource as IList;
 			if (list != null && HasUnevenRows == false && RowHeight > 0 && !IsGroupingEnabled)
@@ -374,7 +378,7 @@ namespace Microsoft.Maui.Controls
 			else
 			{
 				// probably not worth it
-				request = new Size(width, Math.Max(Device.Info.ScaledScreenSize.Width, Device.Info.ScaledScreenSize.Height));
+				request = new Size(width, Math.Max(scaled.Width, scaled.Height));
 			}
 
 			return new SizeRequest(request, minimumSize);
@@ -564,7 +568,7 @@ namespace Microsoft.Maui.Controls
 			if (newValue != null && lv.GroupHeaderTemplate != null)
 			{
 				lv.GroupHeaderTemplate = null;
-				Log.Warning("ListView", "GroupHeaderTemplate and GroupDisplayBinding cannot be set at the same time, setting GroupHeaderTemplate to null");
+				Application.Current?.FindMauiContext()?.CreateLogger<ListView>()?.LogWarning("GroupHeaderTemplate and GroupDisplayBinding cannot be set at the same time, setting GroupHeaderTemplate to null");
 			}
 		}
 
@@ -574,7 +578,7 @@ namespace Microsoft.Maui.Controls
 			if (newValue != null && lv.GroupDisplayBinding != null)
 			{
 				lv.GroupDisplayBinding = null;
-				Log.Warning("ListView", "GroupHeaderTemplate and GroupDisplayBinding cannot be set at the same time, setting GroupDisplayBinding to null");
+				Application.Current?.FindMauiContext()?.CreateLogger<ListView>()?.LogWarning("GroupHeaderTemplate and GroupDisplayBinding cannot be set at the same time, setting GroupDisplayBinding to null");
 			}
 		}
 

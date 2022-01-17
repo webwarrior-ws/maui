@@ -1,4 +1,4 @@
-<views:BasePage xmlns="http://xamarin.com/schemas/2014/forms"
+<views:BasePage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                 xmlns:views="clr-namespace:Samples.View"
                 xmlns:viewmodels="clr-namespace:Samples.ViewModel"
@@ -20,11 +20,17 @@
                 <Editor Placeholder="Enter text..." Text="{Binding SecuredValue}"
                         AutoSize="TextChanges" />
 
+                <Label Text="Enter key, and click 'Load' to get its paired value." />
                 <Button Text="Load" Command="{Binding LoadCommand}" IsEnabled="{Binding IsNotBusy}" />
+
+                <Label Text="Enter key and value, and click 'Save' to save the pair." />
                 <Button Text="Save" Command="{Binding SaveCommand}" IsEnabled="{Binding IsNotBusy}" />
+
+                <Label Text="Enter key, and click 'Remove' to remove the paired value." />
                 <Button Text="Remove" Command="{Binding RemoveCommand}" IsEnabled="{Binding IsNotBusy}" />
 
-                <Button Text="Remove All" Command="{Binding RemoveAllCommand}" IsEnabled="{Binding IsNotBusy}" Margin="0,10,0,0" />
+                <Label Text="Click 'Remove All' to clear all saved key-value pairs." Margin="0,20,0,0" />
+                <Button Text="Remove All" Command="{Binding RemoveAllCommand}" IsEnabled="{Binding IsNotBusy}" />
             </StackLayout>
         </ScrollView>
     </StackLayout>

@@ -17,7 +17,9 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 
 		protected SelectableViewHolder(global::Android.Views.View itemView, bool isSelectionEnabled = true) : base(itemView)
 		{
-			itemView.SetOnClickListener(this);
+			if (isSelectionEnabled)
+				itemView.SetOnClickListener(this);
+
 			_isSelectionEnabled = isSelectionEnabled;
 		}
 
@@ -41,7 +43,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		{
 			if (_isSelectionEnabled)
 			{
-				OnViewHolderClicked(AdapterPosition);
+				OnViewHolderClicked(BindingAdapterPosition);
 			}
 		}
 

@@ -3,10 +3,12 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using Foundation;
-using UIKit;
+using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;
+using Microsoft.Maui.Platform;
+using ObjCRuntime;
+using UIKit;
 using RectangleF = CoreGraphics.CGRect;
-using Microsoft.Maui.Platform.iOS;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
@@ -183,6 +185,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			Control.Font = Element.ToUIFont();
 		}
 
+		[PortHandler]
 		protected internal virtual void UpdateTextColor()
 		{
 			var textColor = Element.TextColor;
@@ -214,7 +217,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 							  .Where(c => c.Name.EndsWith("-" + iOSLocale)).FirstOrDefault();
 			if (cultureInfos == null)
 				cultureInfos = CultureInfo.InvariantCulture;
-			
+
 			if (String.IsNullOrEmpty(Element.Format))
 			{
 				string timeformat = cultureInfos.DateTimeFormat.ShortTimePattern;

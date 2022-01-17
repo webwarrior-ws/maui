@@ -6,61 +6,64 @@ using Windows.Storage.Pickers;
 
 namespace Microsoft.Maui.Essentials
 {
-    public static partial class MediaPicker
-    {
-        static bool PlatformIsCaptureSupported
-            => true;
+	public static partial class MediaPicker
+	{
+		static bool PlatformIsCaptureSupported
+			=> true;
 
-        static Task<FileResult> PlatformPickPhotoAsync(MediaPickerOptions options)
-            => PickAsync(options, true);
+		static Task<FileResult> PlatformPickPhotoAsync(MediaPickerOptions options)
+			=> PickAsync(options, true);
 
-        static Task<FileResult> PlatformPickVideoAsync(MediaPickerOptions options)
-            => PickAsync(options, false);
+		static Task<FileResult> PlatformPickVideoAsync(MediaPickerOptions options)
+			=> PickAsync(options, false);
 
-        static async Task<FileResult> PickAsync(MediaPickerOptions options, bool photo)
-        {
-            var picker = new FileOpenPicker();
+		static async Task<FileResult> PickAsync(MediaPickerOptions options, bool photo)
+		{
+			var picker = new FileOpenPicker();
 
-            var defaultTypes = photo ? FilePickerFileType.Images.Value : FilePickerFileType.Videos.Value;
+			var hwnd = Platform.CurrentWindowHandle;
+			WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
 
-            // set picker properties
-            foreach (var filter in defaultTypes.Select(t => t.TrimStart('*')))
-                picker.FileTypeFilter.Add(filter);
-            picker.SuggestedStartLocation = photo ? PickerLocationId.PicturesLibrary : PickerLocationId.VideosLibrary;
-            picker.ViewMode = PickerViewMode.Thumbnail;
+			var defaultTypes = photo ? FilePickerFileType.Images.Value : FilePickerFileType.Videos.Value;
 
-            // show the picker
-            var result = await picker.PickSingleFileAsync();
+			// set picker properties
+			foreach (var filter in defaultTypes.Select(t => t.TrimStart('*')))
+				picker.FileTypeFilter.Add(filter);
+			picker.SuggestedStartLocation = photo ? PickerLocationId.PicturesLibrary : PickerLocationId.VideosLibrary;
+			picker.ViewMode = PickerViewMode.Thumbnail;
 
-            // cancelled
-            if (result == null)
-                return null;
+			// show the picker
+			var result = await picker.PickSingleFileAsync();
 
-            // picked
-            return new FileResult(result);
-        }
+			// cancelled
+			if (result == null)
+				return null;
 
-        static Task<FileResult> PlatformCapturePhotoAsync(MediaPickerOptions options)
-            => CaptureAsync(options, true);
+			// picked
+			return new FileResult(result);
+		}
 
-        static Task<FileResult> PlatformCaptureVideoAsync(MediaPickerOptions options)
-            => CaptureAsync(options, false);
+		static Task<FileResult> PlatformCapturePhotoAsync(MediaPickerOptions options)
+			=> CaptureAsync(options, true);
 
-        static async Task<FileResult> CaptureAsync(MediaPickerOptions options, bool photo)
-        {
-            var captureUi = new CameraCaptureUI();
+		static Task<FileResult> PlatformCaptureVideoAsync(MediaPickerOptions options)
+			=> CaptureAsync(options, false);
 
-            if (photo)
-                captureUi.PhotoSettings.Format = CameraCaptureUIPhotoFormat.Jpeg;
-            else
-                captureUi.VideoSettings.Format = CameraCaptureUIVideoFormat.Mp4;
+		static async Task<FileResult> CaptureAsync(MediaPickerOptions options, bool photo)
+		{
+			var captureUi = new CameraCaptureUI();
 
-            var file = await captureUi.CaptureFileAsync(photo ? CameraCaptureUIMode.Photo : CameraCaptureUIMode.Video);
+			if (photo)
+				captureUi.PhotoSettings.Format = CameraCaptureUIPhotoFormat.Jpeg;
+			else
+				captureUi.VideoSettings.Format = CameraCaptureUIVideoFormat.Mp4;
 
-            if (file != null)
-                return new FileResult(file);
+			var file = await captureUi.CaptureFileAsync(photo ? CameraCaptureUIMode.Photo : CameraCaptureUIMode.Video);
 
-            return null;
-        }
-    }
+			if (file != null)
+				return new FileResult(file);
+
+			return null;
+		}
+	}
 }

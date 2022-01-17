@@ -7,6 +7,7 @@ using CoreAnimation;
 using CoreGraphics;
 using Foundation;
 using Microsoft.Maui.Graphics;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
@@ -52,7 +53,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				oldRenderer?.Dispose();
 			}
 			// If the user hasn't defined custom content then only the ContentView is set
-			else if(ContentView != null)
+			else if (ContentView != null)
 			{
 				var oldContentView = ContentView;
 				ContentView = null;
@@ -77,7 +78,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 					void ScrollViewScrolled(object sender, ScrolledEventArgs e) =>
 						OnScrolled((nfloat)sv.ScrollY);
 				}
-				else if(Content is CollectionView cv)
+				else if (Content is CollectionView cv)
 				{
 					cv.Scrolled += CollectionViewScrolled;
 					removeScolledEvent = () => cv.Scrolled -= CollectionViewScrolled;
@@ -90,7 +91,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 					removeScolledEvent = () => lv.Scrolled -= ListViewScrolled;
 					void ListViewScrolled(object sender, ScrolledEventArgs e) =>
 						OnScrolled((nfloat)e.ScrollY);
-				}				
+				}
 			}
 		}
 
@@ -253,7 +254,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				{
 					topMargin = (float)Content.Margin.Top;
 				}
-				else if(HeaderView == null)
+				else if (HeaderView == null)
 				{
 					topMargin = (float)Platform.SafeAreaInsetsForWindow.Top;
 				}
@@ -273,7 +274,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				var leftMargin = margin.Left - margin.Right;
 
 				HeaderView.Frame = new CGRect(leftMargin, _headerOffset, parent.Frame.Width, HeaderSize + HeaderTopMargin);
-				
+
 				if (_context.Shell.FlyoutHeaderBehavior == FlyoutHeaderBehavior.Scroll && HeaderTopMargin > 0 && _headerOffset < 0)
 				{
 					var headerHeight = Math.Max(_headerMin, HeaderSize + _headerOffset + HeaderTopMargin);

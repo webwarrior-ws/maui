@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -6,15 +7,13 @@ using System.ComponentModel;
 using System.Linq;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Layouts;
 
-namespace Microsoft.Maui.Controls
+namespace Microsoft.Maui.Controls.Compatibility
 {
 	[ContentProperty(nameof(Children))]
-	public abstract class Layout<T> : Layout, Microsoft.Maui.ILayout, IViewContainer<T> where T : View
+	public abstract partial class Layout<T> : Layout, Microsoft.Maui.ILayout, ILayoutManager, IBindableLayout, IViewContainer<T> where T : View
 	{
-		// TODO ezhart We should look for a way to optimize this a bit
-		IReadOnlyList<Microsoft.Maui.IView> Microsoft.Maui.ILayout.Children => _children.ToList<Microsoft.Maui.IView>().AsReadOnly();
-
 		readonly ElementCollection<T> _children;
 
 		protected Layout() => _children = new ElementCollection<T>(InternalChildren);
@@ -22,6 +21,10 @@ namespace Microsoft.Maui.Controls
 		public new IList<T> Children => _children;
 
 		public ILayoutHandler LayoutHandler => Handler as ILayoutHandler;
+
+		IList IBindableLayout.Children => _children;
+
+		bool ISafeAreaView.IgnoreSafeArea => false;
 
 		protected override void OnChildAdded(Element child)
 		{
@@ -47,24 +50,19 @@ namespace Microsoft.Maui.Controls
 		{
 		}
 
-		public void Add(IView child)
+		Size ILayoutManager.Measure(double widthConstraint, double heightConstraint)
 		{
-			if (child is T view)
-			{
-				Children.Add(view);
-			}
+			return OnMeasure(widthConstraint, heightConstraint);
 		}
 
-		public void Remove(IView child)
+		Size ILayoutManager.ArrangeChildren(Rectangle bounds)
 		{
-			if (child is T view)
-			{
-				Children.Remove(view);
-			}
+			LayoutChildren(bounds.X, bounds.Y, bounds.Width, bounds.Height);
+			return bounds.Size;
 		}
 	}
 
-	public abstract class Layout : View, ILayout, ILayoutController, IPaddingElement, IFrameworkElement
+	public abstract class Layout : View, ILayout, ILayoutController, IPaddingElement, IView, IVisualTreeElement
 	{
 		public static readonly BindableProperty IsClippedToBoundsProperty =
 			BindableProperty.Create(nameof(IsClippedToBounds), typeof(bool), typeof(Layout), false);
@@ -73,10 +71,6 @@ namespace Microsoft.Maui.Controls
 			BindableProperty.Create(nameof(CascadeInputTransparent), typeof(bool), typeof(Layout), true);
 
 		public static readonly BindableProperty PaddingProperty = PaddingElement.PaddingProperty;
-
-		static IList<KeyValuePair<Layout, int>> s_resolutionList = new List<KeyValuePair<Layout, int>>();
-		static bool s_relayoutInProgress;
-		bool _allocatedFlag;
 
 		bool _hasDoneLayout;
 		Size _lastLayoutSize = new Size(-1, -1);
@@ -116,7 +110,7 @@ namespace Microsoft.Maui.Controls
 
 		internal ObservableCollection<Element> InternalChildren { get; } = new ObservableCollection<Element>();
 
-		internal override ReadOnlyCollection<Element> LogicalChildrenInternal => _logicalChildren ?? (_logicalChildren = new ReadOnlyCollection<Element>(InternalChildren));
+		internal override IReadOnlyList<Element> LogicalChildrenInternal => _logicalChildren ?? (_logicalChildren = new ReadOnlyCollection<Element>(InternalChildren));
 
 		public event EventHandler LayoutChanged;
 
@@ -125,11 +119,11 @@ namespace Microsoft.Maui.Controls
 
 		public void ForceLayout() => SizeAllocated(Width, Height);
 
-		[Obsolete("OnSizeRequest is obsolete as of version 2.2.0. Please use OnMeasure instead.")]
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public sealed override SizeRequest GetSizeRequest(double widthConstraint, double heightConstraint)
+		IReadOnlyList<Maui.IVisualTreeElement> IVisualTreeElement.GetVisualChildren() => Children.ToList().AsReadOnly();
+
+		public override SizeRequest Measure(double widthConstraint, double heightConstraint, MeasureFlags flags = MeasureFlags.None)
 		{
-			SizeRequest size = base.GetSizeRequest(widthConstraint - Padding.HorizontalThickness, heightConstraint - Padding.VerticalThickness);
+			SizeRequest size = base.Measure(widthConstraint - Padding.HorizontalThickness, heightConstraint - Padding.VerticalThickness, flags);
 			return new SizeRequest(new Size(size.Request.Width + Padding.HorizontalThickness, size.Request.Height + Padding.VerticalThickness),
 				new Size(size.Minimum.Width + Padding.HorizontalThickness, size.Minimum.Height + Padding.VerticalThickness));
 		}
@@ -137,8 +131,20 @@ namespace Microsoft.Maui.Controls
 		public static void LayoutChildIntoBoundingRegion(VisualElement child, Rectangle region)
 		{
 			bool isRightToLeft = false;
-			if (child.Parent is IFlowDirectionController parent && (isRightToLeft = parent.ApplyEffectiveFlowDirectionToChildContainer && parent.EffectiveFlowDirection.IsRightToLeft()))
+			if (child.Parent is IFlowDirectionController parent &&
+				(isRightToLeft = parent.ApplyEffectiveFlowDirectionToChildContainer &&
+				parent.EffectiveFlowDirection.IsRightToLeft()) &&
+				(parent.Width - region.Right) != region.X)
+			{
 				region = new Rectangle(parent.Width - region.Right, region.Y, region.Width, region.Height);
+			}
+
+			if (child is IView fe && fe.Handler != null)
+			{
+				// The new arrange methods will take care of all the alignment and margins and such
+				fe.Arrange(region);
+				return;
+			}
 
 			if (!(child is View view))
 			{
@@ -215,22 +221,20 @@ namespace Microsoft.Maui.Controls
 		{
 		}
 
-		Size IFrameworkElement.Measure(double widthConstraint, double heightConstraint)
+		Size IView.Measure(double widthConstraint, double heightConstraint)
 		{
-			if (!IsMeasureValid)
-#pragma warning disable CS0618 // Type or member is obsolete	
-				DesiredSize = OnSizeRequest(widthConstraint, heightConstraint).Request;
-#pragma warning restore CS0618 // Type or member is obsolete	
-			IsMeasureValid = true;
-			return DesiredSize;
+			return MeasureOverride(widthConstraint, heightConstraint);
 		}
 
 		protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
-			=> (this as IFrameworkElement).Measure(widthConstraint, heightConstraint);
+		{
+			var sansMargins = OnMeasure(widthConstraint, heightConstraint).Request;
+			DesiredSize = new Size(sansMargins.Width + Margin.HorizontalThickness, sansMargins.Height + Margin.VerticalThickness);
+			return DesiredSize;
+		}
 
 		protected override void OnSizeAllocated(double width, double height)
 		{
-			_allocatedFlag = true;
 			base.OnSizeAllocated(width, height);
 			UpdateChildrenLayout();
 		}
@@ -288,6 +292,13 @@ namespace Microsoft.Maui.Controls
 			if (child.Parent is IFlowDirectionController parent && (isRightToLeft = parent.ApplyEffectiveFlowDirectionToChildContainer && parent.EffectiveFlowDirection.IsRightToLeft()))
 				region = new Rectangle(parent.Width - region.Right, region.Y, region.Width, region.Height);
 
+			if (child is IView fe && fe.Handler != null)
+			{
+				// The new arrange methods will take care of all the alignment and margins and such
+				fe.Arrange(region);
+				return;
+			}
+
 			if (region.Size != childSizeRequest.Request)
 			{
 				bool canUseAlreadyDoneRequest = region.Width >= childSizeRequest.Request.Width && region.Height >= childSizeRequest.Request.Height;
@@ -325,7 +336,7 @@ namespace Microsoft.Maui.Controls
 
 		internal virtual void OnChildMeasureInvalidated(VisualElement child, InvalidationTrigger trigger)
 		{
-			ReadOnlyCollection<Element> children = LogicalChildrenInternal;
+			IReadOnlyList<Element> children = LogicalChildrenInternal;
 			int count = children.Count;
 			for (var index = 0; index < count; index++)
 			{
@@ -347,7 +358,6 @@ namespace Microsoft.Maui.Controls
 				}
 			}
 
-			_allocatedFlag = false;
 			if (trigger == InvalidationTrigger.RendererReady)
 			{
 				InvalidateMeasureInternal(InvalidationTrigger.RendererReady);
@@ -355,56 +365,6 @@ namespace Microsoft.Maui.Controls
 			else
 			{
 				InvalidateMeasureInternal(InvalidationTrigger.MeasureChanged);
-			}
-
-			s_resolutionList.Add(new KeyValuePair<Layout, int>(this, GetElementDepth(this)));
-
-			if (Device.PlatformInvalidator == null && !s_relayoutInProgress)
-			{
-				// Rather than recomputing the layout for each change as it happens, we accumulate them in
-				// s_resolutionList and schedule a single layout update operation to handle them all at once.
-				// This avoids a lot of unnecessary layout operations if something is triggering many property
-				// changes at once (e.g., a BindingContext change)
-
-				s_relayoutInProgress = true;
-
-				if (Dispatcher != null)
-				{
-					Dispatcher.BeginInvokeOnMainThread(ResolveLayoutChanges);
-				}
-				else
-				{
-					Device.BeginInvokeOnMainThread(ResolveLayoutChanges);
-				}
-			}
-			else
-			{
-				// If the platform supports PlatformServices2, queueing is unnecessary; the layout changes
-				// will be handled during the Layout's next Measure/Arrange pass
-				Device.Invalidate(this);
-			}
-		}
-
-		public void ResolveLayoutChanges()
-		{
-			s_relayoutInProgress = false;
-
-			if (s_resolutionList.Count == 0)
-			{
-				return;
-			}
-
-			IList<KeyValuePair<Layout, int>> copy = s_resolutionList;
-			s_resolutionList = new List<KeyValuePair<Layout, int>>();
-
-			foreach (KeyValuePair<Layout, int> kvp in copy)
-			{
-				Layout layout = kvp.Key;
-				double width = layout.Width, height = layout.Height;
-				if (!layout._allocatedFlag && width >= 0 && height >= 0)
-				{
-					layout.SizeAllocated(width, height);
-				}
 			}
 		}
 
@@ -506,6 +466,45 @@ namespace Microsoft.Maui.Controls
 				}
 			}
 			return true;
+		}
+
+		protected override void InvalidateMeasureOverride()
+		{
+			base.InvalidateMeasureOverride();
+
+			foreach (var child in ((IElementController)this).LogicalChildren)
+			{
+				if (child is IView fe)
+				{
+					fe.InvalidateMeasure();
+				}
+			}
+		}
+
+		protected override Size ArrangeOverride(Rectangle bounds)
+		{
+			base.ArrangeOverride(bounds);
+
+			// The SholdLayoutChildren check will catch impossible sizes (negative widths/heights), not-yet-loaded controls,
+			// and other weirdness that comes from the legacy layouts trying to run layout before the native side is ready. 
+			if (!ShouldLayoutChildren())
+				return bounds.Size;
+
+			UpdateChildrenLayout();
+
+			return Frame.Size;
+		}
+
+		public Size CrossPlatformMeasure(double widthConstraint, double heightConstraint)
+		{
+			return OnMeasure(widthConstraint, heightConstraint).Request;
+		}
+
+		public Size CrossPlatformArrange(Rectangle bounds)
+		{
+			UpdateChildrenLayout();
+
+			return Frame.Size;
 		}
 	}
 }

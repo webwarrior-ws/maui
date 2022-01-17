@@ -1,8 +1,9 @@
-using Foundation;
 using System;
 using System.Collections.Specialized;
-using UIKit;
+using Foundation;
 using Microsoft.Maui.Controls.Internals;
+using ObjCRuntime;
+using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {

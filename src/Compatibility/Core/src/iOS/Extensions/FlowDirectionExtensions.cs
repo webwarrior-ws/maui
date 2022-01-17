@@ -1,27 +1,21 @@
+using ObjCRuntime;
 using UIKit;
-using Microsoft.Maui.Controls.Compatibility.Internals;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
 	internal static class FlowDirectionExtensions
 	{
-		internal static FlowDirection ToFlowDirection(this UIUserInterfaceLayoutDirection direction)
-		{
-			switch (direction)
-			{
-				case UIUserInterfaceLayoutDirection.LeftToRight:
-					return FlowDirection.LeftToRight;
-				case UIUserInterfaceLayoutDirection.RightToLeft:
-					return FlowDirection.RightToLeft;
-				default:
-					return FlowDirection.MatchParent;
-			}
-		}
-
 		internal static bool UpdateFlowDirection(this UIView view, IVisualElementController controller)
 		{
 			if (controller == null || view == null || !Forms.IsiOS9OrNewer)
 				return false;
+
+			if (controller is IView v)
+			{
+				var current = view.SemanticContentAttribute;
+				view.UpdateFlowDirection(v);
+				return current != view.SemanticContentAttribute;
+			}
 
 			UISemanticContentAttribute updateValue = view.SemanticContentAttribute;
 

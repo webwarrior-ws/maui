@@ -1,9 +1,13 @@
-﻿using UIKit;
+﻿using ObjCRuntime;
+using UIKit;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public static class TextAlignmentExtensions
 	{
+		public static UITextAlignment ToNative(this TextAlignment alignment, IView view)
+			=> alignment.ToNative(view.FlowDirection == FlowDirection.LeftToRight);
+
 		public static UITextAlignment ToNative(this TextAlignment alignment, bool isLtr)
 		{
 			switch (alignment)

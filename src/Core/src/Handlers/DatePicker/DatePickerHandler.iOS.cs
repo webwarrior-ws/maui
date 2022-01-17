@@ -1,6 +1,6 @@
 ﻿using System;
 using Foundation;
-using Microsoft.Extensions.DependencyInjection;
+using ObjCRuntime;
 using UIKit;
 using RectangleF = CoreGraphics.CGRect;
 
@@ -8,6 +8,7 @@ namespace Microsoft.Maui.Handlers
 {
 	public partial class DatePickerHandler : ViewHandler<IDatePicker, MauiDatePicker>
 	{
+		UIColor? _defaultTextColor;
 		UIDatePicker? _picker;
 
 		protected override MauiDatePicker CreateNativeView()
@@ -64,6 +65,11 @@ namespace Microsoft.Maui.Handlers
 			base.DisconnectHandler(nativeView);
 		}
 
+		void SetupDefaults(MauiDatePicker nativeView)
+		{
+			_defaultTextColor = nativeView.TextColor;
+		}
+
 		public static void MapFormat(DatePickerHandler handler, IDatePicker datePicker)
 		{
 			handler.NativeView?.UpdateFormat(datePicker);
@@ -96,8 +102,10 @@ namespace Microsoft.Maui.Handlers
 			handler.NativeView?.UpdateFont(datePicker, fontManager);
 		}
 
-		[MissingMapper]
-		public static void MapTextColor(DatePickerHandler handler, IDatePicker datePicker) { }
+		public static void MapTextColor(DatePickerHandler handler, IDatePicker datePicker)
+		{
+			handler.NativeView?.UpdateTextColor(datePicker, handler._defaultTextColor);
+		}
 
 		void OnValueChanged(object? sender, EventArgs? e)
 		{

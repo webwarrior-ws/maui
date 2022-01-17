@@ -1,22 +1,58 @@
-﻿using System;
-using Microsoft.UI.Xaml.Controls;
+﻿#nullable disable
+using System;
 
 namespace Microsoft.Maui.Handlers
 {
-	public partial class StepperHandler : ViewHandler<IStepper, Button>
+	public partial class StepperHandler : ViewHandler<IStepper, MauiStepper>
 	{
-		protected override Button CreateNativeView() => new Button();
+		protected override MauiStepper CreateNativeView() => new MauiStepper();
 
-		[MissingMapper]
-		public static void MapMinimum(IViewHandler handler, IStepper stepper) { }
+		protected override void ConnectHandler(MauiStepper nativeView)
+		{
+			nativeView.ValueChanged += OnValueChanged;
 
-		[MissingMapper]
-		public static void MapMaximum(IViewHandler handler, IStepper stepper) { }
+			base.ConnectHandler(nativeView);
+		}
 
-		[MissingMapper]
-		public static void MapIncrement(IViewHandler handler, IStepper stepper) { }
+		protected override void DisconnectHandler(MauiStepper nativeView)
+		{
+			nativeView.ValueChanged -= OnValueChanged;
 
-		[MissingMapper]
-		public static void MapValue(IViewHandler handler, IStepper stepper) { }
+			base.DisconnectHandler(nativeView);
+		}
+
+		public static void MapMinimum(StepperHandler handler, IStepper stepper) 
+		{ 
+			handler.NativeView?.UpdateMinimum(stepper); 
+		}
+
+		public static void MapMaximum(StepperHandler handler, IStepper stepper) 
+		{ 
+			handler.NativeView?.UpdateMaximum(stepper); 
+		}
+
+		public static void MapIncrement(StepperHandler handler, IStepper stepper) 
+		{ 
+			handler.NativeView?.UpdateInterval(stepper); 
+		}
+
+		public static void MapValue(StepperHandler handler, IStepper stepper) 
+		{ 
+			handler.NativeView?.UpdateValue(stepper); 
+		}
+
+		// This is a Windows-specific mapping
+		public static void MapBackground(StepperHandler handler, IStepper view)
+		{
+			handler.NativeView?.UpdateBackground(view);
+		}
+
+		void OnValueChanged(object sender, EventArgs e)
+		{
+			if (VirtualView == null || NativeView == null)
+				return;
+
+			VirtualView.Value = NativeView.Value;
+		}
 	}
 }

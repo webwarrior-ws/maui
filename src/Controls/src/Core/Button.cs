@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Windows.Input;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Graphics;
@@ -9,25 +10,23 @@ namespace Microsoft.Maui.Controls
 {
 	public partial class Button : View, IFontElement, ITextElement, IBorderElement, IButtonController, IElementConfiguration<Button>, IPaddingElement, IImageController, IViewController, IButtonElement, IImageElement
 	{
-		const int DefaultBorderRadius = 5;
 		const double DefaultSpacing = 10;
 
 		public static readonly BindableProperty CommandProperty = ButtonElement.CommandProperty;
 
 		public static readonly BindableProperty CommandParameterProperty = ButtonElement.CommandParameterProperty;
 
-		public static readonly BindableProperty ContentLayoutProperty =
-			BindableProperty.Create(nameof(ContentLayout), typeof(ButtonContentLayout), typeof(Button), new ButtonContentLayout(ButtonContentLayout.ImagePosition.Left, DefaultSpacing),
-				propertyChanged: (bindable, oldVal, newVal) => ((Button)bindable).InvalidateMeasureInternal(InvalidationTrigger.MeasureChanged));
+		public static readonly BindableProperty ContentLayoutProperty = BindableProperty.Create(
+			nameof(ContentLayout), typeof(ButtonContentLayout), typeof(Button), new ButtonContentLayout(ButtonContentLayout.ImagePosition.Left, DefaultSpacing),
+			propertyChanged: (bindable, oldVal, newVal) => ((Button)bindable).InvalidateMeasureInternal(InvalidationTrigger.MeasureChanged));
 
-		public static readonly BindableProperty TextProperty = BindableProperty.Create("Text", typeof(string), typeof(Button), null,
+		public static readonly BindableProperty TextProperty = BindableProperty.Create(
+			nameof(Text), typeof(string), typeof(Button), null,
 			propertyChanged: (bindable, oldVal, newVal) => ((Button)bindable).InvalidateMeasureInternal(InvalidationTrigger.MeasureChanged));
 
 		public static readonly BindableProperty TextColorProperty = TextElement.TextColorProperty;
 
 		public static readonly BindableProperty CharacterSpacingProperty = TextElement.CharacterSpacingProperty;
-
-		public static readonly BindableProperty FontProperty = FontElement.FontProperty;
 
 		public static readonly BindableProperty FontFamilyProperty = FontElement.FontFamilyProperty;
 
@@ -37,19 +36,21 @@ namespace Microsoft.Maui.Controls
 
 		public static readonly BindableProperty FontAttributesProperty = FontElement.FontAttributesProperty;
 
-		public static readonly BindableProperty BorderWidthProperty = BindableProperty.Create("BorderWidth", typeof(double), typeof(Button), -1d);
+		public static readonly BindableProperty FontAutoScalingEnabledProperty = FontElement.FontAutoScalingEnabledProperty;
+
+		public static readonly BindableProperty BorderWidthProperty = BindableProperty.Create(nameof(BorderWidth), typeof(double), typeof(Button), -1d);
 
 		public static readonly BindableProperty BorderColorProperty = BorderElement.BorderColorProperty;
 
-		public static readonly BindableProperty CornerRadiusProperty = BindableProperty.Create("CornerRadius", typeof(int), typeof(Button), defaultValue: BorderElement.DefaultCornerRadius,
-			propertyChanged: CornerRadiusPropertyChanged);
+		public static readonly BindableProperty CornerRadiusProperty = BindableProperty.Create(nameof(CornerRadius), typeof(int), typeof(Button), defaultValue: BorderElement.DefaultCornerRadius);
 
 		public static readonly BindableProperty ImageSourceProperty = ImageElement.ImageSourceProperty;
 
 		public static readonly BindableProperty PaddingProperty = PaddingElement.PaddingProperty;
 
-		public static readonly BindableProperty LineBreakModeProperty = BindableProperty.Create(nameof(LineBreakMode), typeof(LineBreakMode), typeof(Button), LineBreakMode.NoWrap,
-	propertyChanged: (bindable, oldvalue, newvalue) => ((Button)bindable).InvalidateMeasureInternal(InvalidationTrigger.MeasureChanged));
+		public static readonly BindableProperty LineBreakModeProperty = BindableProperty.Create(
+			nameof(LineBreakMode), typeof(LineBreakMode), typeof(Button), LineBreakMode.NoWrap,
+			propertyChanged: (bindable, oldvalue, newvalue) => ((Button)bindable).InvalidateMeasureInternal(InvalidationTrigger.MeasureChanged));
 
 		public Thickness Padding
 		{
@@ -116,12 +117,6 @@ namespace Microsoft.Maui.Controls
 			set { SetValue(CommandParameterProperty, value); }
 		}
 
-		public Font Font
-		{
-			get { return (Font)GetValue(FontProperty); }
-			set { SetValue(FontProperty, value); }
-		}
-
 		public ImageSource ImageSource
 		{
 			get { return (ImageSource)GetValue(ImageSourceProperty); }
@@ -186,11 +181,17 @@ namespace Microsoft.Maui.Controls
 			set { SetValue(FontFamilyProperty, value); }
 		}
 
-		[TypeConverter(typeof(FontSizeConverter))]
+		[System.ComponentModel.TypeConverter(typeof(FontSizeConverter))]
 		public double FontSize
 		{
 			get { return (double)GetValue(FontSizeProperty); }
 			set { SetValue(FontSizeProperty, value); }
+		}
+
+		public bool FontAutoScalingEnabled
+		{
+			get => (bool)GetValue(FontAutoScalingEnabledProperty);
+			set => SetValue(FontAutoScalingEnabledProperty, value);
 		}
 
 		public TextTransform TextTransform
@@ -250,6 +251,9 @@ namespace Microsoft.Maui.Controls
 		void IFontElement.OnFontChanged(Font oldValue, Font newValue) =>
 			HandleFontChanged();
 
+		void IFontElement.OnFontAutoScalingEnabledChanged(bool oldValue, bool newValue) =>
+			HandleFontChanged();
+
 		void HandleFontChanged()
 		{
 			InvalidateMeasureInternal(InvalidationTrigger.MeasureChanged);
@@ -268,46 +272,6 @@ namespace Microsoft.Maui.Controls
 
 		double IBorderElement.BorderWidthDefaultValue => (double)BorderWidthProperty.DefaultValue;
 
-
-		/// <summary>
-		/// Flag to prevent overwriting the value of CornerRadius
-		/// </summary>
-		bool cornerOrBorderRadiusSetting = false;
-
-		static void BorderRadiusPropertyChanged(BindableObject bindable, object oldvalue, object newvalue)
-		{
-			if (newvalue == oldvalue)
-				return;
-
-			var button = (Button)bindable;
-			var val = (int)newvalue;
-			if (val == DefaultBorderRadius && !button.cornerOrBorderRadiusSetting)
-				val = BorderElement.DefaultCornerRadius;
-
-			var oldVal = (int)bindable.GetValue(Button.CornerRadiusProperty);
-
-			if (oldVal == val)
-				return;
-
-			if (button.cornerOrBorderRadiusSetting) // retain until BorderRadiusProperty removed
-				return;
-
-			button.cornerOrBorderRadiusSetting = true;
-			bindable.SetValue(Button.CornerRadiusProperty, val);
-			button.cornerOrBorderRadiusSetting = false;
-		}
-
-		static void CornerRadiusPropertyChanged(BindableObject bindable, object oldvalue, object newvalue)
-		{
-			if (newvalue == oldvalue)
-				return;
-
-			var button = (Button)bindable;
-			var val = (int)newvalue;
-			if (val == BorderElement.DefaultCornerRadius && !button.cornerOrBorderRadiusSetting)
-				val = DefaultBorderRadius;
-		}
-
 		void ITextElement.OnTextColorPropertyChanged(Color oldValue, Color newValue)
 		{
 		}
@@ -321,7 +285,6 @@ namespace Microsoft.Maui.Controls
 		void IBorderElement.OnBorderColorPropertyChanged(Color oldValue, Color newValue)
 		{
 		}
-
 
 		bool IImageController.GetLoadAsAnimation() => false;
 		bool IImageElement.IsLoading => false;
@@ -351,7 +314,7 @@ namespace Microsoft.Maui.Controls
 			=> TextTransformUtilites.GetTransformedText(source, textTransform);
 
 		[DebuggerDisplay("Image Position = {Position}, Spacing = {Spacing}")]
-		[TypeConverter(typeof(ButtonContentTypeConverter))]
+		[System.ComponentModel.TypeConverter(typeof(ButtonContentTypeConverter))]
 		public sealed class ButtonContentLayout
 		{
 			public enum ImagePosition
@@ -375,18 +338,24 @@ namespace Microsoft.Maui.Controls
 			public override string ToString() => $"Image Position = {Position}, Spacing = {Spacing}";
 		}
 
-		[Xaml.TypeConversion(typeof(ButtonContentLayout))]
 		public sealed class ButtonContentTypeConverter : TypeConverter
 		{
-			public override object ConvertFromInvariantString(string value)
+			public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+				=> sourceType == typeof(string);
+
+			public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+				=> false;
+
+			public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
 			{
-				if (value == null)
+				var strValue = value?.ToString();
+				if (strValue == null)
 					throw new InvalidOperationException($"Cannot convert null into {typeof(ButtonContentLayout)}");
 
-				string[] parts = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+				string[] parts = strValue.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 
 				if (parts.Length != 1 && parts.Length != 2)
-					throw new InvalidOperationException($"Cannot convert \"{value}\" into {typeof(ButtonContentLayout)}");
+					throw new InvalidOperationException($"Cannot convert \"{strValue}\" into {typeof(ButtonContentLayout)}");
 
 				double spacing = DefaultSpacing;
 				var position = ButtonContentLayout.ImagePosition.Left;
@@ -405,7 +374,8 @@ namespace Microsoft.Maui.Controls
 				return new ButtonContentLayout(position, spacing);
 			}
 
-			public override string ConvertToInvariantString(object value) => throw new NotSupportedException();
+			public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+				=> throw new NotSupportedException();
 		}
 	}
 }

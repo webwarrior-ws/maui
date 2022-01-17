@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.Controls
 {
-	public class NavigationPage : Page, IPageContainer<Page>, IBarElement, INavigationPageController, IElementConfiguration<NavigationPage>
+	public partial class NavigationPage : Page, IPageContainer<Page>, IBarElement, IElementConfiguration<NavigationPage>
 	{
 		public static readonly BindableProperty BackButtonTitleProperty = BindableProperty.CreateAttached("BackButtonTitle", typeof(string), typeof(Page), null);
 
@@ -29,22 +30,46 @@ namespace Microsoft.Maui.Controls
 
 		public static readonly BindableProperty TitleViewProperty = BindableProperty.CreateAttached("TitleView", typeof(View), typeof(NavigationPage), null, propertyChanging: TitleViewPropertyChanging);
 
-		static readonly BindablePropertyKey CurrentPagePropertyKey = BindableProperty.CreateReadOnly("CurrentPage", typeof(Page), typeof(NavigationPage), null);
+		static readonly BindablePropertyKey CurrentPagePropertyKey = BindableProperty.CreateReadOnly("CurrentPage", typeof(Page), typeof(NavigationPage), null, propertyChanged: OnCurrentPageChanged);
+
 		public static readonly BindableProperty CurrentPageProperty = CurrentPagePropertyKey.BindableProperty;
 
 		static readonly BindablePropertyKey RootPagePropertyKey = BindableProperty.CreateReadOnly(nameof(RootPage), typeof(Page), typeof(NavigationPage), null);
 		public static readonly BindableProperty RootPageProperty = RootPagePropertyKey.BindableProperty;
 
-		public NavigationPage()
-		{
-			_platformConfigurationRegistry = new Lazy<PlatformConfigurationRegistry<NavigationPage>>(() => new PlatformConfigurationRegistry<NavigationPage>(this));
+		INavigationPageController NavigationPageController => this;
 
-			Navigation = new NavigationImpl(this);
+		partial void Init();
+
+#if WINDOWS || ANDROID
+		const bool UseMauiHandler = true;
+#else
+		const bool UseMauiHandler = false;
+#endif
+
+		bool _setForMaui;
+		public NavigationPage() : this(UseMauiHandler)
+		{
 		}
 
-		public NavigationPage(Page root) : this()
+		public NavigationPage(Page root) : this(UseMauiHandler, root)
 		{
-			PushPage(root);
+		}
+
+		internal NavigationPage(bool setforMaui, Page root = null)
+		{
+			_setForMaui = setforMaui;
+			_platformConfigurationRegistry = new Lazy<PlatformConfigurationRegistry<NavigationPage>>(() => new PlatformConfigurationRegistry<NavigationPage>(this));
+
+			if (setforMaui)
+				Navigation = new MauiNavigationImpl(this);
+			else
+				Navigation = new NavigationImpl(this);
+
+			Init();
+
+			if (root != null)
+				PushPage(root);
 		}
 
 		public Color BarBackgroundColor
@@ -83,11 +108,9 @@ namespace Microsoft.Maui.Controls
 			return (Page)InternalChildren[InternalChildren.Count - depth - 1];
 		}
 
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public IEnumerable<Page> Pages => InternalChildren.Cast<Page>();
+		IEnumerable<Page> INavigationPageController.Pages => InternalChildren.Cast<Page>();
 
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public int StackDepth
+		int INavigationPageController.StackDepth
 		{
 			get { return InternalChildren.Count; }
 		}
@@ -164,6 +187,13 @@ namespace Microsoft.Maui.Controls
 
 		public async Task<Page> PopAsync(bool animated)
 		{
+			// If Navigation interactions are being handled by the MAUI APIs
+			// this routes the call there instead of through old behavior
+			if (Navigation is MauiNavigationImpl mvi && this is INavigationView)
+			{
+				return await mvi.PopAsync(animated);
+			}
+
 			var tcs = new TaskCompletionSource<bool>();
 			try
 			{
@@ -176,12 +206,13 @@ namespace Microsoft.Maui.Controls
 				else
 					CurrentNavigationTask = tcs.Task;
 
-				var result = await PopAsyncInner(animated, false);
+				var result = await (this as INavigationPageController).PopAsyncInner(animated, false);
 				tcs.SetResult(true);
 				return result;
 			}
-			catch (Exception)
+			catch (Exception e)
 			{
+				Application.Current?.FindMauiContext()?.CreateLogger<NavigationPage>()?.LogWarning(e, null);
 				CurrentNavigationTask = null;
 				tcs.SetCanceled();
 
@@ -200,6 +231,14 @@ namespace Microsoft.Maui.Controls
 
 		public async Task PopToRootAsync(bool animated)
 		{
+			// If Navigation interactions are being handled by the MAUI APIs
+			// this routes the call there instead of through old behavior
+			if (Navigation is MauiNavigationImpl mvi && this is INavigationView)
+			{
+				await mvi.PopToRootAsync(animated);
+				return;
+			}
+
 			if (CurrentNavigationTask != null && !CurrentNavigationTask.IsCompleted)
 			{
 				var tcs = new TaskCompletionSource<bool>();
@@ -224,6 +263,17 @@ namespace Microsoft.Maui.Controls
 
 		public async Task PushAsync(Page page, bool animated)
 		{
+			// If Navigation interactions are being handled by the MAUI APIs
+			// this routes the call there instead of through old behavior
+			if (Navigation is MauiNavigationImpl mvi && this is INavigationView)
+			{
+				if (InternalChildren.Contains(page))
+					return;
+
+				await mvi.PushAsync(page, animated);
+				return;
+			}
+
 			if (CurrentNavigationTask != null && !CurrentNavigationTask.IsCompleted)
 			{
 				var tcs = new TaskCompletionSource<bool>();
@@ -279,7 +329,7 @@ namespace Microsoft.Maui.Controls
 			if (CurrentPage.SendBackButtonPressed())
 				return true;
 
-			if (StackDepth > 1)
+			if (NavigationPageController.StackDepth > 1)
 			{
 				SafePop();
 				return true;
@@ -288,174 +338,42 @@ namespace Microsoft.Maui.Controls
 			return base.OnBackButtonPressed();
 		}
 
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public event EventHandler<NavigationRequestedEventArgs> InsertPageBeforeRequested;
-
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public async Task<Page> PopAsyncInner(bool animated, bool fast)
+		internal void InitialNativeNavigationStackLoaded()
 		{
-			if (StackDepth == 1)
-			{
-				return null;
-			}
-
-			var page = (Page)InternalChildren.Last();
-
-			return await (this as INavigationPageController).RemoveAsyncInner(page, animated, fast);
+			SendNavigated(null);
 		}
 
-		async Task<Page> INavigationPageController.RemoveAsyncInner(Page page, bool animated, bool fast)
+
+
+		void SendNavigated(Page previousPage)
 		{
-			if (StackDepth == 1)
-			{
-				return null;
-			}
+			previousPage?.SendNavigatedFrom(new NavigatedFromEventArgs(CurrentPage));
+			CurrentPage.SendNavigatedTo(new NavigatedToEventArgs(previousPage));
+		}
 
-			var args = new NavigationRequestedEventArgs(page, animated);
+		void SendNavigating(Page navigatingFrom = null)
+		{
+			(navigatingFrom ?? CurrentPage)?.SendNavigatingFrom(new NavigatingFromEventArgs());
+		}
 
-			var removed = true;
 
-			EventHandler<NavigationRequestedEventArgs> requestPop = PopRequested;
-			if (requestPop != null)
-			{
-				requestPop(this, args);
+		void FireDisappearing(Page page)
+		{
+			if (HasAppeared)
+				page?.SendDisappearing();
+		}
 
-				if (args.Task != null && !fast)
-					removed = await args.Task;
-			}
+		void FireAppearing(Page page)
+		{
+			if (HasAppeared)
+				page?.SendAppearing();
+		}
 
-			if (!removed && !fast)
-				return CurrentPage;
 
+		void RemoveFromInnerChildren(Element page)
+		{
 			InternalChildren.Remove(page);
-
-			CurrentPage = (Page)InternalChildren.Last();
-
-			if (Popped != null)
-				Popped(this, args);
-
-			return page;
-		}
-
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public event EventHandler<NavigationRequestedEventArgs> PopRequested;
-
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public event EventHandler<NavigationRequestedEventArgs> PopToRootRequested;
-
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public event EventHandler<NavigationRequestedEventArgs> PushRequested;
-
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public event EventHandler<NavigationRequestedEventArgs> RemovePageRequested;
-
-		void InsertPageBefore(Page page, Page before)
-		{
-			if (page == null)
-				throw new ArgumentNullException($"{nameof(page)} cannot be null.");
-
-			if (before == null)
-				throw new ArgumentNullException($"{nameof(before)} cannot be null.");
-
-			if (!InternalChildren.Contains(before))
-				throw new ArgumentException($"{nameof(before)} must be a child of the NavigationPage", nameof(before));
-
-			if (InternalChildren.Contains(page))
-				throw new ArgumentException("Cannot insert page which is already in the navigation stack");
-
-			EventHandler<NavigationRequestedEventArgs> handler = InsertPageBeforeRequested;
-			handler?.Invoke(this, new NavigationRequestedEventArgs(page, before, false));
-
-			int index = InternalChildren.IndexOf(before);
-			InternalChildren.Insert(index, page);
-
-			if (index == 0)
-				RootPage = page;
-
-			// Shouldn't be required?
-			if (Width > 0 && Height > 0)
-				ForceLayout();
-		}
-
-		async Task PopToRootAsyncInner(bool animated)
-		{
-			if (StackDepth == 1)
-				return;
-
-			Element[] childrenToRemove = InternalChildren.Skip(1).ToArray();
-			foreach (Element child in childrenToRemove)
-				InternalChildren.Remove(child);
-
-			CurrentPage = RootPage;
-
-			var args = new NavigationRequestedEventArgs(RootPage, animated);
-
-			EventHandler<NavigationRequestedEventArgs> requestPopToRoot = PopToRootRequested;
-			if (requestPopToRoot != null)
-			{
-				requestPopToRoot(this, args);
-
-				if (args.Task != null)
-					await args.Task;
-			}
-
-			PoppedToRoot?.Invoke(this, new PoppedToRootEventArgs(RootPage, childrenToRemove.OfType<Page>().ToList()));
-		}
-
-		async Task PushAsyncInner(Page page, bool animated)
-		{
-			if (InternalChildren.Contains(page))
-				return;
-
-			PushPage(page);
-
-			var args = new NavigationRequestedEventArgs(page, animated);
-
-			EventHandler<NavigationRequestedEventArgs> requestPush = PushRequested;
-			if (requestPush != null)
-			{
-				requestPush(this, args);
-
-				if (args.Task != null)
-					await args.Task;
-			}
-
-			Pushed?.Invoke(this, args);
-		}
-
-		void PushPage(Page page)
-		{
-			InternalChildren.Add(page);
-
-			if (InternalChildren.Count == 1)
-				RootPage = page;
-
-			CurrentPage = page;
-		}
-
-		void RemovePage(Page page)
-		{
-			if (page == null)
-				throw new ArgumentNullException($"{nameof(page)} cannot be null.");
-
-			if (page == CurrentPage && CurrentPage == RootPage)
-				throw new InvalidOperationException("Cannot remove root page when it is also the currently displayed page.");
-			if (page == CurrentPage)
-			{
-				Log.Warning("NavigationPage", "RemovePage called for CurrentPage object. This can result in undesired behavior, consider calling PopAsync instead.");
-				PopAsync();
-				return;
-			}
-
-			if (!InternalChildren.Contains(page))
-				throw new ArgumentException("Page to remove must be contained on this Navigation Page");
-
-			EventHandler<NavigationRequestedEventArgs> handler = RemovePageRequested;
-			handler?.Invoke(this, new NavigationRequestedEventArgs(page, true));
-
-			InternalChildren.Remove(page);
-			if (RootPage == page)
-				RootPage = (Page)InternalChildren.First();
+			page.Handler = null;
 		}
 
 		void SafePop()
@@ -465,49 +383,6 @@ namespace Microsoft.Maui.Controls
 				if (t.IsFaulted)
 					throw t.Exception;
 			});
-		}
-
-		class NavigationImpl : NavigationProxy
-		{
-			readonly Lazy<ReadOnlyCastingList<Page, Element>> _castingList;
-
-			public NavigationImpl(NavigationPage owner)
-			{
-				Owner = owner;
-				_castingList = new Lazy<ReadOnlyCastingList<Page, Element>>(() => new ReadOnlyCastingList<Page, Element>(Owner.InternalChildren));
-			}
-
-			NavigationPage Owner { get; }
-
-			protected override IReadOnlyList<Page> GetNavigationStack()
-			{
-				return _castingList.Value;
-			}
-
-			protected override void OnInsertPageBefore(Page page, Page before)
-			{
-				Owner.InsertPageBefore(page, before);
-			}
-
-			protected override Task<Page> OnPopAsync(bool animated)
-			{
-				return Owner.PopAsync(animated);
-			}
-
-			protected override Task OnPopToRootAsync(bool animated)
-			{
-				return Owner.PopToRootAsync(animated);
-			}
-
-			protected override Task OnPushAsync(Page root, bool animated)
-			{
-				return Owner.PushAsync(root, animated);
-			}
-
-			protected override void OnRemovePage(Page page)
-			{
-				Owner.RemovePage(page);
-			}
 		}
 
 		readonly Lazy<PlatformConfigurationRegistry<NavigationPage>> _platformConfigurationRegistry;

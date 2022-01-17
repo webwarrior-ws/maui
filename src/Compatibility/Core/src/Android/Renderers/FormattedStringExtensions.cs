@@ -77,10 +77,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			{
 				Font = font;
 				TextView = view;
-				if (Forms.IsLollipopOrNewer)
-				{
-					CharacterSpacing = characterSpacing;
-				}
+				CharacterSpacing = characterSpacing;
 			}
 
 			public Font Font { get; }
@@ -102,12 +99,13 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			void Apply(Paint paint)
 			{
 				paint.SetTypeface(Font.ToTypeface());
-				float value = Font.ToScaledPixel();
-				paint.TextSize = TypedValue.ApplyDimension(ComplexUnitType.Sp, value, TextView.Resources.DisplayMetrics);
-				if (Forms.IsLollipopOrNewer)
-				{
-					paint.LetterSpacing = CharacterSpacing;
-				}
+				float value = (float)Font.Size;
+
+				paint.TextSize = TypedValue.ApplyDimension(
+					Font.AutoScalingEnabled ? ComplexUnitType.Sp : ComplexUnitType.Dip,
+					value, TextView.Resources.DisplayMetrics);
+
+				paint.LetterSpacing = CharacterSpacing;
 			}
 		}
 

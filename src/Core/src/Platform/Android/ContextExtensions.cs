@@ -1,6 +1,7 @@
 using System;
-using System.Runtime.CompilerServices;
+using System.IO;
 using Android.Content;
+using Android.Content.Res;
 using Android.OS;
 using Android.Util;
 using Android.Views.InputMethods;
@@ -10,9 +11,9 @@ using AActivity = Android.App.Activity;
 using AApplicationInfoFlags = Android.Content.PM.ApplicationInfoFlags;
 using AAttribute = Android.Resource.Attribute;
 using AColor = Android.Graphics.Color;
-using AFragmentManager = AndroidX.Fragment.App.FragmentManager;
 using Size = Microsoft.Maui.Graphics.Size;
-namespace Microsoft.Maui
+
+namespace Microsoft.Maui.Platform
 {
 	public static class ContextExtensions
 	{
@@ -22,18 +23,17 @@ namespace Microsoft.Maui
 		// activity, we'll need to remove this cached value or cache it in a Dictionary<Context, float>
 		static float s_displayDensity = float.MinValue;
 
+		static int? _actionBarHeight;
 		// TODO FromPixels/ToPixels is both not terribly descriptive and also possibly sort of inaccurate?
 		// These need better names. It's really To/From Device-Independent, but that doesn't exactly roll off the tongue.
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static double FromPixels(this Context self, double pixels)
+		public static double FromPixels(this Context? self, double pixels)
 		{
 			EnsureMetrics(self);
 
 			return pixels / s_displayDensity;
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static Size FromPixels(this Context context, double width, double height)
 		{
 			return new Size(context.FromPixels(width), context.FromPixels(height));
@@ -53,28 +53,25 @@ namespace Microsoft.Maui
 				service.ShowSoftInput(view, ShowFlags.Implicit);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static float ToPixels(this Context self, double dp)
+		public static float ToPixels(this Context? self, double dp)
 		{
 			EnsureMetrics(self);
 
 			return (float)Math.Ceiling(dp * s_displayDensity);
 		}
 
-		public static bool HasRtlSupport(this Context self)
+		public static (int left, int top, int right, int bottom) ToPixels(this Context context, Graphics.Rectangle rectangle)
 		{
-			if (self == null)
-				return false;
-
-			return (self.ApplicationInfo?.Flags & AApplicationInfoFlags.SupportsRtl) == AApplicationInfoFlags.SupportsRtl;
+			return
+			(
+				(int)context.ToPixels(rectangle.Left),
+				(int)context.ToPixels(rectangle.Top),
+				(int)context.ToPixels(rectangle.Right),
+				(int)context.ToPixels(rectangle.Bottom)
+			);
 		}
 
-		public static int? TargetSdkVersion(this Context self)
-		{
-			return (int?)self?.ApplicationInfo?.TargetSdkVersion;
-		}
-
-		internal static double GetThemeAttributeDp(this Context self, int resource)
+		public static double GetThemeAttributeDp(this Context self, int resource)
 		{
 			using (var value = new TypedValue())
 			{
@@ -87,6 +84,20 @@ namespace Microsoft.Maui
 				var pixels = (double)TypedValue.ComplexToDimension(value.Data, self.Resources?.DisplayMetrics);
 
 				return self.FromPixels(pixels);
+			}
+		}
+
+		public static double GetThemeAttributePixels(this Context self, int resource)
+		{
+			using (var value = new TypedValue())
+			{
+				if (self == null || self.Theme == null)
+					return -1;
+
+				if (!self.Theme.ResolveAttribute(resource, value, true))
+					return -1;
+
+				return (double)TypedValue.ComplexToDimension(value.Data, self.Resources?.DisplayMetrics);
 			}
 		}
 
@@ -104,6 +115,13 @@ namespace Microsoft.Maui
 			}
 		}
 
+		public static bool TryResolveAttribute(this Context context, int id, out float? value) =>
+			context.Theme.TryResolveAttribute(id, out value);
+
+		public static bool TryResolveAttribute(this Context context, int id)
+		{
+			return context.Theme.TryResolveAttribute(id);
+		}
 
 		internal static int GetThemeAttrColor(this Context context, int attr)
 		{
@@ -119,7 +137,7 @@ namespace Microsoft.Maui
 					{
 						if (context.Resources != null)
 						{
-							if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
+							if (OperatingSystem.IsAndroidVersionAtLeast((int)BuildVersionCodes.M))
 								return context.Resources.GetColor(mTypedValue.ResourceId, context.Theme);
 							else
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -141,14 +159,15 @@ namespace Microsoft.Maui
 			return (color & 0x00ffffff) | ((int)Math.Round(originalAlpha * alpha) << 24);
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		static void EnsureMetrics(Context context)
+		static void EnsureMetrics(Context? context)
 		{
 			if (s_displayDensity != float.MinValue)
 				return;
 
-			using (DisplayMetrics? metrics = context?.Resources?.DisplayMetrics)
-				s_displayDensity = metrics != null ? metrics.Density : 0;
+			context ??= Android.App.Application.Context;
+
+			using (DisplayMetrics? metrics = context.Resources?.DisplayMetrics)
+				s_displayDensity = metrics != null ? metrics.Density : 1;
 		}
 
 		public static AActivity? GetActivity(this Context context)
@@ -171,7 +190,7 @@ namespace Microsoft.Maui
 				return null;
 
 			if (context is AppCompatActivity activity)
-				return activity.SupportActionBar.ThemedContext;
+				return activity.SupportActionBar?.ThemedContext ?? context;
 
 			if (context is ContextWrapper contextWrapper)
 				return contextWrapper.BaseContext?.GetThemedContext();
@@ -179,7 +198,7 @@ namespace Microsoft.Maui
 			return null;
 		}
 
-		public static AFragmentManager? GetFragmentManager(this Context context)
+		public static FragmentManager? GetFragmentManager(this Context context)
 		{
 			if (context == null)
 				return null;
@@ -190,6 +209,47 @@ namespace Microsoft.Maui
 				return fa.SupportFragmentManager;
 
 			return null;
+		}
+
+		public static int GetDrawableId(this Context context, string name)
+		{
+			if (context.Resources == null || context.PackageName == null)
+				return 0;
+
+			return context.Resources.GetDrawableId(context.PackageName, name);
+		}
+
+		public static int GetDrawableId(this Resources resources, string packageName, string name)
+		{
+			if (string.IsNullOrWhiteSpace(name))
+				return 0;
+
+			var title = Path.GetFileNameWithoutExtension(name);
+
+			title = title.ToLowerInvariant();
+
+			return resources.GetIdentifier(title, "drawable", packageName);
+		}
+
+		public static IWindow? GetWindow(this Context context)
+		{
+			var nativeWindow = context.GetActivity();
+			if (nativeWindow is null)
+				return null;
+
+			foreach (var window in MauiApplication.Current.Application.Windows)
+			{
+				if (window?.Handler?.NativeView == nativeWindow)
+					return window;
+			}
+
+			return null;
+		}
+
+		public static int GetActionBarHeight(this Context context)
+		{
+			_actionBarHeight ??= (int)context.GetThemeAttributePixels(Resource.Attribute.actionBarSize);
+			return _actionBarHeight.Value;
 		}
 	}
 }

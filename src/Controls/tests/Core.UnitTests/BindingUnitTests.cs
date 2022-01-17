@@ -5,25 +5,24 @@ using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Microsoft.Maui.Controls.Internals;
 using NUnit.Framework;
 using CategoryAttribute = NUnit.Framework.CategoryAttribute;
 using DescriptionAttribute = NUnit.Framework.DescriptionAttribute;
 
 namespace Microsoft.Maui.Controls.Core.UnitTests
 {
+	using StackLayout = Microsoft.Maui.Controls.Compatibility.StackLayout;
+
 	[TestFixture]
 	public class BindingUnitTests
 		: BindingBaseUnitTests
 	{
+
 		[SetUp]
 		public override void Setup()
 		{
 			base.Setup();
-			log = new Logger();
-
 			Device.PlatformServices = new MockPlatformServices();
-			Log.Listeners.Add(log);
 		}
 
 		[TearDown]
@@ -31,7 +30,6 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 		{
 			base.TearDown();
 			Device.PlatformServices = null;
-			Log.Listeners.Remove(log);
 		}
 
 		protected override BindingBase CreateBinding(BindingMode mode = BindingMode.Default, string stringFormat = null)
@@ -184,8 +182,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"BindingContext property changed");
 			Assert.AreEqual(value, bindable.GetValue(property),
 				"Target property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test, Category("[Binding] Complex paths")]
@@ -231,8 +229,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"Target property changed");
 			Assert.AreEqual(value, viewmodel.Model.Model.Text,
 				"BindingContext property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test, Category("[Binding] Complex paths")]
@@ -279,8 +277,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"BindingContext property changed");
 			Assert.AreEqual(value, bindable.GetValue(property),
 				"Target property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		class Outer
@@ -338,8 +336,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				Assert.AreEqual(updatedValue, bindable.GetValue(property));
 				Assert.AreEqual(updatedValue, viewmodel.PropertyWithPublicSetter.GetSetProperty);
 			}
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test, Category("[Binding] Indexed paths")]
@@ -385,8 +383,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"BindingContext property changed");
 			Assert.AreEqual(value, bindable.GetValue(property),
 				"Target property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test, Category("[Binding] Indexed paths")]
@@ -426,8 +424,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"BindingContext property changed");
 			Assert.AreEqual(value, bindable.GetValue(property),
 				"Target property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test, Category("[Binding] Indexed paths")]
@@ -472,8 +470,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"BindingContext property changed");
 			Assert.AreEqual(value, bindable.GetValue(property),
 				"Target property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test, Category("[Binding] Indexed paths")]
@@ -512,8 +510,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"BindingContext property changed");
 			Assert.AreEqual(value, bindable.GetValue(property),
 				"Target property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test, Category("[Binding] Indexed paths")]
@@ -558,8 +556,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"Target property changed");
 			Assert.AreEqual(value, viewmodel.Model.Model[1],
 				"BindingContext property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test, Category("[Binding] Indexed paths")]
@@ -605,8 +603,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"BindingContext property changed");
 			Assert.AreEqual(value, bindable.GetValue(property),
 				"Target property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test, Category("[Binding] Indexed paths")]
@@ -652,8 +650,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"BindingContext property changed");
 			Assert.AreEqual(value, bindable.GetValue(property),
 				"Target property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test, Category("[Binding] Indexed paths")]
@@ -692,8 +690,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"BindingContext property changed");
 			Assert.AreEqual(value, bindable.GetValue(property),
 				"Target property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test, Category("[Binding] Self paths")]
@@ -731,8 +729,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"BindingContext property changed");
 			Assert.AreEqual(value, bindable.GetValue(property),
 				"Target property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test, Category("[Binding] Self paths")]
@@ -761,8 +759,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"Target property changed");
 			Assert.IsNull(bindable.BindingContext,
 				"BindingContext changed with self-path binding");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test, Category("[Binding] Self paths")]
@@ -799,8 +797,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"BindingContext property changed");
 			Assert.AreEqual(value, bindable.GetValue(property),
 				"Target property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Category("[Binding] Complex paths")]
@@ -839,8 +837,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"Bindable did not update on binding context property change");
 			Assert.AreEqual(newvalue, viewmodel.Model.Model.Text,
 				"Source property changed when it shouldn't");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Category("[Binding] Complex paths")]
@@ -886,8 +884,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"Bindable did not update on binding context property change");
 			Assert.AreEqual(newvalue, viewmodel.Model.Model.Text,
 				"Source property changed when it shouldn't");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Category("[Binding] Complex paths")]
@@ -934,8 +932,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"Source property did not update with Target's change");
 			Assert.AreEqual(newvalue2, bindable.GetValue(property),
 				"Target property changed from what it was set to");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Category("[Binding] Indexed paths")]
@@ -972,8 +970,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"Bindable did not update on binding context property change");
 			Assert.AreEqual(newvalue, viewmodel.Model.Model[1],
 				"Source property changed when it shouldn't");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Category("[Binding] Indexed paths")]
@@ -1016,8 +1014,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"Bindable did not update on binding context property change");
 			Assert.AreEqual(newvalue, viewmodel.Model.Model[1],
 				"Source property changed when it shouldn't");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Category("[Binding] Indexed paths")]
@@ -1062,8 +1060,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"Source property did not update with Target's change");
 			Assert.AreEqual(newvalue2, bindable.GetValue(property),
 				"Target property changed from what it was set to");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Category("[Binding] Indexed paths")]
@@ -1098,8 +1096,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"Source property did not update with Target's change");
 			Assert.AreEqual(newvalue2, bindable.GetValue(property),
 				"Target property changed from what it was set to");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Category("[Binding] Self paths")]
@@ -1133,8 +1131,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"Bindable did not update on binding context property change");
 			Assert.AreEqual(newvalue, bindable.BindingContext,
 				"Source property changed when it shouldn't");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Category("[Binding] Self paths")]
@@ -1170,8 +1168,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"Target property changed on OneWayToSource with self path");
 			Assert.AreEqual(newvalue, bindable.BindingContext,
 				"Source property changed on OneWayToSource with self path");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Category("[Binding] Self paths")]
@@ -1209,8 +1207,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				"Self-path Source changed with Target's change");
 			Assert.AreEqual(newvalue2, bindable.GetValue(property),
 				"Target property changed from what it was set to");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Category("[Binding] Complex paths")]
@@ -1299,8 +1297,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			Assert.AreEqual(1, bindable.GetValue(property));
 
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test]
@@ -1316,8 +1314,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			Assert.AreEqual("1", vm.Text);
 
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 
@@ -1347,8 +1345,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			Assert.AreEqual("Foo", vm.Text);
 
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		class TestConverterCulture : IValueConverter
@@ -1392,8 +1390,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			bindable.SetBinding(property, new Binding(Binding.SelfPath, converter: converter));
 			Assert.AreEqual("1", bindable.GetValue(property));
 
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		internal class MultiplePropertyViewModel
@@ -1480,8 +1478,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			Assert.AreEqual(5, bindable.Done);
 			Assert.AreEqual(0.05f, bindable.Value);
 
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test, Category("[Binding] Complex paths")]
@@ -1502,8 +1500,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			vm.Model = null;
 
 			Assert.AreEqual(property.DefaultValue, bindable.GetValue(property));
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test, Category("[Binding] Complex paths")]
@@ -1529,8 +1527,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			bindable.BindingContext = null;
 
 			Assert.AreEqual(property.DefaultValue, bindable.GetValue(property));
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0),
+				"An error was logged: " + MockApplication.MockLogger.Messages.FirstOrDefault());
 		}
 
 		[Test]
@@ -1666,7 +1664,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			bindable.Text = "foo";
 
 			Assert.That(() => bindable.SetBinding(MockBindable.TextProperty, new Binding("Monkeys", BindingMode.OneWay)), Throws.Nothing);
-			Assert.That(log.Messages.Count, Is.EqualTo(1), "An error was not logged");
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(1), "An error was not logged");
 			Assert.That(bindable.Text, Is.EqualTo(MockBindable.TextProperty.DefaultValue));
 		}
 
@@ -1677,7 +1675,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			bindable.Text = "foo";
 
 			Assert.That(() => bindable.SetBinding(MockBindable.TextProperty, new Binding("Monkeys", BindingMode.OneWayToSource)), Throws.Nothing);
-			Assert.That(log.Messages.Count, Is.EqualTo(1), "An error was not logged");
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(1), "An error was not logged");
 			Assert.That(bindable.Text, Is.EqualTo(bindable.Text));
 		}
 
@@ -1689,7 +1687,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			Assert.That(() => bindable.SetBinding(MockBindable.TextProperty, new Binding("Monkeys")), Throws.Nothing);
 			// The first error is for the initial binding, the second is for reflecting the update back to the default value
-			Assert.That(log.Messages.Count, Is.EqualTo(2), "An error was not logged");
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(2), "An error was not logged");
 			Assert.That(bindable.Text, Is.EqualTo(MockBindable.TextProperty.DefaultValue));
 		}
 
@@ -1701,8 +1699,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			Assert.That(() => bindable.SetBinding(MockBindable.TextProperty, new Binding("Text2")), Throws.Nothing);
 			Assert.That(bindable.Text, Is.EqualTo(MockBindable.TextProperty.DefaultValue));
-			Assert.That(log.Messages.Count, Is.EqualTo(1), "An error was not logged");
-			Assert.That(log.Messages[0], Does.Contain(String.Format(BindingExpression.PropertyNotFoundErrorMessage,
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(1), "An error was not logged");
+			Assert.That(MockApplication.MockLogger.Messages[0], Does.Contain(String.Format(BindingExpression.PropertyNotFoundErrorMessage,
 				"Text2",
 				"Microsoft.Maui.Controls.Core.UnitTests.BindingUnitTests+DifferentViewModel",
 				"Microsoft.Maui.Controls.Core.UnitTests.MockBindable",
@@ -1720,8 +1718,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			bindable.BindingContext = new MockViewModel { Text = "Foo" };
 			Assert.That(bindable.Text, Is.EqualTo("Foo"));
 
-			Assert.That(log.Messages.Count, Is.Not.GreaterThan(1), "Too many errors were logged");
-			Assert.That(log.Messages[0], Does.Contain(String.Format(BindingExpression.PropertyNotFoundErrorMessage,
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.Not.GreaterThan(1), "Too many errors were logged");
+			Assert.That(MockApplication.MockLogger.Messages[0], Does.Contain(String.Format(BindingExpression.PropertyNotFoundErrorMessage,
 				"Text",
 				"Microsoft.Maui.Controls.Core.UnitTests.BindingUnitTests+EmptyViewModel",
 				"Microsoft.Maui.Controls.Core.UnitTests.MockBindable",
@@ -1734,8 +1732,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			var bindable = new MockBindable { BindingContext = new DifferentViewModel() };
 			Assert.That(() => bindable.SetBinding(MockBindable.TextProperty, new Binding("Text")), Throws.Nothing);
 
-			Assert.That(log.Messages.Count, Is.EqualTo(1), "An error was not logged");
-			Assert.That(log.Messages[0], Does.Contain(String.Format(BindingExpression.PropertyNotFoundErrorMessage,
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(1), "An error was not logged");
+			Assert.That(MockApplication.MockLogger.Messages[0], Does.Contain(String.Format(BindingExpression.PropertyNotFoundErrorMessage,
 				"Text",
 				"Microsoft.Maui.Controls.Core.UnitTests.BindingUnitTests+DifferentViewModel",
 				"Microsoft.Maui.Controls.Core.UnitTests.MockBindable",
@@ -1750,8 +1748,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			var bindable = new MockBindable { BindingContext = new DifferentViewModel() };
 			Assert.That(() => bindable.SetBinding(MockBindable.TextProperty, new Binding("PrivateSetter")), Throws.Nothing);
 
-			Assert.That(log.Messages.Count, Is.EqualTo(1), "An error was not logged");
-			Assert.That(log.Messages[0], Does.Contain(String.Format(BindingExpression.PropertyNotFoundErrorMessage,
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(1), "An error was not logged");
+			Assert.That(MockApplication.MockLogger.Messages[0], Does.Contain(String.Format(BindingExpression.PropertyNotFoundErrorMessage,
 				"PrivateSetter",
 				"Microsoft.Maui.Controls.Core.UnitTests.BindingUnitTests+DifferentViewModel",
 				"Microsoft.Maui.Controls.Core.UnitTests.MockBindable",
@@ -1759,8 +1757,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			Assert.That(() => bindable.SetValueCore(MockBindable.TextProperty, "foo"), Throws.Nothing);
 
-			Assert.That(log.Messages.Count, Is.EqualTo(2), "An error was not logged");
-			Assert.That(log.Messages[1], Does.Contain(String.Format(BindingExpression.PropertyNotFoundErrorMessage,
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(2), "An error was not logged");
+			Assert.That(MockApplication.MockLogger.Messages[1], Does.Contain(String.Format(BindingExpression.PropertyNotFoundErrorMessage,
 				"PrivateSetter",
 				"Microsoft.Maui.Controls.Core.UnitTests.BindingUnitTests+DifferentViewModel",
 				"Microsoft.Maui.Controls.Core.UnitTests.MockBindable",
@@ -1773,8 +1771,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			var bindable = new MockBindable { BindingContext = new MockViewModel() };
 			Assert.That(() => bindable.SetBinding(MockBindable.TextProperty, new Binding("MissingProperty")), Throws.Nothing);
 
-			Assert.That(log.Messages.Count, Is.EqualTo(1), "An error was not logged");
-			Assert.That(log.Messages[0], Does.Contain(String.Format(BindingExpression.PropertyNotFoundErrorMessage,
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(1), "An error was not logged");
+			Assert.That(MockApplication.MockLogger.Messages[0], Does.Contain(String.Format(BindingExpression.PropertyNotFoundErrorMessage,
 				"MissingProperty",
 				"Microsoft.Maui.Controls.Core.UnitTests.MockViewModel",
 				"Microsoft.Maui.Controls.Core.UnitTests.MockBindable",
@@ -1787,7 +1785,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 		{
 			var bindable = new MockBindable { BindingContext = new ComplexMockViewModel() };
 			Assert.That(() => bindable.SetBinding(MockBindable.TextProperty, new Binding("Model.Text")), Throws.Nothing);
-			Assert.That(log.Messages.Count, Is.EqualTo(0), "An error was logged");
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(0), "An error was logged");
 		}
 
 		[Test]
@@ -1803,8 +1801,8 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			};
 			Assert.That(() => bindable.SetBinding(MockBindable.TextProperty, new Binding("Model.MissingProperty")), Throws.Nothing);
 
-			Assert.That(log.Messages.Count, Is.EqualTo(1), "An error was not logged");
-			Assert.That(log.Messages[0], Does.Contain(String.Format(BindingExpression.PropertyNotFoundErrorMessage,
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(1), "An error was not logged");
+			Assert.That(MockApplication.MockLogger.Messages[0], Does.Contain(String.Format(BindingExpression.PropertyNotFoundErrorMessage,
 				"MissingProperty",
 				"Microsoft.Maui.Controls.Core.UnitTests.BindingBaseUnitTests+ComplexMockViewModel",
 				"Microsoft.Maui.Controls.Core.UnitTests.MockBindable",
@@ -2272,7 +2270,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			label.SetBinding(Label.TextColorProperty, "color");
 
 			Assert.DoesNotThrow(() => label.BindingContext = new { color = "" });
-			Assert.That(log.Messages.Count, Is.EqualTo(1), "No error logged");
+			Assert.That(MockApplication.MockLogger.Messages.Count, Is.EqualTo(1), "No error logged");
 		}
 	}
 }

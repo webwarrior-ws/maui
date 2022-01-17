@@ -1,4 +1,4 @@
-#if __IOS__
+#if !(MACCATALYST || MACOS)
 using CoreTelephony;
 #endif
 using System;
@@ -8,10 +8,13 @@ namespace Microsoft.Maui.Essentials
 {
 	public static partial class Connectivity
 	{
-#if __IOS__
-        static readonly Lazy<CTCellularData> cellularData = new Lazy<CTCellularData>(() => new CTCellularData());
+#if !(MACCATALYST || MACOS)
+		// TODO: Use NWPathMonitor on > iOS 12
+#pragma warning disable BI1234
+		static readonly Lazy<CTCellularData> cellularData = new Lazy<CTCellularData>(() => new CTCellularData());
 
-        internal static CTCellularData CellularData => cellularData.Value;
+		internal static CTCellularData CellularData => cellularData.Value;
+#pragma warning restore BI1234
 #endif
 
 		static ReachabilityListener listener;
@@ -37,8 +40,11 @@ namespace Microsoft.Maui.Essentials
 			get
 			{
 				var restricted = false;
-#if __IOS__
-                restricted = CellularData.RestrictedState == CTCellularDataRestrictedState.Restricted;
+#if !(MACCATALYST || MACOS)
+				// TODO: Use NWPathMonitor on > iOS 12
+#pragma warning disable BI1234
+				restricted = CellularData.RestrictedState == CTCellularDataRestrictedState.Restricted;
+#pragma warning restore BI1234
 #endif
 				var internetStatus = Reachability.InternetConnectionStatus();
 				if ((internetStatus == NetworkStatus.ReachableViaCarrierDataNetwork && !restricted) || internetStatus == NetworkStatus.ReachableViaWiFiNetwork)

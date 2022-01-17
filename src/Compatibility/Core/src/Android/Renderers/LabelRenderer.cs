@@ -7,6 +7,7 @@ using Android.Text;
 using Android.Util;
 using Android.Views;
 using Android.Widget;
+using Microsoft.Maui.Controls.Platform;
 using Color = Microsoft.Maui.Graphics.Color;
 using Size = Microsoft.Maui.Graphics.Size;
 
@@ -201,7 +202,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 				_lastTypeface = newTypeface;
 			}
 
-			float newTextSize = f.ToScaledPixel();
+			float newTextSize = (float)f.Size;
 			if (newTextSize != _lastTextSize)
 			{
 				_view.SetTextSize(ComplexUnitType.Sp, newTextSize);
@@ -244,7 +245,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		}
 		void UpdateCharacterSpacing()
 		{
-			if (Forms.IsLollipopOrNewer && Control is TextView textControl)
+			if (Control is TextView textControl)
 			{
 				textControl.LetterSpacing = Element.CharacterSpacing.ToEm();
 			}

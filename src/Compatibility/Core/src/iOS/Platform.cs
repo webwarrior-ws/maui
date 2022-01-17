@@ -4,13 +4,16 @@ using System.Linq;
 using System.Threading.Tasks;
 using CoreGraphics;
 using Foundation;
-using UIKit;
-using IOPath = System.IO.Path;
-using CGRect = CoreGraphics.CGRect;
+using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;
 using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Platform.iOS;
+using Microsoft.Maui.Platform;
+using ObjCRuntime;
+using UIKit;
+using CGRect = CoreGraphics.CGRect;
+using IOPath = System.IO.Path;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
@@ -22,12 +25,18 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 #if DEBUG
 				if (oldvalue != null && newvalue != null)
 				{
-					Log.Warning("Renderer", $"{bindable} already has a renderer attached to it: {oldvalue}. Please figure out why and then fix it.");
+					Forms.MauiContext?.CreateLogger("Renderer")?.LogWarning("{bindable} already has a renderer attached to it: {oldvalue}. Please figure out why and then fix it.", bindable, oldvalue);
 				}
 #endif
 				var view = bindable as VisualElement;
 				if (view != null)
 					view.IsPlatformEnabled = newvalue != null;
+
+				if (bindable is IView mauiView)
+				{
+					if (mauiView.Handler == null && newvalue is IVisualElementRenderer ver)
+						mauiView.Handler = new RendererToHandlerShim(ver);
+				}
 			});
 
 		readonly int _alertPadding = 10;
@@ -240,7 +249,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				//TODO: Handle this with AppBuilderHost
 				try
 				{
-					handler = Forms.MauiContext.Handlers.GetHandler(element.GetType());
+					handler = Forms.MauiContext.Handlers.GetHandler(element.GetType()) as IViewHandler;
 					handler.SetMauiContext(Forms.MauiContext);
 				}
 				catch
@@ -271,6 +280,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				else if (handler is INativeViewHandler vh)
 				{
 					renderer = new HandlerToRendererShim(vh);
+					element.Handler = handler;
+					SetRenderer(element, renderer);
 				}
 			}
 
@@ -528,7 +539,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				SetRenderer(modal, modalRenderer);
 			}
 
-			var wrapper = new ModalWrapper(modalRenderer);
+			var wrapper = new ModalWrapper(modalRenderer.Element.Handler as INativeViewHandler);
 
 			if (_modals.Count > 1)
 			{

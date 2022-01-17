@@ -1,6 +1,9 @@
 using System.Threading.Tasks;
+using Microsoft.Maui.Platform;
 using NUnit.Framework;
+using ObjCRuntime;
 using UIKit;
+using CategoryAttribute = NUnit.Framework.CategoryAttribute;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 {
@@ -8,7 +11,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 	public class FlowDirectionTests : PlatformTestFixture
 	{
 		[Test, Category("FlowDirection")]
-		public void FlowDirectionConversion() 
+		public void FlowDirectionConversion()
 		{
 			var ltr = UIUserInterfaceLayoutDirection.LeftToRight.ToFlowDirection();
 			Assert.That(ltr, Is.EqualTo(FlowDirection.LeftToRight));
@@ -21,7 +24,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 		[TestCase(true, FlowDirection.RightToLeft, Category = "FlowDirection,Entry", ExpectedResult = UITextAlignment.Right)]
 		[TestCase(false, FlowDirection.LeftToRight, Category = "FlowDirection,Entry", ExpectedResult = UITextAlignment.Left)]
 		[TestCase(false, FlowDirection.RightToLeft, Category = "FlowDirection,Entry", ExpectedResult = UITextAlignment.Right)]
-		public async Task<UITextAlignment> EntryAlignmentMatchesFlowDirection(bool isExplicit, FlowDirection flowDirection) 
+		public async Task<UITextAlignment> EntryAlignmentMatchesFlowDirection(bool isExplicit, FlowDirection flowDirection)
 		{
 			var entry = new Entry { Text = "Checking flow direction", HorizontalTextAlignment = TextAlignment.Start };
 			var contentPage = new ContentPage { Title = "Flow Direction", Content = entry };
@@ -35,7 +38,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 				contentPage.FlowDirection = flowDirection;
 			}
 
-			var nativeAlignment = await Device.InvokeOnMainThreadAsync(() => {
+			var nativeAlignment = await Device.InvokeOnMainThreadAsync(() =>
+			{
 				if (!isExplicit)
 				{
 					GetRenderer(contentPage);
@@ -65,7 +69,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 				contentPage.FlowDirection = flowDirection;
 			}
 
-			var nativeAlignment = await Device.InvokeOnMainThreadAsync(() => {
+			var nativeAlignment = await Device.InvokeOnMainThreadAsync(() =>
+			{
 				if (!isExplicit)
 				{
 					GetRenderer(contentPage);
