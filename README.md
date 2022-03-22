@@ -26,4 +26,11 @@ Still with doubts or questions?. Do not worry, we have prepared a complete [Faq]
 
 ## How to Contribute
 
-Are you interesting?. [You can contribute](https://github.com/jsuarezruiz/maui-linux/wiki/Contributing)!.
+Are you interested?. [You can contribute](https://github.com/jsuarezruiz/maui-linux/wiki/Contributing)!.
+
+## Communication Channels
+
+I.t.m. there are no official communication channels by Microsoft. Here is a place to start:
+
+* Matrix: *#maui-linux:matrix.org* (If you don't already have a Matrix client installed, try https://matrix.to/#/#maui-linux:matrix.org)
+* ...
