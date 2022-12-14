@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- dotnet/installer -->
-    <MicrosoftDotnetSdkInternalPackageVersion>6.0.401-servicing.22419.11</MicrosoftDotnetSdkInternalPackageVersion>
+    <MicrosoftDotnetSdkInternalPackageVersion>6.0.300</MicrosoftDotnetSdkInternalPackageVersion>
     <!-- dotnet/runtime -->
     <MicrosoftNETCoreAppRefPackageVersion>6.0.9</MicrosoftNETCoreAppRefPackageVersion>
     <!-- NOTE: should eventually revert back to $(MicrosoftNETCoreAppRefPackageVersion) in .NET 7 -->
@@ -66,12 +66,12 @@
     <TizenUIExtensionsVersion>0.9.0</TizenUIExtensionsVersion>
     <SvgSkiaPackageVersion>0.5.13</SvgSkiaPackageVersion>
     <FizzlerPackageVersion>1.2.0</FizzlerPackageVersion>
-    <GtkSharpPackageVersion>3.24.24.64</GtkSharpPackageVersion>
+    <GtkSharpPackageVersion>3.24.24.77-develop</GtkSharpPackageVersion>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Match the first three version numbers and append 00 -->
     <!-- <DotNetVersionBand Condition=" '$(DotNetVersionBand)' == '' ">$([System.Text.RegularExpressions.Regex]::Match($(MicrosoftDotnetSdkInternalPackageVersion), `^\d+\.\d+\.\d`))00</DotNetVersionBand> -->
-    <DotNetVersionBand Condition=" '$(DotNetVersionBand)' == '' ">6.0.400</DotNetVersionBand>
+    <DotNetVersionBand Condition=" '$(DotNetVersionBand)' == '' ">6.0.300</DotNetVersionBand>
     <DotNetMauiManifestVersionBand>6.0.400</DotNetMauiManifestVersionBand>
     <DotNetMonoManifestVersionBand>6.0.300</DotNetMonoManifestVersionBand>
     <DotNetEmscriptenManifestVersionBand>6.0.300</DotNetEmscriptenManifestVersionBand>
