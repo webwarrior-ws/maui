@@ -16,6 +16,17 @@ using Window = Microsoft.Maui.Controls.Window;
 
 namespace Maui.SimpleSampleApp
 {
+	class App : Application
+	{
+		public App(IServiceProvider services, ITextService textService)
+		{
+			Services = services;
+			MainPage = services.GetService<Page>();
+		}
+
+		public IServiceProvider Services { get; }
+
+	}
 	public class Startup
 	{
 		public static MauiApp CreateMauiApp()
@@ -23,10 +34,9 @@ namespace Maui.SimpleSampleApp
 			var appBuilder = MauiApp.CreateBuilder();
 
 			appBuilder = appBuilder
-					.UseMauiApp<SimpleSampleMauiApp>()
+					.UseMauiApp<App>()
 					.UseMauiCompatibility()
 				;
-
 
 			var services = appBuilder.Services;
 
@@ -35,7 +45,7 @@ namespace Maui.SimpleSampleApp
 			services.AddSingleton<ITextService, TextService>();
 			services.AddTransient<MainPageViewModel>();
 
-			services.AddTransient<Page, ExamplePage>();
+			services.AddTransient<Page, MainPage>();
 
 			services.AddTransient<IWindow, Window>();
 
