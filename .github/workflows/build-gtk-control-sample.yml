@@ -37,21 +37,13 @@ jobs:
         run: |
             cd maui
             pwd
+            dotnet workload list
+            dotnet nuget add source '../GtkSharp/BuildOutput/NugetPackages'
             dotnet tool restore
-      - name: Dotnet Cacke Restore MAUI
-        run: |
-            cd maui
-            pwd
-            dotnet cake --BuildTarget=Restore
-      - name: Dotnet Cake pack MAUI
-        run: |
-            cd maui
-            pwd
-            dotnet cake --pack
+            dotnet cake --pack --workloads=global --verbosity=Diagnostic 
             dotnet workloads list
       - name: Build MAUI
         run: |
-            dotnet nuget add source '../GtkSharp/BuildOutput/NugetPackages'
             dotnet build Microsoft.Maui.BuildTasks.slnf
             dotnet build ./ src/Controls/samples/Controls.Sample.Gtk/Controls.Sample.Gtk.csproj
             cd ..
