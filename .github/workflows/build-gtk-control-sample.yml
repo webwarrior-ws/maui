@@ -33,10 +33,20 @@ jobs:
             dotnet cake build.cake --BuildVersion=3.24.24.64
             dotnet cake --BuildTarget=InstallWorkload --BuildVersion=3.24.24.64
             cd ..
-      - name: Build MAUI
+      - name: Dotnet Tool Restore MAUI
         run: |
             cd maui
+            pwd
             dotnet tool restore
+      - name: Dotnet Cacke Restore MAUI
+        run: |
+            cd maui
+            pwd
+            dotnet cake --BuildTarget=Restore
+      - name: Dotnet Cake pack MAUI
+        run: |
+            cd maui
+            pwd
             dotnet cake --pack
             dotnet workloads list
       - name: Build MAUI
