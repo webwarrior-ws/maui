@@ -40,6 +40,10 @@ jobs:
             dotnet workload list
             dotnet nuget add source '../GtkSharp/BuildOutput/NugetPackages'
             dotnet tool restore
+      - name: Dotnet Pack
+        run: |
+            cd maui
+            pwd
             dotnet cake --pack --workloads=global --verbosity=Diagnostic 
             dotnet workloads list
       - name: Build MAUI
