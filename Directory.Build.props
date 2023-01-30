@@ -50,12 +50,15 @@
 
   <!-- this is CI, so everything should be there -->
   <PropertyGroup Condition="'$(CI)' == 'true' or '$(TF_BUILD)' == 'true'">
+    <!--
     <IncludeWindowsTargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">true</IncludeWindowsTargetFrameworks>
     <IncludeTizenTargetFrameworks>true</IncludeTizenTargetFrameworks>
     <IncludeMacOSTargetFrameworks>true</IncludeMacOSTargetFrameworks>
     <IncludeAndroidTargetFrameworks>true</IncludeAndroidTargetFrameworks>
     <IncludeMacCatalystTargetFrameworks>true</IncludeMacCatalystTargetFrameworks>
     <IncludeIosTargetFrameworks>true</IncludeIosTargetFrameworks>
+    -->
+    <IncludeGtkTargetFrameworks Condition="'$(DotNetGtkWorkloadIsInstalled)' == 'true'">true</IncludeGtkTargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
