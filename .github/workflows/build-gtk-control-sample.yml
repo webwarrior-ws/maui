@@ -44,7 +44,7 @@ jobs:
         run: |
             cd maui
             pwd
-            dotnet cake --pack --workloads=global --verbosity=Diagnostic 
+            dotnet pack Microsoft.Maui-linux.slnf --workloads=global -c:Debug -p:SymbolPackageFormat=snupkg
             dotnet workloads list
       - name: Build MAUI
         run: |
