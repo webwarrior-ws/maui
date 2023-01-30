@@ -40,10 +40,17 @@ jobs:
             dotnet workload list
             dotnet nuget add source '../GtkSharp/BuildOutput/NugetPackages'
             dotnet tool restore
+      - name: install android dependencies
+        run: |
+            dotnet workload install android
+            sudo snap install androidsdk
+            androidsdk "platform-tools" "build-tools;30.0.3"  "platforms;android-31"
       - name: Dotnet Pack
         run: |
             cd maui
             pwd
+            ls /home/ubuntu/AndroidSDK/
+            export AndroidSdkDirectory=/home/ubuntu/AndroidSDK/
             dotnet pack Microsoft.Maui-linux.slnf -c:Debug -p:SymbolPackageFormat=snupkg
             dotnet workloads list
       - name: Build MAUI
