@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk" InitialTargets="LogMessage">
 
   <PropertyGroup>
     <TargetFrameworks>$(MauiDeviceTestsPlatforms)</TargetFrameworks>
@@ -8,6 +8,10 @@
     <AssemblyName>Microsoft.Maui.Core.DeviceTests</AssemblyName>
     <NoWarn>$(NoWarn),CA1416</NoWarn>
   </PropertyGroup>
+  
+  <Target Name="LogMessage" >
+	  <Message Text="Device test platforms = $(MauiDeviceTestsPlatforms)" Importance="high"/>
+  </Target>
 
   <PropertyGroup>
     <ApplicationTitle>Core Tests</ApplicationTitle>
