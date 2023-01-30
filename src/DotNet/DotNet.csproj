@@ -23,6 +23,14 @@
     <DotNetInstallCommand Condition=" '$(PRIVATE_BUILD)' == 'true' ">$(DotNetInstallCommand) --azure-feed $(InternalAzureFeed) --feed-credential $DOTNET_TOKEN</DotNetInstallCommand>
     <DotNetInstallCommand Condition=" '$(PRIVATE_BUILD)' != 'true' ">$(DotNetInstallCommand) --azure-feed $(DotNetFeedUrl)</DotNetInstallCommand>
   </PropertyGroup>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('linux'))">
+    <DotNetInstallScriptUrl>https://dot.net/v1/dotnet-install.sh</DotNetInstallScriptUrl>
+    <DotNetInstallScriptName>dotnet-install.sh</DotNetInstallScriptName>
+    <DotNetInstallScriptPath>$(DotNetOutputPath)$(DotNetInstallScriptName)</DotNetInstallScriptPath>
+    <DotNetInstallCommand>bash '$(DotNetInstallScriptPath)' --version $(MicrosoftDotnetSdkInternalPackageVersion) --install-dir '$(DotNetDirectory)' --verbose</DotNetInstallCommand>
+    <DotNetInstallCommand Condition=" '$(PRIVATE_BUILD)' == 'true' ">$(DotNetInstallCommand) --azure-feed $(InternalAzureFeed) --feed-credential $DOTNET_TOKEN</DotNetInstallCommand>
+    <DotNetInstallCommand Condition=" '$(PRIVATE_BUILD)' != 'true' ">$(DotNetInstallCommand) --azure-feed $(DotNetFeedUrl)</DotNetInstallCommand>
+  </PropertyGroup>
 
   <PropertyGroup>
     <_ProvisionDependsOn>
@@ -122,11 +130,13 @@
     <_PacksToRemove Include="Microsoft.NET.Workload.macOS" />
     <!-- Ids for 'dotnet workload install' -->
     <_WorkloadIds Include="android" />
+<!--
     <_WorkloadIds Include="maccatalyst" />
     <_WorkloadIds Include="macos" />
     <_WorkloadIds Include="ios" />
     <_WorkloadIds Include="tvos" />
     <_WorkloadIds Include="tizen" />
+-->
   </ItemGroup>
 
   <Target Name="_AcquireWorkloadManifests"
@@ -159,7 +169,7 @@
   </Target>
 
   <Target Name="_InstallWorkloadPacks"
-      Condition=" '$(InstallWorkloadPacks)' == 'true' "
+      Condition=" '$(InstallWorkloadPacks)' == 'true' and '$(WorkloadIds)' != '' "
       Inputs="$(_Inputs)"
       Outputs="$(DotNetPacksDirectory).stamp">
     <Exec
