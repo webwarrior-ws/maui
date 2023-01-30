@@ -130,6 +130,13 @@
     <_PacksToRemove Include="Microsoft.NET.Workload.macOS" />
     <!-- Ids for 'dotnet workload install' -->
     <_WorkloadIds Include="android" />
+<!--
+    <_WorkloadIds Include="maccatalyst" />
+    <_WorkloadIds Include="macos" />
+    <_WorkloadIds Include="ios" />
+    <_WorkloadIds Include="tvos" />
+    <_WorkloadIds Include="tizen" />
+-->
   </ItemGroup>
 
   <Target Name="_AcquireWorkloadManifests"
@@ -162,7 +169,7 @@
   </Target>
 
   <Target Name="_InstallWorkloadPacks"
-      Condition=" '$(InstallWorkloadPacks)' == 'true' "
+      Condition=" '$(InstallWorkloadPacks)' == 'true' and '$(WorkloadIds)' != '' "
       Inputs="$(_Inputs)"
       Outputs="$(DotNetPacksDirectory).stamp">
     <Exec
