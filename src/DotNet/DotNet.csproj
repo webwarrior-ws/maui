@@ -130,8 +130,6 @@
     <_PacksToRemove Include="Microsoft.NET.Workload.macOS" />
     <!-- Ids for 'dotnet workload install' -->
     <_WorkloadIds Include="android" />
-<<<<<<< HEAD
-=======
 <!--
     <_WorkloadIds Include="maccatalyst" />
     <_WorkloadIds Include="macos" />
@@ -139,7 +137,6 @@
     <_WorkloadIds Include="tvos" />
     <_WorkloadIds Include="tizen" />
 -->
->>>>>>> 4d451db56... WIP: remove unneeded workloads
   </ItemGroup>
 
   <Target Name="_AcquireWorkloadManifests"
