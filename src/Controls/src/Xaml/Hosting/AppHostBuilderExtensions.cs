@@ -23,6 +23,9 @@ using Microsoft.Maui.Controls.Handlers.Compatibility;
 #elif TIZEN
 using Microsoft.Maui.Controls.Handlers.Compatibility;
 using Microsoft.Maui.Controls.Compatibility.Platform.Tizen;
+#elif GTK
+using Microsoft.Maui.Controls.Handlers.Compatibility;
+using Microsoft.Maui.Controls.Compatibility.Platform.Gtk;
 #endif
 
 namespace Microsoft.Maui.Controls.Hosting
@@ -161,6 +164,10 @@ namespace Microsoft.Maui.Controls.Hosting
 			DependencyService.Register<ResourcesProvider>();
 			DependencyService.Register<FontNamedSizeService>();
 #pragma warning restore CS0612, CA1416 // Type or member is obsolete
+#endif
+
+#if GTK
+			DependencyService.Register<FontNamedSizeService>();
 #endif
 
 			builder.ConfigureImageSourceHandlers();
