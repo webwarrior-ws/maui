@@ -29,7 +29,7 @@ namespace Microsoft.Maui
 
 		public static MauiGtkApplication Current { get; internal set; } = null!;
 
-		public MauiGtkMainWindow MainWindow { get; protected set; } = null!;
+		public MauiGtkMainWindow MainWindow { get; set; } = null!;
 
 		public IServiceProvider Services { get; protected set; } = null!;
 
