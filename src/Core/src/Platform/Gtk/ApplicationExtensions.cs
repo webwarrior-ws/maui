@@ -16,6 +16,7 @@ public static class ApplicationExtensions
 
 		var mainWindow = new MauiGtkMainWindow();
 		platformApplication.AddWindow(mainWindow);
+		MauiGtkApplication.Current.MainWindow = mainWindow;
 
 		var mauiContext = applicationContext!.MakeWindowScope(mainWindow, out var windowScope);
 
