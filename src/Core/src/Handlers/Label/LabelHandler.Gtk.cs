@@ -57,7 +57,7 @@ namespace Microsoft.Maui.Handlers
 				SharedTextLayout.HorizontalAlignment = virtualView.HorizontalTextAlignment.GetHorizontalAlignment();
 				SharedTextLayout.VerticalAlignment = virtualView.VerticalTextAlignment.GetVerticalAlignment();
 
-				// SharedTextLayout.LineBreakMode = virtualView.LineBreakMode.GetLineBreakMode();
+				SharedTextLayout.LineBreakMode = virtualView.LineBreakMode.GetLineBreakMode();
 
 				var heightForWidth = !heightConstrained;
 
