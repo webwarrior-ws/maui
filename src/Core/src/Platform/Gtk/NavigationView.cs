@@ -23,9 +23,10 @@ namespace Microsoft.Maui.Platform
 
 		public void RequestNavigation(NavigationRequest request)
 		{
-			var page = request.NavigationStack.Last(); // stack top is last
+			// stack top is last
+			var page = request.NavigationStack.Last();
 			var newPageWidget = page.ToPlatform(mauiContext!);
-			if (pageWidget == null)
+			if (pageWidget is null)
 			{
 				this.PackStart(newPageWidget, true, true, 0);
 			}

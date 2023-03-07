@@ -28,12 +28,12 @@ namespace Microsoft.Maui.Handlers
 			nativeView.Disconnect(VirtualView);
 		}
 
-		public static void RequestNavigation(INavigationViewHandler arg1, IStackNavigation arg2, object? arg3)
+		public static void RequestNavigation(INavigationViewHandler handler, IStackNavigation navigation, object? request)
 		{
-			if (arg1 is NavigationViewHandler platformHandler && arg3 is NavigationRequest ea)
+			if (handler is NavigationViewHandler platformHandler && request is NavigationRequest navRequest)
 			{
-				platformHandler.PlatformView?.RequestNavigation(ea);
-				arg2.NavigationFinished(ea.NavigationStack);
+				platformHandler.PlatformView?.RequestNavigation(navRequest);
+				navigation.NavigationFinished(navRequest.NavigationStack);
 			}
 		}
 	}
