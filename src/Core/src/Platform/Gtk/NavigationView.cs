@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Gtk;
 
 namespace Microsoft.Maui.Platform
 {
@@ -22,11 +23,19 @@ namespace Microsoft.Maui.Platform
 
 		public void RequestNavigation(NavigationRequest request)
 		{
-			if (pageWidget != null)
+			var page = request.NavigationStack.Last(); // stack top is last
+			var newPageWidget = page.ToPlatform(mauiContext!);
+			if (pageWidget == null)
+			{
+				this.PackStart(newPageWidget, true, true, 0);
+			}
+			else
+			{
 				this.Remove(pageWidget);
-			var page = request.NavigationStack.Last(); // is stack top first or last?
-			pageWidget = page.ToPlatform(mauiContext!);
-			this.Add(pageWidget);
+				this.Add(newPageWidget);
+				this.SetChildPacking(newPageWidget, true, true, 0, PackType.Start);
+			}
+			pageWidget = newPageWidget;
 		}
 
 	}
