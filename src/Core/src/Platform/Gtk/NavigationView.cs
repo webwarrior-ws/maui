@@ -13,18 +13,15 @@ namespace Microsoft.Maui.Platform
 
 		public void Connect(IStackNavigationView virtualView)
 		{
-			Console.WriteLine($"Connect to {virtualView}");
 			mauiContext = virtualView.Handler?.MauiContext;
 		}
 
 		public void Disconnect(IStackNavigationView virtualView)
 		{
-			Console.WriteLine($"Disconnect from {virtualView}");
 		}
 
 		public void RequestNavigation(NavigationRequest request)
 		{
-			Console.WriteLine($"Navigation requested: {request}");
 			if (pageWidget != null)
 				this.Remove(pageWidget);
 			var page = request.NavigationStack.Last(); // is stack top first or last?

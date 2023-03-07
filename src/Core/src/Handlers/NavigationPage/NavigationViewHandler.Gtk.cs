@@ -30,9 +30,11 @@ namespace Microsoft.Maui.Handlers
 
 		public static void RequestNavigation(INavigationViewHandler arg1, IStackNavigation arg2, object? arg3)
 		{
-			Console.WriteLine($"RequestNavigation({arg1}, {arg2}, {arg3})");
 			if (arg1 is NavigationViewHandler platformHandler && arg3 is NavigationRequest ea)
+			{
 				platformHandler.PlatformView?.RequestNavigation(ea);
+				arg2.NavigationFinished(ea.NavigationStack);
+			}
 		}
 	}
 
