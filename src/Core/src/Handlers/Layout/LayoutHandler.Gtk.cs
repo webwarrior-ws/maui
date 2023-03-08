@@ -124,9 +124,21 @@ namespace Microsoft.Maui.Handlers
 
 #endif
 
+		private void UpdateVisibility(Visibility visibility)
+		{
+			if (visibility == Visibility.Visible)
+				PlatformView.Show();
+			else
+				PlatformView.Hide();
+		}
+
 		[MissingMapper]
 		public void UpdateZIndex(IView view) => throw new NotImplementedException();
 
+		static void MapVisibility(ILayoutHandler handler, ILayout layout)
+		{
+			((LayoutHandler)handler).UpdateVisibility(layout.Visibility);
+		}
 	}
 
 }
