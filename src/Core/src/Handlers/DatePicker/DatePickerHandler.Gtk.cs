@@ -11,23 +11,42 @@ namespace Microsoft.Maui.Handlers
 			return new MauiDatePicker();
 		}
 
-		[MissingMapper]
+		protected override void ConnectHandler(MauiDatePicker platformView)
+		{
+			base.ConnectHandler(platformView);
+			platformView.DateChanged += DateChanged;
+		}
+
+		protected override void DisconnectHandler(MauiDatePicker platformView)
+		{
+			base.DisconnectHandler(platformView);
+			platformView.DateChanged -= DateChanged;
+		}
+
+		private void DateChanged(object? sender, System.EventArgs args)
+		{
+			VirtualView.Date = PlatformView.Date;
+		}
+
 		public static void MapFormat(IDatePickerHandler handler, IDatePicker datePicker)
 		{
 			handler.PlatformView?.UpdateFormat(datePicker);
 		}
 
-		[MissingMapper]
 		public static void MapDate(IDatePickerHandler handler, IDatePicker datePicker)
 		{
 			handler.PlatformView?.UpdateDate(datePicker);
 		}
 
-		[MissingMapper]
-		public static void MapMinimumDate(IDatePickerHandler handler, IDatePicker datePicker) { }
+		public static void MapMinimumDate(IDatePickerHandler handler, IDatePicker datePicker)
+		{
+			handler.PlatformView.MinDate = handler.VirtualView.MinimumDate;
+		}
 
-		[MissingMapper]
-		public static void MapMaximumDate(IDatePickerHandler handler, IDatePicker datePicker) { }
+		public static void MapMaximumDate(IDatePickerHandler handler, IDatePicker datePicker)
+		{
+			handler.PlatformView.MaxDate = handler.VirtualView.MaximumDate;
+		}
 
 		[MissingMapper]
 		public static void MapCharacterSpacing(IDatePickerHandler handler, IDatePicker datePicker) { }
