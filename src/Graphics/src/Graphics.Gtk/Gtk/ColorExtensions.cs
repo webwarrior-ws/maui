@@ -11,6 +11,18 @@ public static class ColorExtensions
 	public static Color ToColor(this Gdk.RGBA color)
 		=> new Color((float)color.Red, (float)color.Green, (float)color.Blue, (float)color.Alpha);
 
+	public static Gdk.Color ToGdkColor(this Color color)
+	{
+		string hex = color.ToRgbaHex();
+		Gdk.Color gtkColor = new Gdk.Color();
+		// error CS0612: 'Color.Parse(string, ref Color)' is obsolete
+#pragma warning disable 612
+		Gdk.Color.Parse(hex, ref gtkColor);
+#pragma warning restore 612
+
+		return gtkColor;
+	}
+
 	public static Cairo.Color ToCairoColor(this Color color)
 		=> color == default ? default : new Cairo.Color(color.Red, color.Green, color.Blue, color.Alpha);
 
