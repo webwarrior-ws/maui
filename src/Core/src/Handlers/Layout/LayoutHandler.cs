@@ -24,6 +24,9 @@ namespace Microsoft.Maui.Handlers
 #if ANDROID || WINDOWS
 			[nameof(IView.InputTransparent)] = MapInputTransparent,
 #endif
+#if GTK
+			[nameof(IView.Visibility)] = MapVisibility,
+#endif
 		};
 
 		public static CommandMapper<ILayout, ILayoutHandler> CommandMapper = new(ViewCommandMapper)
