@@ -2,6 +2,8 @@
 using System.Runtime.Serialization;
 using System.Linq;
 using Gtk;
+using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Graphics.Platform.Gtk;
 
 namespace Microsoft.Maui.Platform
 {
@@ -152,21 +154,9 @@ namespace Microsoft.Maui.Platform
 			}
 		}
 
-		// protected override bool OnExposeEvent(Gdk.EventExpose args)
-		// {
-		// 	base.OnExposeEvent(args);
-
-		// 	int winWidth, winHeight;
-		// 	GetSize(out winWidth, out winHeight);
-		// 	GdkWindow.DrawRectangle(
-		// 		Style.ForegroundGC(StateType.Insensitive), false, 0, 0, winWidth - 1, winHeight - 1);
-
-		// 	return false;
-		// }
-
 		protected virtual void OnButtonPressEvent(object o, ButtonPressEventArgs args)
 		{
-			Close();
+			CloseCalendar();
 		}
 
 		protected virtual void OnCalendarButtonPressEvent(object o, ButtonPressEventArgs args)
@@ -174,18 +164,18 @@ namespace Microsoft.Maui.Platform
 			args.RetVal = true;
 		}
 
-		protected virtual void OnCalendarDaySelected(object sender, EventArgs e)
+		protected virtual void OnCalendarDaySelected(object? sender, EventArgs e)
 		{
 			OnDateTimeChanged?.Invoke(this, new DateEventArgs(SelectedDate));
 		}
 
-		protected virtual void OnCalendarDaySelectedDoubleClick(object sender, EventArgs e)
+		protected virtual void OnCalendarDaySelectedDoubleClick(object? sender, EventArgs e)
 		{
 			OnDateTimeChanged?.Invoke(this, new DateEventArgs(SelectedDate));
-			Close();
+			CloseCalendar();
 		}
 
-		new void Close()
+		void CloseCalendar()
 		{
 			GrabHelper.RemoveGrab(this);
 			Destroy();
@@ -249,8 +239,7 @@ namespace Microsoft.Maui.Platform
 				{
 					Date = MinimumDate;
 				}
-
-				if (Date > MaximumDate)
+				else if (Date > MaximumDate)
 				{
 					Date = MaximumDate;
 				}
@@ -263,7 +252,7 @@ namespace Microsoft.Maui.Platform
 		private Gtk.Entry _entry;
 		private Gtk.Button _button;
 		private Gtk.Arrow _arrow;
-		private Gdk.Color _color;
+		private Color _color = Colors.Black;
 
 		public CustomComboBox()
 		{
@@ -296,52 +285,57 @@ namespace Microsoft.Maui.Platform
 			}
 		}
 
-		public Gdk.Color Color
+		public Color Color
 		{
 			get { return _color; }
 			set
 			{
 				_color = value;
-				Entry.ModifyText(Gtk.StateType.Normal, _color);
+				Entry.UpdateTextColor(_color);
 			}
 		}
 
 		public void SetBackgroundColor(Gdk.Color color)
 		{
-			ModifyBg(Gtk.StateType.Normal, Microsoft.Maui.Controls.Compatibility.Color.Red.ToGtkColor());
-			Entry.ModifyBase(Gtk.StateType.Normal, Microsoft.Maui.Controls.Compatibility.Color.Blue.ToGtkColor());
+			var redColor = new Gdk.Color(255, 0, 0);
+			var blueColor = new Gdk.Color(0, 0, 255);
+			ModifyBg(Gtk.StateType.Normal, redColor);
+			Entry.OverrideBackgroundColor(Gtk.StateFlags.Normal, Colors.Blue.ToGdkRgba());
 		}
 	}
 
 	public class MauiDatePicker : EventBox
 	{
-		CustomComboBox _comboBox;
-		Gdk.Color _color;
+		readonly CustomComboBox _comboBox;
 		DateTime _currentDate;
-		DateTime _minDate;
-		DateTime _maxDate;
-		string _dateFormat;
+		string? _dateFormat;
+		DatePickerWindow? _pickerWindow;
 
-		public event EventHandler DateChanged;
-		public event EventHandler GotFocus;
-		public event EventHandler LostFocus;
+		public event EventHandler DateChanged = new EventHandler((sender, args) => { });
+		public event EventHandler GotFocus = new EventHandler((sender, args) => { });
+		public event EventHandler LostFocus = new EventHandler((sender, args) => { });
 
 		public MauiDatePicker()
 		{
-			BuildDatePicker();
+			_comboBox = new CustomComboBox();
+			Add(_comboBox);
+
+			if ((Child != null))
+				Child.ShowAll();
+			Show();
 
 			Date = DateTime.Now;
-			Format = Format = string.Empty;
-			MinDate = Date;
-			MaxDate = Date;
+			Format = string.Empty;
+			MinDate = new DateTime(1900, 1, 1);
+			MaxDate = new DateTime(2199, 1, 1);
 
 			_comboBox.Entry.CanDefault = false;
 			_comboBox.Entry.CanFocus = false;
 			_comboBox.Entry.IsEditable = false;
-			_comboBox.Entry.State = StateType.Normal;
-			_comboBox.Entry.FocusEntry.CanFocus = false;
+			_comboBox.Entry.SetStateFlags(StateFlags.Normal, true);
+			_comboBox.Entry.CanFocus = false;
 			_comboBox.Entry.IsEditable = false;
-			_comboBox.Entry.StaGrabbed += new EventHandler(OnEntryFocused);
+			_comboBox.Entry.FocusGrabbed += new EventHandler(OnEntryFocused);
 			_comboBox.PopupButton.Clicked += new EventHandler(OnBtnShowCalendarClicked);
 		}
 
@@ -358,31 +352,11 @@ namespace Microsoft.Maui.Platform
 			}
 		}
 
-		public DateTime MinDate
-		{
-			get
-			{
-				return _minDate;
-			}
-			set
-			{
-				_minDate = value;
-			}
-		}
+		public DateTime MinDate { get; set; }
 
-		public DateTime MaxDate
-		{
-			get
-			{
-				return _maxDate;
-			}
-			set
-			{
-				_maxDate = value;
-			}
-		}
+		public DateTime MaxDate { get; set; }
 
-		public string Format
+		public string? Format
 		{
 			get
 			{
@@ -400,22 +374,6 @@ namespace Microsoft.Maui.Platform
 			_comboBox.SetBackgroundColor(color);
 		}
 
-		public void OpenPicker()
-		{
-			ShowPickerWindow();
-		}
-
-		public void ClosePicker()
-		{
-			var windows = Window.ListToplevels();
-			var window = windows.FirstOrDefault(w => w.GetType() == typeof(DatePickerWindow));
-
-			if (window != null)
-			{
-				Remove(window);
-			}
-		}
-
 		void ShowPickerWindow()
 		{
 			int x = 0;
@@ -427,10 +385,12 @@ namespace Microsoft.Maui.Platform
 			var picker = new DatePickerWindow();
 			picker.Move(x, y);
 			picker.SelectedDate = Date;
-			picker.MinimumDate = _minDate;
-			picker.MaximumDate = _maxDate;
+			picker.MinimumDate = MinDate;
+			picker.MaximumDate = MaxDate;
 			picker.OnDateTimeChanged += OnPopupDateChanged;
 			picker.Destroyed += OnPickerClosed;
+
+			_pickerWindow = picker;
 		}
 
 		void OnPopupDateChanged(object sender, DateEventArgs args)
@@ -453,43 +413,29 @@ namespace Microsoft.Maui.Platform
 			DateChanged?.Invoke(this, EventArgs.Empty);
 		}
 
-		void BuildDatePicker()
-		{
-			_comboBox = new CustomComboBox();
-			Add(_comboBox);
-
-			if ((Child != null))
-			{
-				Child.ShowAll();
-			}
-
-			Show();
-		}
-
 		void UpdateEntryText()
 		{
 			_comboBox.Entry.Text = _currentDate.ToString(string.IsNullOrEmpty(_dateFormat) ? "D" : _dateFormat);
 		}
 
-		void OnBtnShowCalendarClicked(object sender, EventArgs e)
+		void OnBtnShowCalendarClicked(object? sender, EventArgs e)
 		{
 			ShowPickerWindow();
 		}
 
-		void OnEntryFocused(object sender, EventArgs e)
+		void OnEntryFocused(object? sender, EventArgs e)
 		{
 			ShowPickerWindow();
 			GotFocus?.Invoke(this, EventArgs.Empty);
 		}
 
-		void OnPickerClosed(object sender, EventArgs e)
+		void OnPickerClosed(object? sender, EventArgs e)
 		{
-			var window = sender as DatePickerWindow;
-
-			if (window != null)
+			if (_pickerWindow != null)
 			{
-				Remove(window);
+				Remove(_pickerWindow);
 				LostFocus?.Invoke(this, EventArgs.Empty);
+				_pickerWindow = null;
 			}
 		}
 #pragma warning restore 612
