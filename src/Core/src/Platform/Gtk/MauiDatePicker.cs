@@ -75,7 +75,7 @@ namespace Microsoft.Maui.Platform
 
 		public event DateEventHandler? OnDateTimeChanged;
 
-		public DatePickerWindow()
+		public DatePickerWindow(DateTime initialDate)
 			: base(WindowType.Popup)
 		{
 			Title = "DatePicker";
@@ -106,13 +106,13 @@ namespace Microsoft.Maui.Platform
 				Child.ShowAll();
 			}
 
+			SelectedDate = initialDate;
 			Show();
 			ButtonPressEvent += new ButtonPressEventHandler(OnButtonPressEvent);
 			_calendar.ButtonPressEvent += new ButtonPressEventHandler(OnCalendarButtonPressEvent);
 			_calendar.DaySelected += new EventHandler(OnCalendarDaySelected);
 			_calendar.DaySelectedDoubleClick += new EventHandler(OnCalendarDaySelectedDoubleClick);
 			GrabHelper.GrabWindow(this);
-			SelectedDate = DateTime.Now;
 		}
 
 		public DateTime SelectedDate
@@ -382,9 +382,8 @@ namespace Microsoft.Maui.Platform
 			Window.GetOrigin(out x, out y);
 			y += Allocation.Height;
 
-			var picker = new DatePickerWindow();
+			var picker = new DatePickerWindow(Date);
 			picker.Move(x, y);
-			picker.SelectedDate = Date;
 			picker.MinimumDate = MinDate;
 			picker.MaximumDate = MaxDate;
 			picker.OnDateTimeChanged += OnPopupDateChanged;
