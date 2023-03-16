@@ -34,7 +34,7 @@ namespace Microsoft.Maui
 			var mainNode = widget.CssMainNode();
 			if (cssFlags != null)
 				mainNode = $"{mainNode}:{cssFlags}";
-			widget.SetStyleColor(color, mainNode, "background-color");
+			widget.SetStyleColor(color, mainNode, "background");
 
 		}
 
