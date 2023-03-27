@@ -16,7 +16,7 @@ public partial class PlatformCanvas
 			case SolidPaint solidPaint:
 				{
 					FillColor = solidPaint.Color;
-
+					context.SetSourceColor(solidPaint.Color.ToCairoColor());
 					break;
 				}
 
