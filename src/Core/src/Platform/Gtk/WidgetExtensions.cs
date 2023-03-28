@@ -24,6 +24,7 @@ namespace Microsoft.Maui
 
 					break;
 				case Visibility.Collapsed:
+					platformView.Visible = false;
 
 					break;
 				default:
