@@ -5,10 +5,10 @@ using Microsoft.Maui.Graphics;
 namespace Microsoft.Maui.Platform
 {
 
-	public class ContentView : Gtk.Box
+	public class ContentView : Gtk.EventBox
 	{
 
-		public ContentView() : base(Orientation.Horizontal, 0) { }
+		public ContentView() : base() { }
 
 		internal Func<double, double, Size>? CrossPlatformMeasure { get; set; }
 
@@ -28,7 +28,7 @@ namespace Microsoft.Maui.Platform
 				}
 				else if (value != null)
 				{
-					PackStart(value, true, true, 0);
+					Add(value);
 				}
 
 				_content = value;
