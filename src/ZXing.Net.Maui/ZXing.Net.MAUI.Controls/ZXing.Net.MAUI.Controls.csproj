@@ -4,7 +4,7 @@
 		<PackageId>ZXing.Net.Maui.Controls</PackageId>
 		<Title>ZXing.Net.MAUI Barcode Scanner for .NET MAUI</Title>
 		<Authors>Redth</Authors>
-		<UseMaui>True</UseMaui>
+		<!--<UseMaui>True</UseMaui>-->
 		<SingleProject>True</SingleProject>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<UseSystemResourceKeys>false</UseSystemResourceKeys>
