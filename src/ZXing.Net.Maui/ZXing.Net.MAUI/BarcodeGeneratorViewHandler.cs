@@ -4,6 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Platform;
+using Size = Microsoft.Maui.Graphics.Size;
 
 namespace ZXing.Net.Maui
 {
@@ -55,6 +57,8 @@ namespace ZXing.Net.Maui
 			imageView.SetBackgroundColor(Android.Graphics.Color.Transparent);
 #elif WINDOWS
 			imageView = new NativePlatformImageView();
+#elif GTK
+			imageView = new ImageView();
 #endif
 			return imageView;
 		}
@@ -85,6 +89,8 @@ namespace ZXing.Net.Maui
 			imageView?.SetImageBitmap(image);
 #elif WINDOWS
 			imageView.Source = image;
+#elif GTK
+			imageView.Image = image;
 #endif
 		}
 

@@ -36,6 +36,11 @@
 		<ProjectReference Include="$(MauiPath)Controls\src\Xaml\Controls.Xaml.csproj" />
 		<ProjectReference Include="$(MauiPath)Core\src\Core.csproj" />
 		<ProjectReference Include="$(MauiPath)Compatibility\Core\src\Compatibility.csproj" />
+
+		<Compile Remove="Platforms\Android\*" />
+		<Compile Remove="Platforms\iOS\*" />
+		<Compile Remove="Platforms\MacCatalyst\*" />
+		<Compile Remove="Platforms\Windows\*" />
 	</ItemGroup>
 	
 	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0-android'">
