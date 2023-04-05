@@ -21,6 +21,9 @@ namespace ZXing.Net.Maui
 			[nameof(IBarcodeGeneratorView.ForegroundColor)] = MapUpdateBarcode,
 			[nameof(IBarcodeGeneratorView.BackgroundColor)] = MapUpdateBarcode,
 			[nameof(IBarcodeGeneratorView.Margin)] = MapUpdateBarcode,
+#if GTK
+			[nameof(IBarcodeGeneratorView.Visibility)] = UpdateVisibility,
+#endif
 		};
 
 		public BarcodeGeneratorViewHandler() : base(BarcodeGeneratorViewMapper)
@@ -45,7 +48,20 @@ namespace ZXing.Net.Maui
 
 			UpdateBarcode();
 		}
+#if GTK
+		public override Size GetDesiredSize(double widthConstraint, double heightConstraint)
+		{
+			if (VirtualView is Microsoft.Maui.Controls.View { } virtualView)
+				return new Size(virtualView.WidthRequest, virtualView.HeightRequest);
+			else
+				return base.GetDesiredSize(widthConstraint, heightConstraint);
+		}
 
+		public static void UpdateVisibility(BarcodeGeneratorViewHandler handler, IBarcodeGeneratorView barcodeGeneratorView)
+		{
+			handler.imageView.Visible = barcodeGeneratorView.Visibility == Visibility.Visible;
+		}
+#endif
 		NativePlatformImageView imageView;
 
 		protected override NativePlatformImageView CreatePlatformView()
