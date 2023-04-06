@@ -45,6 +45,6 @@ jobs:
       - name: Run dotnet format
         run: |
           # remark: doesnt work, alwasy fails:
-          # dotnet format whitespace ./src --folder --exclude Templates/src
+          # dotnet format whitespace ./src --folder --exclude Templates/src --exclude ZXing.Net.Maui
           git diff --exit-code
 
