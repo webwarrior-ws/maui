@@ -37,6 +37,10 @@ jobs:
       - name: Build MAUI
         run: |
             dotnet build Microsoft.Maui.Gtk.slnf
+      - name: Build ZXing.Net.Maui
+        run: |
+            dotnet build ./src/ZXing.Net.Maui/ZXing.Net.MAUI/ZXing.Net.MAUI.csproj --framework=net6.0-gtk
+            dotnet build ./src/ZXing.Net.Maui/ZXing.Net.MAUI.Controls/ZXing.Net.MAUI.Controls.csproj --framework=net6.0-gtk
 
   dotnet-format:
     needs: build_and_test
