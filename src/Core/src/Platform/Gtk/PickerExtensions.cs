@@ -44,12 +44,12 @@ namespace Microsoft.Maui
 			if (nativeView == null)
 				return;
 
-			if (nativeView.HasEntry)
+			if (nativeView.HasEntry && nativeView.Entry.Attributes is not null)
 			{
 				nativeView.Entry.Attributes = nativeView.Entry.Attributes.AttrListFor(spacing);
 			}
 
-			if (nativeView.GetCellRendererText() is { } cell)
+			if (nativeView.GetCellRendererText() is { } cell && cell.Attributes is not null)
 				cell.Attributes = cell.Attributes.AttrListFor(spacing);
 		}
 
