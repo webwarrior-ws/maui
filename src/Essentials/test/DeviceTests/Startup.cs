@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Microsoft.Maui.Hosting;
 using Microsoft.Maui.LifecycleEvents;
 using Microsoft.Maui.TestUtils.DeviceTests.Runners;
@@ -17,9 +18,9 @@ namespace Microsoft.Maui.Essentials.DeviceTests
 					life.AddAndroid(android =>
 					{
 						android.OnCreate((activity, bundle) =>
-							Platform.Init(activity, bundle));
+							ApplicationModel.Platform.Init(activity, bundle));
 						android.OnRequestPermissionsResult((activity, requestCode, permissions, grantResults) =>
-							Platform.OnRequestPermissionsResult(requestCode, permissions, grantResults));
+							ApplicationModel.Platform.OnRequestPermissionsResult(requestCode, permissions, grantResults));
 					});
 #endif
 				})
@@ -32,7 +33,7 @@ namespace Microsoft.Maui.Essentials.DeviceTests
 					SkipCategories = Traits
 						.GetSkipTraits()
 #if __ANDROID__
-						.Append($"{Traits.FileProvider}={Traits.FeatureSupport.ToExclude(Platform.HasApiLevel(24))}")
+						.Append($"{Traits.FileProvider}={Traits.FeatureSupport.ToExclude(OperatingSystem.IsAndroidVersionAtLeast(24))}")
 #endif
 						.ToList(),
 				})

@@ -2,52 +2,109 @@
   <Import Project="eng\Versions.props" />
 
   <PropertyGroup>
-    <BuildForWinUI Condition=" ($(SolutionFileName.Contains('winui')) OR '$(SolutionFileName)' == 'BlazorWindows-net6.sln') AND '$(Packing)' == ''">true</BuildForWinUI>
-    <BuildForAndroid Condition="'$(SolutionFileName)' == 'Microsoft.Maui.Droid.sln' AND '$(Packing)' == ''">true</BuildForAndroid>
-    <BuildForNet6 Condition="'$(Packing)' == 'true' OR $(MSBuildProjectFile.Contains('SingleProject')) OR $(MSBuildProjectFile.Contains('Profiling')) OR $(MSBuildProjectFile.Contains('net6')) OR $(SolutionFileName.Contains('net6')) OR '$(BuildForWinUI)' == 'true' OR '$(BuildForAndroid)' == 'true'">true</BuildForNet6>
-    <MauiPlatforms>net6.0-ios;net6.0-maccatalyst;net6.0-android</MauiPlatforms>
-    <WindowsMauiPlatforms Condition="'$(WindowsMauiPlatforms)' == ''">net6.0-windows10.0.19041;net6.0-windows10.0.18362</WindowsMauiPlatforms>
-    <MauiPlatforms Condition="'$(Packing)' == 'true'">$(MauiPlatforms);$(WindowsMauiPlatforms)</MauiPlatforms>
-    <MauiPlatforms Condition="'$(BuildForWinUI)' == 'true'">$(WindowsMauiPlatforms)</MauiPlatforms>
-    <MauiPlatforms Condition="'$(BuildForAndroid)' == 'true'">net6.0-android</MauiPlatforms>
+    <_MauiDotNetVersionMajor Condition="'$(_MauiDotNetVersionMajor)' == ''">6</_MauiDotNetVersionMajor>
+    <_MauiDotNetVersionMinor Condition="'$(_MauiDotNetVersionMinor)' == ''">0</_MauiDotNetVersionMinor>
+    <_MauiDotNetVersion Condition="'$(_MauiDotNetVersion)' == ''">$(_MauiDotNetVersionMajor).$(_MauiDotNetVersionMinor)</_MauiDotNetVersion>
+    <_MauiDotNetTfm Condition="'$(_MauiDotNetTfm)' == ''">net$(_MauiDotNetVersion)</_MauiDotNetTfm>
+    <_MauiTargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</_MauiTargetPlatformIdentifier>
+    <_MauiNoTargetPlatform Condition="'$(_MauiTargetPlatformIdentifier)' == ''">True</_MauiNoTargetPlatform>
+    <_MauiTargetPlatformIsAndroid Condition="'$(_MauiTargetPlatformIdentifier)' == 'android'">True</_MauiTargetPlatformIsAndroid>
+    <_MauiTargetPlatformIsiOS Condition="'$(_MauiTargetPlatformIdentifier)' == 'ios'">True</_MauiTargetPlatformIsiOS>
+    <_MauiTargetPlatformIsMacCatalyst Condition="'$(_MauiTargetPlatformIdentifier)' == 'maccatalyst'">True</_MauiTargetPlatformIsMacCatalyst>
+    <_MauiTargetPlatformIsmacOS Condition="'$(_MauiTargetPlatformIdentifier)' == 'macos'">True</_MauiTargetPlatformIsmacOS>
+    <_MauiTargetPlatformIstvOS Condition="'$(_MauiTargetPlatformIdentifier)' == 'tvos'">True</_MauiTargetPlatformIstvOS>
+    <_MauiTargetPlatformIsWindows Condition="$(_MauiTargetPlatformIdentifier.Contains('windows')) == 'True'">True</_MauiTargetPlatformIsWindows>
+    <_MauiTargetPlatformIsTizen Condition="'$(_MauiTargetPlatformIdentifier)' == 'tizen'">True</_MauiTargetPlatformIsTizen>
+    <_MauiTargetPlatformIsGtk Condition="'$(_MauiTargetPlatformIdentifier)' == 'gtk'">True</_MauiTargetPlatformIsGtk>
 
-    <!-- Work around the IDE not properly handling the NU1703 warning -->
-    <MauiPlatformsNoMacCat>net6.0-ios;net6.0-android</MauiPlatformsNoMacCat>
-    <MauiPlatformsNoMacCat Condition="'$(BuildForWinUI)' == 'true'">$(MauiPlatforms)</MauiPlatformsNoMacCat>
-    <MauiPlatformsNoMacCat Condition="'$(BuildForAndroid)' == 'true'">$(MauiPlatforms)</MauiPlatformsNoMacCat>
+  </PropertyGroup>
 
-    <!-- This is used to easily build for a specific target to make the IDE work a bit better  -->   
-    <MauiGtkTargets>net5</MauiGtkTargets>
-    <NonNet6Platforms>$(MauiGtkTargets)</NonNet6Platforms>
-    <BuildForGtk Condition="$(MauiGtkTargets.Contains($(TargetFramework))) == true AND $(TargetFramework.StartsWith('MonoAndroid')) != true">true</BuildForGtk>
-    <NonNet6EssentialsPlatforms>netstandard2.0;netstandard2.1</NonNet6EssentialsPlatforms>
-    <NonNet6EssentialsPlatforms Condition=" '$(OS)' == 'Windows_NT'">$(NonNet6EssentialsPlatforms);uap10.0.16299;</NonNet6EssentialsPlatforms>
-    <NonNet6EssentialsPlatforms Condition="'$(BuildForGtk)' == 'true'">$(NonNet6EssentialsPlatforms);$(MauiGtkTargets);</NonNet6EssentialsPlatforms>
+  <!-- Try determine which .NET workloads are installed -->
+  <PropertyGroup Condition="'$(CI)' != 'true' and '$(TF_BUILD)' != 'true'">
+    <DotNetWorkloadVersionRegex>\d+\.\d+\.\d+(-[a-z]+[\.\d+]+)?</DotNetWorkloadVersionRegex>
 
-    <BuildNonNet6ForiOS>false</BuildNonNet6ForiOS>
-    <BuildNonNet6ForiOS Condition="'$(SolutionFileName)' == 'Microsoft.Maui.iOS.sln'">true</BuildNonNet6ForiOS>
-    <NonNet6Platforms Condition="'$(BuildNonNet6ForiOS)' == 'true'">Xamarin.iOS10</NonNet6Platforms>
-    <NonNet6EssentialsPlatforms Condition="'$(BuildNonNet6ForiOS)' == 'true'">netstandard2.0;netstandard2.1;Xamarin.iOS10</NonNet6EssentialsPlatforms>
+    <DotNetWorkloadInstallLocation Condition="'$(DotNetWorkloadInstallLocation)' == '' and Exists('$(DOTNET_ROOT)\sdk-manifests\$(DotNetVersionBand)\microsoft.net.sdk.macos\WorkloadManifest.json')">$(DOTNET_ROOT)\sdk-manifests\$(DotNetVersionBand)\</DotNetWorkloadInstallLocation>
+    <DotNetWorkloadInstallLocation Condition="'$(DotNetWorkloadInstallLocation)' == '' and Exists('$(ProgramFiles)\dotnet\sdk-manifests\$(DotNetVersionBand)\microsoft.net.sdk.macos\WorkloadManifest.json')">$(ProgramFiles)\dotnet\sdk-manifests\$(DotNetVersionBand)\</DotNetWorkloadInstallLocation>
+    <DotNetWorkloadPacksInstallLocation Condition="'$(DotNetWorkloadInstallLocation)' != ''">$(DotNetWorkloadInstallLocation)..\..\packs\</DotNetWorkloadPacksInstallLocation>
 
-    <BuildNonNet6ForAndroid>false</BuildNonNet6ForAndroid>
-    <NonNet6Platforms Condition="'$(BuildNonNet6ForAndroid)' == 'true'">MonoAndroid10.0</NonNet6Platforms>
-    <NonNet6EssentialsPlatforms Condition="'$(BuildNonNet6ForAndroid)' == 'true'">netstandard2.0;netstandard2.1;MonoAndroid10.0</NonNet6EssentialsPlatforms>
+    <DotNetMacOSWorkloadInstalledVersion Condition="Exists('$(DotNetWorkloadInstallLocation)microsoft.net.sdk.macos\WorkloadManifest.json')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(DotNetWorkloadInstallLocation)\microsoft.net.sdk.macos\WorkloadManifest.json')), '$(DotNetWorkloadVersionRegex)'))</DotNetMacOSWorkloadInstalledVersion>
+    <DotNetTizenWorkloadInstalledVersion Condition="Exists('$(DotNetWorkloadInstallLocation)samsung.net.sdk.tizen\WorkloadManifest.json')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(DotNetWorkloadInstallLocation)\samsung.net.sdk.tizen\WorkloadManifest.json')), $(DotNetWorkloadVersionRegex)))</DotNetTizenWorkloadInstalledVersion>
+    <DotNetGtkWorkloadInstalledVersion Condition="Exists('$(DotNetWorkloadInstallLocation)GtkSharp.NET.Sdk.Gtk\WorkloadManifest.json')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(DotNetWorkloadInstallLocation)\samsung.net.sdk.tizen\WorkloadManifest.json')), $(DotNetWorkloadVersionRegex)))</DotNetGtkWorkloadInstalledVersion>
+
+    <DotNetMacOSWorkloadIsInstalled Condition="Exists('$(DotNetWorkloadPacksInstallLocation)Microsoft.macOS.Sdk\$(DotNetMacOSWorkloadInstalledVersion)\Sdk\AutoImport.props')">true</DotNetMacOSWorkloadIsInstalled>
+    <DotNetTizenWorkloadIsInstalled Condition="Exists('$(DotNetWorkloadPacksInstallLocation)Samsung.Tizen.Sdk\$(DotNetTizenWorkloadInstalledVersion)\Sdk\AutoImport.props')">true</DotNetTizenWorkloadIsInstalled>
+    <DotNetGtkWorkloadIsInstalled Condition="Exists('$(DotNetWorkloadPacksInstallLocation)GtkSharp.Sdk\$(DotNetGtkWorkloadInstalledVersion)\Sdk\Sdk.targets')">true</DotNetGtkWorkloadIsInstalled>
+
+    <IncludeWindowsTargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows')) or '$(Packing)' == 'true'">true</IncludeWindowsTargetFrameworks>
+    <IncludeMacOSTargetFrameworks Condition="'$(DotNetMacOSWorkloadIsInstalled)' == 'true'">true</IncludeMacOSTargetFrameworks>
+    <IncludeTizenTargetFrameworks Condition="'$(DotNetTizenWorkloadIsInstalled)' == 'true'">true</IncludeTizenTargetFrameworks>
+    <IncludeAndroidTargetFrameworks>true</IncludeAndroidTargetFrameworks>
+    <IncludeMacCatalystTargetFrameworks>true</IncludeMacCatalystTargetFrameworks>
+    <IncludeIosTargetFrameworks>true</IncludeIosTargetFrameworks>
+    <IncludeGtkTargetFrameworks Condition="'$(DotNetGtkWorkloadIsInstalled)' == 'true'">true</IncludeGtkTargetFrameworks>
+
+  </PropertyGroup>
+
+  <!-- this is CI, so everything should be there -->
+  <PropertyGroup Condition="'$(CI)' == 'true' or '$(TF_BUILD)' == 'true'">
+    <IncludeWindowsTargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">true</IncludeWindowsTargetFrameworks>
+    <IncludeTizenTargetFrameworks>true</IncludeTizenTargetFrameworks>
+    <IncludeMacOSTargetFrameworks>true</IncludeMacOSTargetFrameworks>
+    <IncludeAndroidTargetFrameworks>true</IncludeAndroidTargetFrameworks>
+    <IncludeMacCatalystTargetFrameworks>true</IncludeMacCatalystTargetFrameworks>
+    <IncludeIosTargetFrameworks>true</IncludeIosTargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants Condition="'$(_MauiTargetPlatformIsWindows)' == 'True'">$(DefineConstants);WINDOWS</DefineConstants>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-
     <!-- <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles> -->
-
     <!-- HACK: WinUI seems to have issues without this -->
     <GenerateLibraryLayout>true</GenerateLibraryLayout>
     <DisableEmbeddedXbf>false</DisableEmbeddedXbf>
+    <EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
+  </PropertyGroup>
 
-    <DefineConstants Condition="$(TargetFramework.Contains('-windows'))">$(DefineConstants);WINDOWS</DefineConstants>
+  <!-- version number information -->
+  <PropertyGroup>
+    <IosTargetFrameworkVersion>13.6</IosTargetFrameworkVersion>
+    <TvosTargetFrameworkVersion>13.6</TvosTargetFrameworkVersion>
+    <MacCatalystTargetFrameworkVersion>13.5</MacCatalystTargetFrameworkVersion>
+    <MacosTargetFrameworkVersion>10.14</MacosTargetFrameworkVersion>
+    <AndroidTargetFrameworkVersion>30.0</AndroidTargetFrameworkVersion>
+    <WindowsTargetFrameworkVersion>10.0.19041</WindowsTargetFrameworkVersion>
+    <Windows2TargetFrameworkVersion>10.0.20348</Windows2TargetFrameworkVersion>
+    <TizenTargetFrameworkVersion>6.5</TizenTargetFrameworkVersion>
+    <GtkTargetFrameworkVersion>3.24.24.64</GtkTargetFrameworkVersion>
+  </PropertyGroup>
 
-    <!-- Workaround: https://github.com/dotnet/sdk/issues/19050 -->
-    <DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
+  <Import Condition="Exists('Directory.Build.Override.props')" Project="Directory.Build.Override.props" />
+
+  <PropertyGroup>
+    <!-- the real TFMs -->
+    <WindowsMauiPlatforms Condition="'$(WindowsMauiPlatforms)' == ''">net$(_MauiDotNetVersion)-windows$(WindowsTargetFrameworkVersion);net$(_MauiDotNetVersion)-windows$(Windows2TargetFrameworkVersion)</WindowsMauiPlatforms>
+
+    <MauiPlatforms Condition="'$(IncludeTizenTargetFrameworks)' == 'true'">net$(_MauiDotNetVersion)-tizen;$(MauiPlatforms)</MauiPlatforms>
+    <MauiPlatforms Condition="'$(IncludeWindowsTargetFrameworks)' == 'true'">$(WindowsMauiPlatforms);$(MauiPlatforms)</MauiPlatforms>
+    <MauiPlatforms Condition="'$(IncludeAndroidTargetFrameworks)' == 'true'">net$(_MauiDotNetVersion)-android;$(MauiPlatforms)</MauiPlatforms>
+    <MauiPlatforms Condition="'$(IncludeMacCatalystTargetFrameworks)' == 'true'">net$(_MauiDotNetVersion)-maccatalyst;$(MauiPlatforms)</MauiPlatforms>
+    <MauiPlatforms Condition="'$(IncludeIosTargetFrameworks)' == 'true'">net$(_MauiDotNetVersion)-ios;$(MauiPlatforms)</MauiPlatforms>
+    <MauiPlatforms Condition="'$(IncludeGtkTargetFrameworks)' == 'true'">net$(_MauiDotNetVersion)-gtk;$(MauiPlatforms)</MauiPlatforms>
+
+    <!-- Device Tests TFMs (no Tizen yet) -->
+    <MauiDeviceTestsPlatforms Condition="'$(IncludeWindowsTargetFrameworks)' == 'true'">$(WindowsMauiPlatforms);$(MauiDeviceTestsPlatforms)</MauiDeviceTestsPlatforms>
+    <MauiDeviceTestsPlatforms Condition="'$(IncludeAndroidTargetFrameworks)' == 'true'">net$(_MauiDotNetVersion)-android;$(MauiDeviceTestsPlatforms)</MauiDeviceTestsPlatforms>
+    <MauiDeviceTestsPlatforms Condition="'$(IncludeMacCatalystTargetFrameworks)' == 'true'">net$(_MauiDotNetVersion)-maccatalyst;$(MauiDeviceTestsPlatforms)</MauiDeviceTestsPlatforms>
+    <MauiDeviceTestsPlatforms Condition="'$(IncludeIosTargetFrameworks)' == 'true'">net$(_MauiDotNetVersion)-ios;$(MauiDeviceTestsPlatforms)</MauiDeviceTestsPlatforms>
+
+    <!-- Graphics TFMs -->
+    <MauiGraphicsPlatforms>$(MauiPlatforms)</MauiGraphicsPlatforms>
+    <MauiGraphicsPlatforms Condition="'$(IncludeMacOSTargetFrameworks)' == 'true'">$(MauiGraphicsPlatforms);net$(_MauiDotNetVersion)-macos</MauiGraphicsPlatforms>
   </PropertyGroup>
 
   <PropertyGroup>
     <MauiRootDirectory>$(MSBuildThisFileDirectory)</MauiRootDirectory>
+    <MauiSrcDirectory>$(MSBuildThisFileDirectory)src/</MauiSrcDirectory>
     <MauiNuSpecDirectory>$(MSBuildThisFileDirectory).nuspec/</MauiNuSpecDirectory>
     <DotNetOutputPath>$(MSBuildThisFileDirectory)bin/</DotNetOutputPath>
     <DotNetTempDirectory>$(DotNetOutputPath)temp/</DotNetTempDirectory>
@@ -55,7 +112,7 @@
     <DotNetToolPath>$(DotNetDirectory)dotnet</DotNetToolPath>
     <DotNetPacksDirectory>$(DotNetDirectory)packs/</DotNetPacksDirectory>
     <DotNetLibraryPacksDirectory>$(DotNetDirectory)library-packs/</DotNetLibraryPacksDirectory>
-    <DotNetSdkManifestsDirectory>$(DotNetDirectory)sdk-manifests/$(DotNetPreviewVersionBand)/</DotNetSdkManifestsDirectory>
+    <DotNetSdkManifestsDirectory>$(DotNetDirectory)sdk-manifests/$(DotNetVersionBand)/</DotNetSdkManifestsDirectory>
     <DotNetTemplatePacksDirectory>$(DotNetDirectory)template-packs/</DotNetTemplatePacksDirectory>
     <_MauiBuildTasksLocation>$(_MauiBuildTasksLocation)</_MauiBuildTasksLocation>
     <_MauiBuildTasksLocation Condition="'$(_MauiBuildTasksLocation)' == ''">$(MSBuildThisFileDirectory).nuspec\</_MauiBuildTasksLocation>
@@ -69,7 +126,6 @@
     <Product>Microsoft MAUI</Product>
     <ProduceReferenceAssembly Condition="'$(UsingMicrosoftNETSdk)' == 'True' AND '$(Configuration)' == 'Debug'">True</ProduceReferenceAssembly>
     <ProduceReferenceAssemblyInOutDir>True</ProduceReferenceAssemblyInOutDir>
-    <TargetPlatformMinVersion Condition="'$(TargetPlatformMinVersion)' == '' and $(TargetFramework.Contains('-windows'))">10.0.17763.0</TargetPlatformMinVersion>
     <Win2DWarnNoPlatform>false</Win2DWarnNoPlatform>
   </PropertyGroup>
   <PropertyGroup>
@@ -83,7 +139,7 @@
     <PackageProjectUrl>https://github.com/dotnet/maui</PackageProjectUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
-    <PackageVersion>0.0.1-alpha1</PackageVersion>
+    <PackageVersion>$(DotNetVersionBand)-dev</PackageVersion>
     <PackageOutputPath>$(MSBuildThisFileDirectory)artifacts</PackageOutputPath>
   </PropertyGroup>
   <!-- This target is replaced by GitInfo when restored. Allows Versions.targets to rely on it before restore. -->
@@ -92,6 +148,10 @@
   <Import Condition="'$(EnvironmentBuildPropsImported)' != 'True'" Project="$(MSBuildThisFileDirectory)eng\Environment.Build.props" />
   <Import Condition="'$(SampleProject)' != 'True' and '$(CI)' == 'true'" Project="$(MSBuildThisFileDirectory)eng\SourceLink.Build.props" />
   <ItemGroup Condition="'$(MSBuildVersion)' != '' AND '$(MSBuildVersion)' &lt; '16.7.0'  ">
-    <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="3.9.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="4.2.0" PrivateAssets="all" />
   </ItemGroup>
+  <PropertyGroup>
+    <MauiGraphicsPlatforms></MauiGraphicsPlatforms>
+    <MauiPlatforms>net$(_MauiDotNetVersion)-gtk;</MauiPlatforms>
+  </PropertyGroup>
 </Project>

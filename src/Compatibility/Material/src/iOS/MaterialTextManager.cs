@@ -1,6 +1,7 @@
 using System;
 using CoreGraphics;
 using MaterialComponents;
+using ObjCRuntime;
 using UIKit;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.Platform.iOS;
@@ -128,7 +129,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Material.iOS
 			textField.ContainerScheme.ColorScheme.PrimaryColor = uIColor;
 		}
 
-		static Color AdjustTextColor(IMaterialEntryRenderer element) 
+		static Color AdjustTextColor(IMaterialEntryRenderer element)
 		{
 			if (Forms.IsiOS14OrNewer)
 			{

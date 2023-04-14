@@ -1,6 +1,7 @@
 ﻿using System;
 using CoreGraphics;
 using Microsoft.Maui.Graphics;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
@@ -21,6 +22,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 		public EventHandler CheckedChanged;
 		bool _disposed;
 
+#pragma warning disable CA1416 // TODO: ContentEdgeInsets, AdjustsImageWhenDisabled, AdjustsImageWhenHighlighted unsupported from version 15.0
 		internal float MinimumViewSize
 		{
 			get { return _minimumViewSize; }
@@ -42,6 +44,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			AdjustsImageWhenDisabled = false;
 			AdjustsImageWhenHighlighted = false;
 		}
+#pragma warning restore CA1416
 
 		void OnTouchUpInside(object sender, EventArgs e)
 		{
@@ -85,7 +88,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 					return;
 
 				_tintColor = value;
-				CheckBoxTintUIColor = CheckBoxTintColor?.ToUIColor();
+				CheckBoxTintUIColor = CheckBoxTintColor?.ToPlatform();
 			}
 		}
 

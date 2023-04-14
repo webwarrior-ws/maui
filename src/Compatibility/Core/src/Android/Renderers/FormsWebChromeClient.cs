@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using Android.App;
 using Android.Content;
 using Android.Webkit;
+using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Internals;
 using Object = Java.Lang.Object;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 {
+	[Obsolete("Use Microsoft.Maui.Platform.MauiWebViewClient instead")]
 	public class FormsWebChromeClient : WebChromeClient
 	{
 		Activity _activity;
@@ -73,7 +75,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		{
 			_activity = thisActivity as Activity;
 			if (_activity == null)
-				Log.Warning(nameof(WebViewRenderer), $"Failed to set the activity of the WebChromeClient, can't show pickers on the Webview");
+				Application.Current?.FindMauiContext()?.CreateLogger<WebViewRenderer>()?.LogWarning($"Failed to set the activity of the WebChromeClient, can't show pickers on the Webview");
 		}
 	}
 }

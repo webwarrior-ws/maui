@@ -14,9 +14,14 @@ using Microsoft.Maui.Controls.Internals;
 using WBrush = Microsoft.UI.Xaml.Media.Brush;
 using WSolidColorBrush = Microsoft.UI.Xaml.Media.SolidColorBrush;
 using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Controls.Handlers.Compatibility;
+using Microsoft.Maui.Controls.Platform;
+using WMenuFlyout = Microsoft.UI.Xaml.Controls.MenuFlyout;
+using WFlyoutBase = Microsoft.UI.Xaml.Controls.Primitives.FlyoutBase;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[Obsolete("Use Microsoft.Maui.Controls.Platform.Compatibility.CellControl instead")]
 	public class CellControl : ContentControl
 	{
 		public static readonly DependencyProperty CellProperty = DependencyProperty.Register("Cell", typeof(object), typeof(CellControl),
@@ -51,7 +56,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			if (Cell == null)
 				return;
 
-			/// 🚀 subscribe topropertychanged
+			// 🚀 subscribe topropertychanged
 			// make sure we do not subscribe twice (because this could happen in SetSource(Cell oldCell, Cell newCell))
 			Cell.PropertyChanged -= _propertyChangedHandler;
 			Cell.PropertyChanged += _propertyChangedHandler;
@@ -63,7 +68,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				return;
 
 			Cell.SendDisappearing();
-			/// 🚀 unsubscribe from propertychanged
+			// 🚀 unsubscribe from propertychanged
 			Cell.PropertyChanged -= _propertyChangedHandler;
 		}
 
@@ -85,7 +90,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			get { return (FrameworkElement)Content; }
 		}
 
-		protected override Windows.Foundation.Size MeasureOverride(Windows.Foundation.Size availableSize)
+		protected override global::Windows.Foundation.Size MeasureOverride(global::Windows.Foundation.Size availableSize)
 		{
 			ListView lv = _listView.Value;
 
@@ -105,23 +110,23 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 					{
 						var estimate = (double)lv.GetValue(MeasuredEstimateProperty);
 						if (estimate > -1)
-							return new Windows.Foundation.Size(availableSize.Width, estimate);
+							return new global::Windows.Foundation.Size(availableSize.Width, estimate);
 					}
 					else
 					{
 						double rowHeight = lv.RowHeight;
 						if (rowHeight > -1)
-							return new Windows.Foundation.Size(availableSize.Width, rowHeight);
+							return new global::Windows.Foundation.Size(availableSize.Width, rowHeight);
 					}
 				}
 
 				// This needs to return a size with a non-zero height; 
 				// otherwise, it kills virtualization.
-				return new Windows.Foundation.Size(0, Cell.DefaultCellHeight);
+				return new global::Windows.Foundation.Size(0, Cell.DefaultCellHeight);
 			}
 
 			// Children still need measure called on them
-			Windows.Foundation.Size result = base.MeasureOverride(availableSize);
+			global::Windows.Foundation.Size result = base.MeasureOverride(availableSize);
 
 			if (lv != null)
 			{
@@ -181,7 +186,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				? _defaultOnColor
 				: new WSolidColorBrush(switchCell.OnColor.ToWindowsColor());
 
-			var nativeSwitch = FrameworkElementExtensions.GetFirstDescendant<ToggleSwitch>(this);
+			var nativeSwitch = this.GetFirstDescendant<ToggleSwitch>();
 
 			// change fill color in switch rectangle
 			var rects = nativeSwitch.GetDescendantsByName<Microsoft.UI.Xaml.Shapes.Rectangle>("SwitchKnobBounds");
@@ -230,7 +235,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		{
 			if (_defaultOnColor == null && Cell is SwitchCell)
 			{
-				var nativeSwitch = FrameworkElementExtensions.GetFirstDescendant<ToggleSwitch>(this);
+				var nativeSwitch = this.GetFirstDescendant<ToggleSwitch>();
 				var rects = nativeSwitch.GetDescendantsByName<Microsoft.UI.Xaml.Shapes.Rectangle>("SwitchKnobBounds");
 				foreach (var rect in rects)
 					_defaultOnColor = rect.Fill;
@@ -241,7 +246,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		void OnClick(object sender, PointerRoutedEventArgs e)
 		{
 			var point = e.GetCurrentPoint(CellContent);
-			if (point.Properties.PointerUpdateKind != PointerUpdateKind.RightButtonReleased)
+			if (point.Properties.PointerUpdateKind != Microsoft.UI.Input.PointerUpdateKind.RightButtonReleased)
 				return;
 
 			OpenContextMenu();
@@ -274,16 +279,16 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 		void OnLongTap(object sender, HoldingRoutedEventArgs e)
 		{
-			if (e.HoldingState == HoldingState.Started)
+			if (e.HoldingState == Microsoft.UI.Input.HoldingState.Started)
 				OpenContextMenu();
 		}
 
 		/// <summary>
 		/// To check the context, not just the text.
 		/// </summary>
-		MenuFlyout GetAttachedFlyout()
+		WMenuFlyout GetAttachedFlyout()
 		{
-			if (FlyoutBase.GetAttachedFlyout(CellContent) is MenuFlyout flyout)
+			if (WFlyoutBase.GetAttachedFlyout(CellContent) is WMenuFlyout flyout)
 			{
 				var actions = Cell.ContextActions;
 				if (flyout.Items.Count != actions.Count)
@@ -303,16 +308,16 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		{
 			if (GetAttachedFlyout() == null)
 			{
-				var flyout = new MenuFlyout();
+				var flyout = new WMenuFlyout();
 				SetupMenuItems(flyout);
 
 				((INotifyCollectionChanged)Cell.ContextActions).CollectionChanged += OnContextActionsChanged;
 
 				_contextActions = Cell.ContextActions;
-				FlyoutBase.SetAttachedFlyout(CellContent, flyout);
+				WFlyoutBase.SetAttachedFlyout(CellContent, flyout);
 			}
 
-			FlyoutBase.ShowAttachedFlyout(CellContent);
+			WFlyoutBase.ShowAttachedFlyout(CellContent);
 		}
 
 		void SetCell(object newContext)
@@ -331,17 +336,10 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			// If there is a ListView, load the Cell content from the ItemTemplate.
 			// Otherwise, the given Cell is already a templated Cell from a TableView.
 			ListView lv = _listView.Value;
+
 			if (lv != null)
 			{
-				// 🚀 If there is an old cell, check if it was a group header
-				// we need this later to know whether we can recycle this cell
-				bool? wasGroupHeader = null;
-				var oldCell = Cell;
-				if (oldCell != null)
-				{
-					wasGroupHeader = oldCell.GetIsGroupHeader<ItemsView<Cell>, Cell>();
-				}
-
+				Cell oldCell = Cell;
 				bool isGroupHeader = IsGroupHeader;
 				DataTemplate template = isGroupHeader ? lv.GroupHeaderTemplate : lv.ItemTemplate;
 				object bindingContext = newContext;
@@ -359,15 +357,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 						sameTemplate = oldTemplate == template;
 					}
 				}
-				// 🚀 if there is no datatemplateselector, we now verify if the old cell
-				// was a groupheader and whether the new one is as well.
-				// Again, this is only to verify we can reuse this cell
-				else if (wasGroupHeader.HasValue)
-				{
-					sameTemplate = wasGroupHeader == isGroupHeader;
-				}
 
-				// reuse cell
+				// Reuse cell
 				var canReuseCell = Cell != null && sameTemplate;
 
 				// 🚀 If we can reuse the cell, just reuse it...
@@ -404,7 +395,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 			if (Cell != cell)
 				Cell = cell;
-			// 🚀 even if the cell did not change, we **must** call SendDisappearing() and SendAppearing()
+
+			// 🚀 Even if the cell did not change, we **must** call SendDisappearing() and SendAppearing()
 			// because frameworks such as Reactive UI rely on this! (this.WhenActivated())
 			else if (Cell != null)
 			{
@@ -451,7 +443,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 					_contextActions = null;
 				}
 
-				FlyoutBase.SetAttachedFlyout(CellContent, null);
+				WFlyoutBase.SetAttachedFlyout(CellContent, null);
 				return;
 			}
 
@@ -459,12 +451,12 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			CellContent.Holding += OnLongTap;
 		}
 
-		void SetupMenuItems(MenuFlyout flyout)
+		void SetupMenuItems(WMenuFlyout flyout)
 		{
-			foreach (MenuItem item in Cell.ContextActions)
+			foreach (var item in Cell.ContextActions)
 			{
-				var flyoutItem = new MenuFlyoutItem();
-				flyoutItem.SetBinding(MenuFlyoutItem.TextProperty, "Text");
+				var flyoutItem = new Microsoft.UI.Xaml.Controls.MenuFlyoutItem();
+				flyoutItem.SetBinding(UI.Xaml.Controls.MenuFlyoutItem.TextProperty, "Text");
 				//WINUI FIX
 				//flyoutItem.Command = new MenuItemCommand(item);
 				flyoutItem.DataContext = item;

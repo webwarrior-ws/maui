@@ -3,18 +3,17 @@
   <PropertyGroup>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <Description>.NET MAUI NuGet dependencies pack</Description>
-    <TargetFrameworks>net6.0;$(MauiPlatforms)</TargetFrameworks>
+    <TargetFrameworks>$(_MauiDotNetTfm);$(MauiPlatforms)</TargetFrameworks>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <IncludeSymbols>false</IncludeSymbols>
-    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <NoWarn>$(NoWarn);NU5128;NU5104;</NoWarn>
   </PropertyGroup>
 
   <Import Project="../Shared/LibraryPacks.targets" />
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Maui.Graphics" />
-    <PackageReference Include="Reloadify3000" />
+    <ProjectReference Include="..\..\..\src\Graphics\src\Graphics\Graphics.csproj" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'android' ">
     <PackageReference Include="Xamarin.Android.Glide" />
@@ -26,14 +25,17 @@
     <PackageReference Include="Xamarin.AndroidX.Navigation.Common" />
     <PackageReference Include="Xamarin.AndroidX.Browser" />
     <PackageReference Include="Xamarin.Google.Android.Material" />
+    <PackageReference Include="Xamarin.AndroidX.Security.SecurityCrypto" />
+    <PackageReference Include="Xamarin.Google.Crypto.Tink.Android" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'windows' ">
-    <PackageReference Include="Microsoft.Maui.Graphics.Win2D.WinUI.Desktop" />
+    <ProjectReference Include="..\..\..\src\Graphics\src\Graphics.Win2D\Graphics.Win2D.csproj" />
     <PackageReference Include="Microsoft.WindowsAppSDK" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" />
-    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" NoWarn="NU1701" />
     <PackageReference Include="Microsoft.Graphics.Win2D" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'tizen'" >
+    <PackageReference Include="Tizen.UIExtensions.NUI" />
+    <ProjectReference Include="..\..\..\src\Graphics\src\Graphics.Skia\Graphics.Skia.csproj" />
   </ItemGroup>
 
 </Project>

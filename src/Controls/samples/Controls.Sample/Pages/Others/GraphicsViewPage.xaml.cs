@@ -1,4 +1,8 @@
-﻿using Microsoft.Maui.Graphics;
+﻿using System;
+using System.Linq;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Dispatching;
+using Microsoft.Maui.Graphics;
 
 namespace Maui.Controls.Sample.Pages
 {
@@ -8,11 +12,64 @@ namespace Maui.Controls.Sample.Pages
 		{
 			InitializeComponent();
 		}
+
+		void OnButtonClicked(object sender, EventArgs e)
+			=> GraphicsView.Invalidate();
+
+		void GraphicsView_DragInteraction(object sender, TouchEventArgs e)
+			=> UpdateInteractions("Drag Touches", e);
+
+		void GraphicsView_CancelInteraction(object sender, EventArgs e)
+			=> UpdateInteractions("Cancel Touches");
+
+		void GraphicsView_EndInteraction(object sender, TouchEventArgs e)
+			=> UpdateInteractions("End Touches", e);
+
+		void GraphicsView_StartInteraction(object sender, TouchEventArgs e)
+			=> UpdateInteractions("Start Touch", e);
+
+		void GraphicsView_StartHoverInteraction(object sender, TouchEventArgs e)
+			=> UpdateInteractions("Start Hover", e);
+
+		void GraphicsView_MoveHoverInteraction(object sender, TouchEventArgs e)
+			=> UpdateInteractions("Move Hover", e);
+
+		void GraphicsView_EndHoverInteraction(object sender, EventArgs e)
+			=> UpdateInteractions("End Hover");
+
+		void GraphicsView_Tapped(object sender, EventArgs args)
+			=> UpdateGestures("TapGestureRecognizer");
+
+		void GraphicsView_PanUpdated(object sender, PanUpdatedEventArgs args)
+			=> UpdateGestures("PanGestureRecognizer");
+
+		void GraphicsView_PinchUpdated(object sender, PinchGestureUpdatedEventArgs args)
+			=> UpdateGestures("PinchGestureRecognizer ");
+
+		void UpdateInteractions(string name, TouchEventArgs e)
+		{
+			Dispatcher.DispatchAsync(() =>
+				labelInteractions.Text = $"{name}: "
+					+ string.Join(", ", e.Touches.Select(t => $"[{Math.Round(t.X, 1)},{Math.Round(t.Y, 1)}]"))
+					+ $" IsInsideBounds: {e.IsInsideBounds}");
+
+			Dispatcher.DispatchAsync(() =>
+				labelGestures.Text = string.Empty);
+		}
+
+		void UpdateGestures(string name)
+		{
+			Dispatcher.DispatchAsync(() =>
+				labelGestures.Text = $"{name}");
+		}
+
+		void UpdateInteractions(string name)
+			=> Dispatcher.DispatchAsync(() => labelInteractions.Text = name);
 	}
 
 	public class GraphicsDrawable : IDrawable
 	{
-		public void Draw(ICanvas canvas, RectangleF dirtyRect)
+		public void Draw(ICanvas canvas, RectF dirtyRect)
 		{
 			canvas.SaveState();
 
@@ -172,14 +229,14 @@ namespace Maui.Controls.Sample.Pages
 			linearGradientPaint.StartPoint = new Point(0.1, 0.1);
 			linearGradientPaint.EndPoint = new Point(0.9, 0.9);
 
-			var linearRectangleRectangle = new RectangleF(50, 700, 100, 50);
+			var linearRectangleRectangle = new RectF(50, 700, 100, 50);
 			canvas.SetFillPaint(linearGradientPaint, linearRectangleRectangle);
 			canvas.FillRectangle(linearRectangleRectangle);
 
 			linearGradientPaint.StartPoint = new Point(0.1, 0.1);
 			linearGradientPaint.EndPoint = new Point(0.9, 0.9);
 
-			var linearEllipseRectangle = new RectangleF(200, 700, 100, 50);
+			var linearEllipseRectangle = new RectF(200, 700, 100, 50);
 			canvas.SetFillPaint(linearGradientPaint, linearEllipseRectangle);
 			canvas.FillEllipse(linearEllipseRectangle);
 
@@ -187,7 +244,7 @@ namespace Maui.Controls.Sample.Pages
 			linearGradientPaint.StartPoint = new Point(0.1, 0.1);
 			linearGradientPaint.EndPoint = new Point(0.9, 0.9);
 
-			var linearRoundedRectangleRectangle = new RectangleF(350, 700, 100, 50);
+			var linearRoundedRectangleRectangle = new RectF(350, 700, 100, 50);
 			canvas.SetFillPaint(linearGradientPaint, linearRoundedRectangleRectangle);
 			canvas.FillRoundedRectangle(linearRoundedRectangleRectangle, 25);
 
@@ -200,7 +257,7 @@ namespace Maui.Controls.Sample.Pages
 			linearGradientPaint.StartPoint = new Point(0.1, 0.1);
 			linearGradientPaint.EndPoint = new Point(0.9, 0.9);
 
-			var linearPathRectangle = new RectangleF(500, 700, 200, 50);
+			var linearPathRectangle = new RectF(500, 700, 200, 50);
 			canvas.SetFillPaint(linearGradientPaint, linearPathRectangle);
 			canvas.FillPath(path);
 
@@ -217,14 +274,14 @@ namespace Maui.Controls.Sample.Pages
 			radialGradientPaint.Center = new Point(0.5, 0.5);
 			radialGradientPaint.Radius = 0.5;
 
-			var radialRectangleRectangle = new RectangleF(50, 800, 100, 50);
+			var radialRectangleRectangle = new RectF(50, 800, 100, 50);
 			canvas.SetFillPaint(radialGradientPaint, radialRectangleRectangle);
 			canvas.FillRectangle(radialRectangleRectangle);
 
 			radialGradientPaint.Center = new Point(0.5, 0.5);
 			radialGradientPaint.Radius = 0.5;
 
-			var radialEllipseRectangle = new RectangleF(200, 800, 100, 50);
+			var radialEllipseRectangle = new RectF(200, 800, 100, 50);
 			canvas.SetFillPaint(radialGradientPaint, radialEllipseRectangle);
 			canvas.FillEllipse(radialEllipseRectangle);
 
@@ -232,7 +289,7 @@ namespace Maui.Controls.Sample.Pages
 			radialGradientPaint.Center = new Point(0.5, 0.5);
 			radialGradientPaint.Radius = 0.5;
 
-			var radialRoundedRectangleRectangle = new RectangleF(350, 800, 100, 50);
+			var radialRoundedRectangleRectangle = new RectF(350, 800, 100, 50);
 			canvas.SetFillPaint(radialGradientPaint, radialRoundedRectangleRectangle);
 			canvas.FillRoundedRectangle(radialRoundedRectangleRectangle, 25);
 
@@ -245,7 +302,7 @@ namespace Maui.Controls.Sample.Pages
 			radialGradientPaint.Center = new Point(0.5, 0.5);
 			radialGradientPaint.Radius = 0.5;
 
-			var radialPathRectangle = new RectangleF(550, 800, 200, 50);
+			var radialPathRectangle = new RectF(550, 800, 200, 50);
 			canvas.SetFillPaint(radialGradientPaint, radialPathRectangle);
 			canvas.FillPath(path);
 
@@ -426,7 +483,7 @@ namespace Maui.Controls.Sample.Pages
 					var vHorizontalAlignment = (HorizontalAlignment)x;
 					var vVerticalAlignment = (VerticalAlignment)y;
 
-					canvas.FontName = "Arial";
+					canvas.Font = new Font("Arial");
 					canvas.FontSize = 12f;
 					canvas.DrawString(vTextLong, dx, dy, 190, 140, vHorizontalAlignment, vVerticalAlignment);
 				}
@@ -447,7 +504,7 @@ namespace Maui.Controls.Sample.Pages
 					var vHorizontalAlignment = (HorizontalAlignment)x;
 					var vVerticalAlignment = (VerticalAlignment)y;
 
-					canvas.FontName = "Arial";
+					canvas.Font = new Font("Arial");
 					canvas.FontSize = 12f;
 					canvas.DrawString(vTextShort, dx, dy, 190, 140, vHorizontalAlignment, vVerticalAlignment);
 				}
@@ -465,7 +522,7 @@ namespace Maui.Controls.Sample.Pages
 				const HorizontalAlignment vHorizontalAlignment = HorizontalAlignment.Left;
 				var vVerticalAlignment = (VerticalAlignment)y;
 
-				canvas.FontName = "Arial";
+				canvas.Font = new Font("Arial");
 				canvas.FontSize = 12f;
 				canvas.DrawString(
 					vTextLong,
@@ -502,39 +559,33 @@ namespace Maui.Controls.Sample.Pages
 			canvas.DrawLine(300, 1275, 300, 1375);
 			canvas.RestoreState();
 
-			var graphicsPlatform = GraphicsPlatform.CurrentService;
-			if (graphicsPlatform != null)
+			//
+			// Test String Measuring
+			//
+
+			canvas.StrokeColor = Colors.Blue;
+			for (int i = 0; i < 4; i++)
 			{
-				//
-				// Test String Measuring
-				//
+				canvas.FontSize = 12 + i * 6;
+				canvas.DrawString("Test String Length", 650, 400 + (100 * i), HorizontalAlignment.Left);
 
-				canvas.StrokeColor = Colors.Blue;
-				for (int i = 0; i < 4; i++)
-				{
-					canvas.FontSize = 12 + i * 6;
-					canvas.DrawString("Test String Length", 650, 400 + (100 * i), HorizontalAlignment.Left);
-
-					var size = graphicsPlatform.GetStringSize("Test String Length", "Arial", 12 + i * 6);
-					canvas.DrawRectangle(650, 400 + (100 * i), size.Width, size.Height);
-				}
-
-				//
-				// Test Path Measuring
-				//
-
-				var vBuilder = new PathBuilder();
-				path =
-					vBuilder.BuildPath(
-						"M0 52.5 C60 -17.5 60 -17.5 100 52.5 C140 122.5 140 122.5 100 152.5 Q60 182.5 0 152.5 Z");
-
-				canvas.SaveState();
-				canvas.Translate(650, 900);
-				canvas.StrokeColor = Colors.Black;
-				canvas.DrawPath(path);
-
-				canvas.RestoreState();
+				var size = canvas.GetStringSize("Test String Length", new Font("Arial"), 12 + i * 6);
+				canvas.DrawRectangle(650, 400 + (100 * i), size.Width, size.Height);
 			}
+
+			//
+			// Test Path Measuring
+			//
+
+			var vBuilder = new PathBuilder();
+			path = vBuilder.BuildPath("M0 52.5 C60 -17.5 60 -17.5 100 52.5 C140 122.5 140 122.5 100 152.5 Q60 182.5 0 152.5 Z");
+
+			canvas.SaveState();
+			canvas.Translate(650, 900);
+			canvas.StrokeColor = Colors.Black;
+			canvas.DrawPath(path);
+
+			canvas.RestoreState();
 
 			canvas.RestoreState();
 		}

@@ -13,11 +13,14 @@ using System.Linq;
 using Microsoft.UI.Xaml.Controls;
 using WWebView = Microsoft.UI.Xaml.Controls.WebView2;
 using Microsoft.Maui.Controls.Platform;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class WebViewRenderer : ViewRenderer<WebView, WebView2>, IWebViewDelegate
 	{
+		IWebViewController WebViewController => Element;
 		WebNavigationEvent _eventState;
 		bool _updating;
 		WebView2 _internalWebView;
@@ -50,7 +53,7 @@ if(bases.length == 0){
 			_internalWebView.NavigationCompleted += async (sender, args) =>
 			{
 				// Generate a version of the <base> script with the correct <base> tag
-				var script = BaseInsertionScript.Replace("baseTag", baseTag);
+				var script = BaseInsertionScript.Replace("baseTag", baseTag, StringComparison.Ordinal);
 
 				// Run it and retrieve the updated HTML from our WebView
 				await sender.ExecuteScriptAsync(script);
@@ -90,7 +93,7 @@ if(bases.length == 0){
 				}
 				catch (Exception exc)
 				{
-					Internals.Log.Warning(nameof(WebViewRenderer), $"Failed to load: {uri} {exc}");
+					Application.Current?.FindMauiContext()?.CreateLogger<WebViewRenderer>()?.LogWarning(exc, "Failed to load: {uri}", uri);
 				}
 			}
 			else
@@ -102,7 +105,7 @@ if(bases.length == 0){
 				}
 				catch (Exception exc)
 				{
-					Internals.Log.Warning(nameof(WebViewRenderer), $"Failed to load: {uri} {exc}");
+					Application.Current?.FindMauiContext()?.CreateLogger<WebViewRenderer>()?.LogWarning(exc, "Failed to load: {uri}", uri);
 				}
 			}
 		}
@@ -141,11 +144,11 @@ if(bases.length == 0){
 				{
 					Control.NavigationStarting -= OnNavigationStarted;
 					Control.NavigationCompleted -= OnNavigationCompleted;
-					Element.EvalRequested -= OnEvalRequested;
-					Element.EvaluateJavaScriptRequested -= OnEvaluateJavaScriptRequested;
-					Element.GoBackRequested -= OnGoBackRequested;
-					Element.GoForwardRequested -= OnGoForwardRequested;
-					Element.ReloadRequested -= OnReloadRequested;
+					WebViewController.EvalRequested -= OnEvalRequested;
+					WebViewController.EvaluateJavaScriptRequested -= OnEvaluateJavaScriptRequested;
+					WebViewController.GoBackRequested -= OnGoBackRequested;
+					WebViewController.GoForwardRequested -= OnGoForwardRequested;
+					WebViewController.ReloadRequested -= OnReloadRequested;
 				}
 			}
 
@@ -185,7 +188,7 @@ if(bases.length == 0){
 
 			if (e.OldElement != null)
 			{
-				var oldElement = e.OldElement;
+				IWebViewController oldElement = e.OldElement;
 				oldElement.EvalRequested -= OnEvalRequested;
 				oldElement.EvaluateJavaScriptRequested -= OnEvaluateJavaScriptRequested;
 				oldElement.GoBackRequested -= OnGoBackRequested;
@@ -202,7 +205,7 @@ if(bases.length == 0){
 					SetNativeControl(webView);
 				}
 
-				var newElement = e.NewElement;
+				IWebViewController newElement = e.NewElement;
 				newElement.EvalRequested += OnEvalRequested;
 				newElement.EvaluateJavaScriptRequested += OnEvaluateJavaScriptRequested;
 				newElement.GoForwardRequested += OnGoForwardRequested;
@@ -228,8 +231,10 @@ if(bases.length == 0){
 			}
 		}
 
+		[PortHandler]
 		HashSet<string> _loadedCookies = new HashSet<string>();
 
+		[PortHandler]
 		Uri CreateUriForCookies(string url)
 		{
 			if (url == null)
@@ -251,15 +256,17 @@ if(bases.length == 0){
 			return null;
 		}
 
+		[PortHandler]
 		HttpCookieCollection GetCookiesFromNativeStore(string url)
 		{
 			var uri = CreateUriForCookies(url);
 			CookieContainer existingCookies = new CookieContainer();
-			var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
+			var filter = new global::Windows.Web.Http.Filters.HttpBaseProtocolFilter();
 			var nativeCookies = filter.CookieManager.GetCookies(uri);
 			return nativeCookies;
 		}
 
+		[PortHandler]
 		void InitialCookiePreloadIfNecessary(string url)
 		{
 			var myCookieJar = Element.Cookies;
@@ -284,6 +291,7 @@ if(bases.length == 0){
 			}
 		}
 
+		[PortHandler]
 		void SyncNativeCookiesToElement(string url)
 		{
 			var myCookieJar = Element.Cookies;
@@ -298,7 +306,7 @@ if(bases.length == 0){
 			var cookies = myCookieJar.GetCookies(uri);
 			var retrieveCurrentWebCookies = GetCookiesFromNativeStore(url);
 
-			var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
+			var filter = new global::Windows.Web.Http.Filters.HttpBaseProtocolFilter();
 			var nativeCookies = filter.CookieManager.GetCookies(uri);
 
 			foreach (Cookie cookie in cookies)
@@ -315,6 +323,7 @@ if(bases.length == 0){
 			SyncNativeCookies(url);
 		}
 
+		[PortHandler]
 		void SyncNativeCookies(string url)
 		{
 			var uri = CreateUriForCookies(url);
@@ -332,7 +341,7 @@ if(bases.length == 0){
 
 			var retrieveCurrentWebCookies = GetCookiesFromNativeStore(url);
 
-			var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
+			var filter = new global::Windows.Web.Http.Filters.HttpBaseProtocolFilter();
 			foreach (Cookie cookie in cookies)
 			{
 				HttpCookie httpCookie = new HttpCookie(cookie.Name, cookie.Domain, cookie.Path);
@@ -368,7 +377,7 @@ if(bases.length == 0){
 					}
 					catch (Exception exc)
 					{
-						Log.Warning(nameof(WebView), $"Eval of script failed: {exc} Script: {eventArg.Script}");
+						Application.Current?.FindMauiContext()?.CreateLogger<WebView>()?.LogWarning(exc, "Eval of script failed Script: {eventArg.Script}", eventArg.Script);
 					}
 				});
 		}
@@ -406,6 +415,7 @@ if(bases.length == 0){
 			Control.Reload();
 		}
 
+		[PortHandler]
 		async void NavigationSucceeded(WWebView sender, Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
 		{
 			// TODO WINUI3
@@ -422,6 +432,7 @@ if(bases.length == 0){
 
 		}
 
+		[PortHandler]
 		void NavigationFailed(WWebView sender, Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
 		{
 			Uri uri = sender.Source;
@@ -438,12 +449,14 @@ if(bases.length == 0){
 				NavigationFailed(sender, e);
 		}
 
+		[PortHandler]
 		async void OnWebMessageReceived(WWebView sender, Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs e)
 		{
 			if (Element.OnThisPlatform().IsJavaScriptAlertEnabled())
-				await new Windows.UI.Popups.MessageDialog(e.TryGetWebMessageAsString()).ShowAsync();
+				await new global::Windows.UI.Popups.MessageDialog(e.TryGetWebMessageAsString()).ShowAsync();
 		}
 
+		[PortHandler]
 		void OnNavigationStarted(WWebView sender, Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)
 		{
 			// TODO WINUI3
@@ -457,7 +470,7 @@ if(bases.length == 0){
 			{
 				var args = new WebNavigatingEventArgs(_eventState, new UrlWebViewSource { Url = uri.AbsoluteUri }, uri.AbsoluteUri);
 
-				Element.SendNavigating(args);
+				WebViewController.SendNavigating(args);
 				e.Cancel = args.Cancel;
 
 				// reset in this case because this is the last event we will get
@@ -466,6 +479,7 @@ if(bases.length == 0){
 			}
 		}
 
+		[PortHandler]
 		void SendNavigated(UrlWebViewSource source, WebNavigationEvent evnt, WebNavigationResult result)
 		{
 			_updating = true;
@@ -473,12 +487,13 @@ if(bases.length == 0){
 			_updating = false;
 
 			SyncNativeCookiesToElement(source.Url);
-			Element.SendNavigated(new WebNavigatedEventArgs(evnt, source, source.Url, result));
+			WebViewController.SendNavigated(new WebNavigatedEventArgs(evnt, source, source.Url, result));
 
 			UpdateCanGoBackForward();
 			_eventState = WebNavigationEvent.NewPage;
 		}
 
+		[PortHandler]
 		void UpdateCanGoBackForward()
 		{
 			((IWebViewController)Element).CanGoBack = Control.CanGoBack;

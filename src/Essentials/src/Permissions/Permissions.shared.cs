@@ -1,17 +1,21 @@
 using System.Threading.Tasks;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.ApplicationModel
 {
+	/// <include file="../../docs/Microsoft.Maui.Essentials/Permissions.xml" path="Type[@FullName='Microsoft.Maui.Essentials.Permissions']/Docs" />
 	public static partial class Permissions
 	{
+		/// <include file="../../docs/Microsoft.Maui.Essentials/Permissions.xml" path="//Member[@MemberName='CheckStatusAsync']/Docs" />
 		public static Task<PermissionStatus> CheckStatusAsync<TPermission>()
 			where TPermission : BasePermission, new() =>
 				new TPermission().CheckStatusAsync();
 
+		/// <include file="../../docs/Microsoft.Maui.Essentials/Permissions.xml" path="//Member[@MemberName='RequestAsync']/Docs" />
 		public static Task<PermissionStatus> RequestAsync<TPermission>()
 			where TPermission : BasePermission, new() =>
 				new TPermission().RequestAsync();
 
+		/// <include file="../../docs/Microsoft.Maui.Essentials/Permissions.xml" path="//Member[@MemberName='ShouldShowRationale']/Docs" />
 		public static bool ShouldShowRationale<TPermission>()
 			where TPermission : BasePermission, new() =>
 				new TPermission().ShouldShowRationale();
@@ -29,9 +33,17 @@ namespace Microsoft.Maui.Essentials
 				throw new PermissionException($"{typeof(TPermission).Name} permission was not granted: {status}");
 		}
 
+		internal static async Task EnsureGrantedOrRestrictedAsync<TPermission>()
+			where TPermission : BasePermission, new()
+		{
+			var status = await RequestAsync<TPermission>();
+
+			if (status != PermissionStatus.Granted && status != PermissionStatus.Restricted)
+				throw new PermissionException($"{typeof(TPermission).Name} permission was not granted or restricted: {status}");
+		}
+
 		public abstract partial class BasePermission
 		{
-			[Preserve]
 			public BasePermission()
 			{
 			}
@@ -106,6 +118,10 @@ namespace Microsoft.Maui.Essentials
 		}
 
 		public partial class Photos
+		{
+		}
+
+		public partial class PhotosAddOnly : BasePlatformPermission
 		{
 		}
 

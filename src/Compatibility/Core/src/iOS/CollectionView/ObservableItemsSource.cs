@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Specialized;
 using Foundation;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
@@ -99,20 +100,14 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 		void CollectionChanged(object sender, NotifyCollectionChangedEventArgs args)
 		{
-			if (Device.IsInvokeRequired)
-			{
-				Device.BeginInvokeOnMainThread(() => CollectionChanged(args));
-			}
-			else
-			{
-				CollectionChanged(args);
-			}
+			CollectionView.BeginInvokeOnMainThread(() => CollectionChanged(args));
 		}
 
 		void CollectionChanged(NotifyCollectionChangedEventArgs args)
 		{
 			// Force UICollectionView to get the internal accounting straight 
-			CollectionView.NumberOfItemsInSection(_section);
+			if (!CollectionView.Hidden)
+				CollectionView.NumberOfItemsInSection(_section);
 
 			switch (args.Action)
 			{
@@ -285,7 +280,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 		void OnCollectionViewUpdated(NotifyCollectionChangedEventArgs args)
 		{
-			Device.BeginInvokeOnMainThread(() =>
+			CollectionView.BeginInvokeOnMainThread(() =>
 			{
 				CollectionViewUpdated?.Invoke(this, args);
 			});

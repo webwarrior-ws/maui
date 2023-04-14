@@ -1,9 +1,11 @@
 using System;
 using CoreGraphics;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[System.Obsolete]
 	public class StructuredItemsViewController<TItemsView> : ItemsViewController<TItemsView>
 		where TItemsView : StructuredItemsView
 	{

@@ -16,7 +16,8 @@ using Color = Microsoft.Maui.Graphics.Color;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 {
-	public abstract class VisualElementRenderer<TElement> : FormsViewGroup, IVisualElementRenderer, IDisposedState,
+	[Obsolete("Use Microsoft.Maui.Controls.Handlers.Compatibility.VisualElementRenderer instead")]
+	public abstract class VisualElementRenderer<TElement> : Microsoft.Maui.MauiViewGroup, IVisualElementRenderer, IDisposedState,
 		IEffectControlProvider where TElement : VisualElement
 	{
 		readonly List<EventHandler<VisualElementChangedEventArgs>> _elementChangedHandlers = new List<EventHandler<VisualElementChangedEventArgs>>();
@@ -24,7 +25,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		VisualElementRendererFlags _flags = VisualElementRendererFlags.AutoPackage | VisualElementRendererFlags.AutoTrack;
 
 		string _defaultContentDescription;
-		ImportantForAccessibility? _defaultImportantForAccessibility;
 		string _defaultHint;
 		bool _cascadeInputTransparent = true;
 		bool _defaultAutomationSet;
@@ -356,7 +356,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		}
 
 		protected virtual void SetImportantForAccessibility()
-			=> Controls.Platform.AutomationPropertiesProvider.SetImportantForAccessibility(this, Element, ref _defaultImportantForAccessibility);
+			=> Controls.Platform.AutomationPropertiesProvider.SetImportantForAccessibility(this, Element);
 
 		void UpdateInputTransparent()
 		{
@@ -405,15 +405,5 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 
 		void IVisualElementRenderer.SetLabelFor(int? id)
 			=> ViewCompat.SetLabelFor(this, id ?? ViewCompat.GetLabelFor(this));
-
-		protected override void OnMeasure(int widthMeasureSpec, int heightMeasureSpec)
-		{
-			if (Element is Layout layout)
-			{
-				layout.ResolveLayoutChanges();
-			}
-
-			base.OnMeasure(widthMeasureSpec, heightMeasureSpec);
-		}
 	}
 }

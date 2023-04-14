@@ -1,5 +1,9 @@
-﻿using Microsoft.Maui;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Maui;
+using Microsoft.Maui.Controls.Compatibility;
+using Microsoft.Maui.Controls.Compatibility.Hosting;
 using Microsoft.Maui.Controls.Hosting;
+using Microsoft.Maui.Hosting;
 using Microsoft.Maui.LifecycleEvents;
 
 namespace Samples
@@ -8,35 +12,25 @@ namespace Samples
 	{
 		public static MauiApp CreateMauiApp()
 		{
-			var appBuilder = MauiApp.CreateBuilder();
+			var builder = MauiApp.CreateBuilder();
 
-#if WINDOWS
-			Microsoft.Maui.Essentials.Platform.MapServiceToken =
-				"RJHqIE53Onrqons5CNOx~FrDr3XhjDTyEXEjng-CRoA~Aj69MhNManYUKxo6QcwZ0wmXBtyva0zwuHB04rFYAPf7qqGJ5cHb03RCDw1jIW8l";
+			builder
+				.UseMauiApp<App>()
+#if TIZEN
+				.UseMauiCompatibility()
 #endif
-
-			appBuilder
-				.ConfigureLifecycleEvents(lifecycle =>
+				.ConfigureEssentials(essentials =>
 				{
-#if __IOS__
-					lifecycle
-						.AddiOS(iOS => iOS
-							.OpenUrl((app, url, options) =>
-								Microsoft.Maui.Essentials.Platform.OpenUrl(app, url, options))
-							.ContinueUserActivity((application, userActivity, completionHandler) =>
-								Microsoft.Maui.Essentials.Platform.ContinueUserActivity(application, userActivity, completionHandler))
-							.PerformActionForShortcutItem((application, shortcutItem, completionHandler) =>
-								Microsoft.Maui.Essentials.Platform.PerformActionForShortcutItem(application, shortcutItem, completionHandler)));
-#elif WINDOWS
-					lifecycle
-						.AddWindows(windows => windows
-							.OnLaunched((app, e) =>
-								Microsoft.Maui.Essentials.Platform.OnLaunched(e)));
+					essentials.UseVersionTracking();
+#if WINDOWS
+					essentials.UseMapServiceToken("RJHqIE53Onrqons5CNOx~FrDr3XhjDTyEXEjng-CRoA~Aj69MhNManYUKxo6QcwZ0wmXBtyva0zwuHB04rFYAPf7qqGJ5cHb03RCDw1jIW8l");
 #endif
-				})
-				.UseMauiApp<App>();
+					essentials.AddAppAction("app_info", "App Info", icon: "app_info_action_icon");
+					essentials.AddAppAction("battery_info", "Battery Info");
+					essentials.OnAppAction(App.HandleAppActions);
+				});
 
-			return appBuilder.Build();
+			return builder.Build();
 		}
 	}
 }

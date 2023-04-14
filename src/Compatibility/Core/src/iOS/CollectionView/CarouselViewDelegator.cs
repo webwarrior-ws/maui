@@ -1,8 +1,10 @@
 using Foundation;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[System.Obsolete]
 	public class CarouselViewDelegator : ItemsViewDelegator<CarouselView, CarouselViewController>
 	{
 		public CarouselViewDelegator(ItemsViewLayout itemsViewLayout, CarouselViewController itemsViewController)

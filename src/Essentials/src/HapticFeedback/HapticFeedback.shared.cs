@@ -1,14 +1,27 @@
-using System;
+﻿#nullable enable
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.Devices
 {
-	public static partial class HapticFeedback
+	public interface IHapticFeedback
 	{
-		public static void Perform(HapticFeedbackType type = HapticFeedbackType.Click)
-		{
-			if (!IsSupported)
-				throw new FeatureNotSupportedException();
-			PlatformPerform(type);
-		}
+		bool IsSupported { get; }
+
+		void Perform(HapticFeedbackType type);
+	}
+
+	/// <include file="../../docs/Microsoft.Maui.Essentials/HapticFeedback.xml" path="Type[@FullName='Microsoft.Maui.Essentials.HapticFeedback']/Docs" />
+	public static class HapticFeedback
+	{
+		/// <include file="../../docs/Microsoft.Maui.Essentials/HapticFeedback.xml" path="//Member[@MemberName='Perform']/Docs" />
+		public static void Perform(HapticFeedbackType type = HapticFeedbackType.Click) =>
+			Default.Perform(type);
+
+		static IHapticFeedback? defaultImplementation;
+
+		public static IHapticFeedback Default =>
+			defaultImplementation ??= new HapticFeedbackImplementation();
+
+		internal static void SetDefault(IHapticFeedback? implementation) =>
+			defaultImplementation = implementation;
 	}
 }

@@ -7,7 +7,7 @@ The idea, is a project to be able to set `$(UseMaui)`:
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net6.0-android;net6.0-ios</TargetFrameworks>
+    <TargetFrameworks>$(_MauiDotNetTfm)-android;$(_MauiDotNetTfm)-ios</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <UseMaui>true</UseMaui>
   </PropertyGroup>
@@ -17,7 +17,7 @@ The idea, is a project to be able to set `$(UseMaui)`:
 `$(UseMaui)` automatically brings in the following workload packs:
 
 * `Microsoft.NET.Sdk.Maui`
-* `Microsoft.Maui.Controls.Sdk`
+* `Microsoft.Maui.Sdk`
 * `Microsoft.Maui.Resizetizer.Sdk`
 * `Microsoft.Maui.Core.Ref.[platform]`
 * `Microsoft.Maui.Core.Runtime.[platform]`
@@ -26,7 +26,6 @@ The idea, is a project to be able to set `$(UseMaui)`:
 * `Microsoft.Maui.Dependencies`
 * `Microsoft.Maui.Essentials.Ref.[platform]`
 * `Microsoft.Maui.Essentials.Runtime.[platform]`
-* `Microsoft.Maui.Extensions`
 * `Microsoft.Maui.Templates`
 
 BlazorWebView is an addition to MAUI, project can currently opt into
@@ -68,7 +67,7 @@ Special files:
   Maui projects will go. Note that this is imported by *all* .NET 6
   project types -- *even non-mobile ones*.
 * `WorkloadManifest.json` - general .NET workload configuration
-* `WorkloadManifest.targets` - imports `Microsoft.Maui.Controls.Sdk` when
+* `WorkloadManifest.targets` - imports `Microsoft.Maui.Sdk` when
   `$(UseMaui)` is `true`. Note that this is imported by *all* .NET 6
   project types -- *even non-mobile ones*.
 
@@ -93,10 +92,10 @@ installed:
 * `maui-maccatalyst`
 * `maui-macos`
 * `maui-windows`
+* `maui-tizen`
 
-Eventually, Android will have a `microsoft-android-sdk-minimal`
-workload id that excludes AOT compilers. We'll need to modify some of
-the MAUI workload ids when this is available.
+`maui-android` simply extends the `android` workload, adding the
+Android-specific platform implementation for MAUI.
 
 These ids will not map exactly to the Visual Studio Installer's
 concept of a "workload". Consider the following diagram for what .NET
@@ -104,6 +103,34 @@ developers would get from the choices of `mobile`, `maui`, or
 `desktop`:
 
 ![Workload Diagram](docs/workload-diagram.png)
+
+## `$(MauiVersion)`
+
+Right now the .NET MAUI workload is installed side-by-side per .NET
+SDK band such as:
+
+    dotnet/sdk-manifests/6.0.100/microsoft.net.sdk.maui/
+
+To give greater flexibility, you can specify in your `.csproj`:
+
+```xml
+<MauiVersion>6.0.100-rc.2.2000</MauiVersion>
+```
+
+Even if you have `6.0.100-rc.2.1000` installed system-wide, placing
+this in your `.csproj` enables it to build against newer MAUI
+assemblies at build & runtime. Things might break if the version is
+much different that what MAUI source generators or MSBuild tasks
+expect. We have a `$(_MinimumMauiWorkloadVersion)` property to fall
+back on if there is a breaking change that requires a newer .NET MAUI
+system-wide install.
+
+    error MAUI004: At least version '6.0.200' of the .NET MAUI workload is required to use <MauiVersion>6.0.200-preview.13</MauiVersion>.
+
+One issue is that any MSBuild tasks no longer update via `$(MauiVersion)`:
+
+* `Microsoft.Maui.Sdk`: source generators and XamlC
+* `Microsoft.Maui.Resizetizer.Sdk`: MSBuild tasks
 
 ## Using the .NET MAUI Workload
 
@@ -122,7 +149,7 @@ declared:
 
 ```dotnetcli
 $ git clean -dxf src/Controls/samples/
-$ ./bin/dotnet/dotnet build Microsoft.Maui.Samples-net6.slnf -p:UseWorkload=true
+$ ./bin/dotnet/dotnet build Microsoft.Maui.Samples.slnf -p:UseWorkload=true
 ```
 
 ### Install System-Wide
@@ -165,7 +192,7 @@ $ ./bin/dotnet/dotnet build src/DotNet/DotNet.csproj -t:Install
 Then we can build samples with `-p:UseWorkload=true`:
 
 ```dotnetcli
-$ ./bin/dotnet/dotnet build Microsoft.Maui.Samples-net6.slnf -p:UseWorkload=true
+$ ./bin/dotnet/dotnet build Microsoft.Maui.Samples.slnf -p:UseWorkload=true
 ```
 
 ## Cleanup .NET 6 installs & workloads

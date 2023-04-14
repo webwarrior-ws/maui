@@ -6,8 +6,10 @@ using System.Reflection;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="Type[@FullName='Microsoft.Maui.Controls.Binding']/Docs" />
 	public sealed class Binding : BindingBase
 	{
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='SelfPath']/Docs" />
 		public const string SelfPath = ".";
 		IValueConverter _converter;
 		object _converterParameter;
@@ -17,10 +19,12 @@ namespace Microsoft.Maui.Controls
 		object _source;
 		string _updateSourceEventName;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='.ctor'][1]/Docs" />
 		public Binding()
 		{
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='.ctor']/Docs" />
 		public Binding(string path, BindingMode mode = BindingMode.Default, IValueConverter converter = null, object converterParameter = null, string stringFormat = null, object source = null)
 		{
 			if (path == null)
@@ -36,6 +40,7 @@ namespace Microsoft.Maui.Controls
 			Source = source;
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='Converter']/Docs" />
 		public IValueConverter Converter
 		{
 			get { return _converter; }
@@ -47,6 +52,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='ConverterParameter']/Docs" />
 		public object ConverterParameter
 		{
 			get { return _converterParameter; }
@@ -58,6 +64,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='Path']/Docs" />
 		public string Path
 		{
 			get { return _path; }
@@ -70,6 +77,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='Source']/Docs" />
 		public object Source
 		{
 			get { return _source; }
@@ -82,8 +90,10 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='DoNothing']/Docs" />
 		public static readonly object DoNothing = new object();
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='UpdateSourceEventName']/Docs" />
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public string UpdateSourceEventName
 		{
@@ -122,7 +132,7 @@ namespace Microsoft.Maui.Controls
 			else
 			{
 				object bindingContext = src ?? Context ?? context;
-				if (_expression == null && bindingContext != null)
+				if (_expression == null)
 					_expression = new BindingExpression(this, SelfPath);
 				_expression.Apply(bindingContext, bindObj, targetProperty);
 			}
@@ -244,12 +254,12 @@ namespace Microsoft.Maui.Controls
 
 			bool fitsElementType =
 				relativeSource.Mode == RelativeBindingSourceMode.FindAncestor &&
-				relativeSource.AncestorType.GetTypeInfo().IsAssignableFrom(element.GetType().GetTypeInfo());
+				relativeSource.AncestorType.IsAssignableFrom(element.GetType());
 
 			bool fitsBindingContextType =
 				element.BindingContext != null &&
 				relativeSource.Mode == RelativeBindingSourceMode.FindAncestorBindingContext &&
-				relativeSource.AncestorType.GetTypeInfo().IsAssignableFrom(element.BindingContext.GetType().GetTypeInfo());
+				relativeSource.AncestorType.IsAssignableFrom(element.BindingContext.GetType());
 
 			if (!fitsElementType && !fitsBindingContextType)
 				return false;

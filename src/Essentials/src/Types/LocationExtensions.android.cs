@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
 using AndroidAddress = Android.Locations.Address;
 using AndroidLocation = Android.Locations.Location;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.Devices.Sensors
 {
-	public static partial class LocationExtensions
+	static partial class LocationExtensions
 	{
 		internal static Location ToLocation(this AndroidAddress address) =>
 			new Location
@@ -29,24 +28,18 @@ namespace Microsoft.Maui.Essentials
 				Timestamp = location.GetTimestamp().ToUniversalTime(),
 				Accuracy = location.HasAccuracy ? location.Accuracy : default(float?),
 				VerticalAccuracy =
-#if __ANDROID_26__
-					Platform.HasApiLevelO && location.HasVerticalAccuracy ? location.VerticalAccuracyMeters : default(float?),
-#else
-					default(float?),
-#endif
+					OperatingSystem.IsAndroidVersionAtLeast(26) && location.HasVerticalAccuracy
+						? location.VerticalAccuracyMeters
+						: null,
+				ReducedAccuracy = false,
 				Course = location.HasBearing ? location.Bearing : default(double?),
 				Speed = location.HasSpeed ? location.Speed : default(double?),
-				IsFromMockProvider = Platform.HasApiLevel(global::Android.OS.BuildVersionCodes.JellyBeanMr2)
-					? (
-#if __ANDROID_31__
-						Platform.HasApiLevelS
-							? location.Mock :
-#endif
+				IsFromMockProvider =
+					OperatingSystem.IsAndroidVersionAtLeast(31)
+						? location.Mock
 #pragma warning disable CS0618 // Type or member is obsolete
-							location.IsFromMockProvider
+						: location.IsFromMockProvider,
 #pragma warning restore CS0618 // Type or member is obsolete
-						)
-					: false,
 				AltitudeReferenceSystem = AltitudeReferenceSystem.Ellipsoid
 			};
 

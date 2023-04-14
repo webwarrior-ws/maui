@@ -1,3 +1,4 @@
+using ObjCRuntime;
 using UIKit;
 using MaterialComponents;
 using System;
@@ -23,7 +24,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Material.iOS
 		{
 			base.UpdateFont();
 			Control?.ApplyTypographyScheme(Element);
-		}	
+		}
 
 		protected internal override void UpdatePlaceholderText()
 		{
@@ -58,7 +59,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Material.iOS
 		{
 			base.OnElementChanged(e);
 
-			if(e.NewElement != null)
+			if (e.NewElement != null)
 				InitialPlaceholderSetupHack();
 		}
 
@@ -74,7 +75,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Material.iOS
 			base.UpdateAutoSizeOption();
 			Control.AutoSizeWithChanges = Element.AutoSize == EditorAutoSizeOption.TextChanges;
 
-			if(!Control.ExpandsOnOverflow)
+			if (!Control.ExpandsOnOverflow)
 				Control.ExpandsOnOverflow = Element.AutoSize == EditorAutoSizeOption.TextChanges;
 		}
 
@@ -84,7 +85,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Material.iOS
 			if (Element == null)
 				return;
 
-			if(String.IsNullOrWhiteSpace(Element.Text) || String.IsNullOrWhiteSpace(Element.Placeholder))
+			if (String.IsNullOrWhiteSpace(Element.Text) || String.IsNullOrWhiteSpace(Element.Placeholder))
 			{
 				_hackHasRan = true;
 				UpdateText();

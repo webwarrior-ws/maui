@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.Platform;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
@@ -58,9 +59,9 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 					await image.SetSourceAsync(stream);
 					return image;
 				}
-				catch (Exception ex) 
+				catch (Exception ex)
 				{
-					Log.Warning("Image Loading", $"{nameof(UriImageSourceHandler)} could not load {imageLoader.Uri}: {ex}");
+					Application.Current?.FindMauiContext()?.CreateLogger<UriImageSourceHandler>()?.LogWarning(ex, "Could not load {uri}", imageLoader.Uri);
 
 					// According to https://msdn.microsoft.com/library/windows/apps/jj191522
 					// this can happen if the image data is bad or the app is close to its 

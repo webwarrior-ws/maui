@@ -14,6 +14,7 @@ using Size = Microsoft.Maui.Graphics.Size;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.FastRenderers
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class LabelRenderer : FormsTextView, IVisualElementRenderer, IViewRenderer, ITabStop
 	{
 		int? _defaultLabelFor;
@@ -139,6 +140,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.FastRenderers
 			return result;
 		}
 
+		[PortHandler]
 		protected override void OnLayout(bool changed, int left, int top, int right, int bottom)
 		{
 			base.OnLayout(changed, left, top, right, bottom);
@@ -315,7 +317,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.FastRenderers
 		{
 			Font f = Font.OfSize(Element.FontFamily, Element.FontSize).WithAttributes(Element.FontAttributes);
 
-			Typeface newTypeface = f.ToTypeface();
+			Typeface newTypeface = f.ToTypeface(Element.RequireFontManager());
 			if (newTypeface != _lastTypeface)
 			{
 				Typeface = newTypeface;
@@ -361,10 +363,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.FastRenderers
 		[PortHandler]
 		void UpdateCharacterSpacing()
 		{
-			if (Forms.IsLollipopOrNewer)
-			{
-				LetterSpacing = Element.CharacterSpacing.ToEm();
-			}
+			LetterSpacing = Element.CharacterSpacing.ToEm();
 		}
 
 		[PortHandler]
@@ -389,7 +388,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.FastRenderers
 				FormattedString formattedText = Element.FormattedText ?? Element.Text;
 
 				Font f = Font.OfSize(Element.FontFamily, Element.FontSize).WithAttributes(Element.FontAttributes);
-				TextFormatted = _spannableString = formattedText.ToAttributed(f, Element.TextColor, this);
+				TextFormatted = _spannableString = formattedText.ToSpannableString(Element.RequireFontManager());
 				_wasFormatted = true;
 			}
 			else

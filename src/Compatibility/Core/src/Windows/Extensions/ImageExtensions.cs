@@ -12,37 +12,12 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.Maui.Controls.Internals;
 using WImageSource = Microsoft.UI.Xaml.Media.ImageSource;
 using Microsoft.Maui.Controls.Platform;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
 	internal static class ImageExtensions
 	{
-		public static Graphics.Size GetImageSourceSize(this WImageSource source)
-		{
-			if (source is null)
-			{
-				return Graphics.Size.Zero;
-			}
-			else if (source is BitmapSource bitmap)
-			{
-				return new Graphics.Size
-				{
-					Width = bitmap.PixelWidth,
-					Height = bitmap.PixelHeight
-				};
-			}
-			else if (source is CanvasImageSource canvas)
-			{
-				return new Graphics.Size
-				{
-					Width = canvas.Size.Width,
-					Height = canvas.Size.Height
-				};
-			}
-
-			throw new InvalidCastException($"\"{source.GetType().FullName}\" is not supported.");
-		}
-
 		public static Microsoft.UI.Xaml.Controls.IconSource ToWindowsIconSource(this ImageSource source)
 		{
 			return source.ToWindowsIconSourceAsync().GetAwaiter().GetResult();
@@ -115,11 +90,11 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			}
 			catch (OperationCanceledException)
 			{
-				Log.Warning("Image loading", "Image load cancelled");
+				Application.Current?.FindMauiContext()?.CreateLogger<ImageSource>()?.LogWarning("Image load cancelled");
 			}
 			catch (Exception ex)
 			{
-				Log.Warning("Image loading", $"Image load failed: {ex}");
+				Application.Current?.FindMauiContext()?.CreateLogger<ImageSource>()?.LogWarning(ex, "Image load failed");
 #if DEBUG
 				throw;
 #endif

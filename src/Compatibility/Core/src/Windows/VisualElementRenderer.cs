@@ -15,6 +15,7 @@ using Microsoft.Maui.Controls.Platform;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[Obsolete("Use Microsoft.Maui.Controls.Handlers.Compatibility.VisualElementRenderer instead")]
 	public class VisualElementRenderer<TElement, TNativeElement> : Panel, IVisualNativeElementRenderer, IDisposable, IEffectControlProvider where TElement : VisualElement
 																																	  where TNativeElement : FrameworkElement
 	{
@@ -108,7 +109,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			if (Children.Count == 0 || Control == null)
 				return new SizeRequest();
 
-			var constraint = new Windows.Foundation.Size(widthConstraint, heightConstraint);
+			var constraint = new global::Windows.Foundation.Size(widthConstraint, heightConstraint);
 			TNativeElement child = Control;
 
 			child.Measure(constraint);
@@ -189,12 +190,12 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			remove { _controlChanged -= value; }
 		}
 
-		protected override Windows.Foundation.Size ArrangeOverride(Windows.Foundation.Size finalSize)
+		protected override global::Windows.Foundation.Size ArrangeOverride(global::Windows.Foundation.Size finalSize)
 		{
 			if (Element == null || finalSize.Width * finalSize.Height == 0)
 				return finalSize;
 
-			Element.IsInNativeLayout = true;
+			Element.IsInPlatformLayout = true;
 
 			var myRect = new WRect(0, 0, finalSize.Width, finalSize.Height);
 
@@ -212,7 +213,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				IVisualElementRenderer renderer = Platform.GetRenderer(child);
 				if (renderer == null)
 					continue;
-				Rectangle bounds = child.Bounds;
+				var bounds = child.Bounds;
 
 				renderer.ContainerElement.Arrange(new WRect(bounds.X, bounds.Y, Math.Max(0, bounds.Width), Math.Max(0, bounds.Height)));
 
@@ -243,7 +244,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 			_backgroundLayer?.Arrange(myRect);
 
-			Element.IsInNativeLayout = false;
+			Element.IsInPlatformLayout = false;
 
 			return finalSize;
 		}
@@ -271,17 +272,12 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			SetElement(null);
 		}
 
-		protected override Windows.Foundation.Size MeasureOverride(Windows.Foundation.Size availableSize)
+		protected override global::Windows.Foundation.Size MeasureOverride(global::Windows.Foundation.Size availableSize)
 		{
 			if (Element == null || availableSize.Width * availableSize.Height == 0)
-				return new Windows.Foundation.Size(0, 0);
+				return new global::Windows.Foundation.Size(0, 0);
 
-			if (Element is Layout layout)
-			{
-				layout.ResolveLayoutChanges();
-			}
-
-			Element.IsInNativeLayout = true;
+			Element.IsInPlatformLayout = true;
 
 			for (var i = 0; i < ElementController.LogicalChildren.Count; i++)
 			{
@@ -297,7 +293,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 			double width = Math.Max(0, Element.Width);
 			double height = Math.Max(0, Element.Height);
-			var result = new Windows.Foundation.Size(width, height);
+			var result = new global::Windows.Foundation.Size(width, height);
 			if (Control != null)
 			{
 				double w = Element.Width;
@@ -308,10 +304,10 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 					h = availableSize.Height;
 				w = Math.Max(0, w);
 				h = Math.Max(0, h);
-				Control.Measure(new Windows.Foundation.Size(w, h));
+				Control.Measure(new global::Windows.Foundation.Size(w, h));
 			}
 
-			Element.IsInNativeLayout = false;
+			Element.IsInPlatformLayout = false;
 
 			return result;
 		}
@@ -431,13 +427,13 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 					"Cannot assign a native control without an Element; Renderer unbound and/or disposed. " +
 					"Please consult Microsoft.Maui.Controls.Compatibility renderers for reference implementation of OnElementChanged.");
 
-			Element.IsNativeStateConsistent = false;
+			Element.IsPlatformStateConsistent = false;
 			control.Loaded += OnControlLoaded;
 
 			control.GotFocus += OnControlGotFocus;
 			control.LostFocus += OnControlLostFocus;
 			Children.Add(control);
-			
+
 			UpdateBackgroundColor();
 			UpdateBackground();
 
@@ -462,7 +458,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			{
 				if (!backgroundColor.IsDefault())
 				{
-					_control.Background = Maui.ColorExtensions.ToNative(backgroundColor);
+					_control.Background = backgroundColor.ToPlatform();
 				}
 				else
 				{
@@ -474,7 +470,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			{
 				if (!backgroundColor.IsDefault())
 				{
-					backgroundLayer.Background = Maui.ColorExtensions.ToNative(backgroundColor);
+					backgroundLayer.Background = backgroundColor.ToPlatform();
 				}
 				else
 				{
@@ -502,7 +498,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				else
 				{
 					if (!backgroundColor.IsDefault())
-						_control.Background = Maui.ColorExtensions.ToNative(backgroundColor);
+						_control.Background = backgroundColor.ToPlatform();
 					else
 					{
 						_control.ClearValue(Microsoft.UI.Xaml.Controls.Control.BackgroundProperty);
@@ -517,14 +513,15 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				else
 				{
 					if (!backgroundColor.IsDefault())
-						backgroundLayer.Background = Maui.ColorExtensions.ToNative(backgroundColor);
+						backgroundLayer.Background = backgroundColor.ToPlatform();
 					else
 						backgroundLayer.ClearValue(BackgroundProperty);
 				}
 			}
 		}
 
-		protected void UpdateAccessKey() {
+		protected void UpdateAccessKey()
+		{
 			var control = Control;
 			var element = Element as IElementConfiguration<TElement>;
 
@@ -543,6 +540,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			SetAutomationPropertiesLabeledBy();
 		}
 
+		[PortHandler]
 		internal virtual void OnElementFocusChangeRequested(object sender, VisualElement.FocusRequestArgs args)
 		{
 			if (_control == null)
@@ -557,6 +555,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			}
 		}
 
+		[PortHandler]
 		internal void UnfocusControl(Control control)
 		{
 			if (control == null || !control.IsEnabled)
@@ -595,6 +594,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			}
 		}
 
+		[PortHandler]
 		void OnControlGotFocus(object sender, RoutedEventArgs args)
 		{
 			((IVisualElementController)Element).SetValueFromRenderer(VisualElement.IsFocusedPropertyKey, true);
@@ -602,9 +602,10 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 		void OnControlLoaded(object sender, RoutedEventArgs args)
 		{
-			Element.IsNativeStateConsistent = true;
+			Element.IsPlatformStateConsistent = true;
 		}
 
+		[PortHandler]
 		void OnControlLostFocus(object sender, RoutedEventArgs args)
 		{
 			((IVisualElementController)Element).SetValueFromRenderer(VisualElement.IsFocusedPropertyKey, false);

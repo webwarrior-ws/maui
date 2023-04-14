@@ -8,7 +8,9 @@ using Foundation;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
+using ObjCRuntime;
 using UIKit;
 using RectangleF = CoreGraphics.CGRect;
 using SizeF = CoreGraphics.CGSize;
@@ -16,6 +18,7 @@ using Specifics = Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific.List
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[Obsolete("Use Microsoft.Maui.Controls.Platform.Compatibility.ListViewRenderer instead")]
 	public class ListViewRenderer : ViewRenderer<ListView, UITableView>
 	{
 		const int DefaultRowHeight = 44;
@@ -62,7 +65,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 		public override void LayoutSubviews()
 		{
-			_insetTracker?.OnLayoutSubviews();
 			base.LayoutSubviews();
 
 			double height = Bounds.Height;
@@ -80,7 +82,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				// grow a little each time, which you weren't testing at all were you? So there you have it, the stupid reason we integer align here.
 				//
 				// The same technically applies to the footer, though that could hardly matter less. We just do it for fun.
-				Layout.LayoutChildIntoBoundingRegion(e, new Rectangle(0, 0, width, Math.Ceiling(request.Request.Height)));
+				Layout.LayoutChildIntoBoundingRegion(e, new Rect(0, 0, width, Math.Ceiling(request.Request.Height)));
 
 				Device.BeginInvokeOnMainThread(() =>
 				{
@@ -93,7 +95,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			{
 				var e = _footerRenderer.Element;
 				var request = e.Measure(width, height, MeasureFlags.IncludeMargins);
-				Layout.LayoutChildIntoBoundingRegion(e, new Rectangle(0, 0, width, Math.Ceiling(request.Request.Height)));
+				Layout.LayoutChildIntoBoundingRegion(e, new Rect(0, 0, width, Math.Ceiling(request.Request.Height)));
 
 				Device.BeginInvokeOnMainThread(() =>
 				{
@@ -121,7 +123,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			if (Control == null)
 				return;
 
-			_backgroundUIView.RemoveBackgroundLayer();
+			BrushExtensions.RemoveBackgroundLayer(_backgroundUIView);
 
 			if (!Brush.IsNullOrEmpty(brush))
 			{
@@ -138,7 +140,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 					if (backgroundColor == null)
 						_backgroundUIView.BackgroundColor = UIColor.White;
 					else
-						_backgroundUIView.BackgroundColor = backgroundColor.ToUIColor();
+						_backgroundUIView.BackgroundColor = backgroundColor.ToPlatform();
 				}
 				else
 				{
@@ -147,7 +149,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 					if (backgroundLayer != null)
 					{
 						_backgroundUIView.BackgroundColor = UIColor.Clear;
-						_backgroundUIView.InsertBackgroundLayer(backgroundLayer, 0);
+						BrushExtensions.InsertBackgroundLayer(_backgroundUIView, backgroundLayer, 0);
 					}
 				}
 			}
@@ -273,6 +275,9 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 					_tableViewController = new FormsUITableViewController(e.NewElement, _usingLargeTitles);
 					SetNativeControl(_tableViewController.TableView);
 
+					if (Forms.IsiOS15OrNewer)
+						_tableViewController.TableView.SectionHeaderTopPadding = new nfloat(0);
+
 					_backgroundUIView = _tableViewController.TableView.BackgroundView;
 
 					_insetTracker = new KeyboardInsetTracker(_tableViewController.TableView, () => Control.Window, insets => Control.ContentInset = Control.ScrollIndicatorInsets = insets, point =>
@@ -396,7 +401,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 			var footerView = (VisualElement)sender;
 			var request = footerView.Measure(width, double.PositiveInfinity, MeasureFlags.IncludeMargins);
-			Layout.LayoutChildIntoBoundingRegion(footerView, new Rectangle(0, 0, width, request.Request.Height));
+			Layout.LayoutChildIntoBoundingRegion(footerView, new Rect(0, 0, width, request.Request.Height));
 
 			Control.TableFooterView = _footerRenderer.NativeView;
 		}
@@ -418,7 +423,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 			var headerView = (VisualElement)sender;
 			var request = headerView.Measure(width, double.PositiveInfinity, MeasureFlags.IncludeMargins);
-			Layout.LayoutChildIntoBoundingRegion(headerView, new Rectangle(0, 0, width, request.Request.Height));
+			Layout.LayoutChildIntoBoundingRegion(headerView, new Rect(0, 0, width, request.Request.Height));
 
 			Control.TableHeaderView = _headerRenderer.NativeView;
 		}
@@ -489,7 +494,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 				double width = Bounds.Width;
 				var request = footerView.Measure(width, double.PositiveInfinity, MeasureFlags.IncludeMargins);
-				Layout.LayoutChildIntoBoundingRegion(footerView, new Rectangle(0, 0, width, request.Request.Height));
+				Layout.LayoutChildIntoBoundingRegion(footerView, new Rect(0, 0, width, request.Request.Height));
 
 				Control.TableFooterView = _footerRenderer.NativeView;
 				footerView.MeasureInvalidated += OnFooterMeasureInvalidated;
@@ -535,7 +540,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 				double width = Bounds.Width;
 				var request = headerView.Measure(width, double.PositiveInfinity, MeasureFlags.IncludeMargins);
-				Layout.LayoutChildIntoBoundingRegion(headerView, new Rectangle(0, 0, width, request.Request.Height));
+				Layout.LayoutChildIntoBoundingRegion(headerView, new Rect(0, 0, width, request.Request.Height));
 
 				Control.TableHeaderView = _headerRenderer.NativeView;
 				headerView.MeasureInvalidated += OnHeaderMeasureInvalidated;
@@ -738,10 +743,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 		void UpdateSeparatorColor()
 		{
 			var color = Element.SeparatorColor;
-			// ...and Steve said to the unbelievers the separator shall be gray, and gray it was. The unbelievers looked on, and saw that it was good, and
-			// they went forth and documented the default color. The holy scripture still reflects this default.
-			// Defined here: https://developer.apple.com/library/ios/documentation/UIKit/Reference/UITableView_Class/#//apple_ref/occ/instp/UITableView/separatorColor
-			Control.SeparatorColor = color.ToUIColor(ColorExtensions.SeparatorColor);
+			Control.SeparatorColor = color.ToPlatform(ColorExtensions.SeparatorColor);
 		}
 
 		void UpdateSeparatorVisibility()
@@ -776,7 +778,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			var color = Element.RefreshControlColor;
 
 			if (_tableViewController != null)
-				_tableViewController.UpdateRefreshControlColor(color == null ? null : color.ToUIColor());
+				_tableViewController.UpdateRefreshControlColor(color == null ? null : color.ToPlatform());
 		}
 
 		void UpdateVerticalScrollBarVisibility()
@@ -1299,7 +1301,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 					_isDragging = true;
 				}
 
-				if (_isDragging && scrollView.ContentOffset.Y < -10f && _uiTableViewController._usingLargeTitles && Device.Info.CurrentOrientation.IsPortrait())
+				if (_isDragging && scrollView.ContentOffset.Y < -10f && _uiTableViewController._usingLargeTitles && DeviceDisplay.MainDisplayInfo.Orientation.IsPortrait())
 				{
 					_uiTableViewController.ForceRefreshing();
 				}
@@ -1531,6 +1533,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 		}
 	}
 
+	[Obsolete("Use Microsoft.Maui.Controls.Platform.Compatibility.ListViewRenderer.FormsUITableViewController instead")]
 	internal class FormsUITableViewController : UITableViewController
 	{
 		ListView _list;
@@ -1547,8 +1550,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			? UITableViewStyle.Plain
 			  : UITableViewStyle.Grouped)
 		{
-			if (Forms.IsiOS9OrNewer)
-				TableView.CellLayoutMarginsFollowReadableWidth = false;
+			TableView.CellLayoutMarginsFollowReadableWidth = false;
 
 			_usingLargeTitles = usingLargeTitles;
 

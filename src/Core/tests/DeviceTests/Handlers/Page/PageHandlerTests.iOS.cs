@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.Maui.Handlers;
+using ObjCRuntime;
 using UIKit;
 using Xunit;
 
@@ -10,7 +11,7 @@ namespace Microsoft.Maui.DeviceTests
 		public UIView GetNativePageContent(PageHandler handler)
 		{
 			int childCount = 0;
-			if (handler.NativeView is UIView view)
+			if (handler.PlatformView is UIView view)
 			{
 				childCount = view.Subviews.Length;
 				if (childCount == 1)

@@ -3,66 +3,104 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.Controls
 {
-	public partial class NavigationPage : Page, IPageContainer<Page>, IBarElement, INavigationPageController, IElementConfiguration<NavigationPage>
+	/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="Type[@FullName='Microsoft.Maui.Controls.NavigationPage']/Docs" />
+	public partial class NavigationPage : Page, IPageContainer<Page>, IBarElement, IElementConfiguration<NavigationPage>
 	{
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='BackButtonTitleProperty']/Docs" />
 		public static readonly BindableProperty BackButtonTitleProperty = BindableProperty.CreateAttached("BackButtonTitle", typeof(string), typeof(Page), null);
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='HasNavigationBarProperty']/Docs" />
 		public static readonly BindableProperty HasNavigationBarProperty =
 			BindableProperty.CreateAttached("HasNavigationBar", typeof(bool), typeof(Page), true);
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='HasBackButtonProperty']/Docs" />
 		public static readonly BindableProperty HasBackButtonProperty = BindableProperty.CreateAttached("HasBackButton", typeof(bool), typeof(NavigationPage), true);
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='BarBackgroundColorProperty']/Docs" />
 		public static readonly BindableProperty BarBackgroundColorProperty = BarElement.BarBackgroundColorProperty;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='BarBackgroundProperty']/Docs" />
 		public static readonly BindableProperty BarBackgroundProperty = BarElement.BarBackgroundProperty;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='BarTextColorProperty']/Docs" />
 		public static readonly BindableProperty BarTextColorProperty = BarElement.BarTextColorProperty;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='TitleIconImageSourceProperty']/Docs" />
 		public static readonly BindableProperty TitleIconImageSourceProperty = BindableProperty.CreateAttached("TitleIconImageSource", typeof(ImageSource), typeof(NavigationPage), default(ImageSource));
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='IconColorProperty']/Docs" />
 		public static readonly BindableProperty IconColorProperty = BindableProperty.CreateAttached("IconColor", typeof(Color), typeof(NavigationPage), null);
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='TitleViewProperty']/Docs" />
 		public static readonly BindableProperty TitleViewProperty = BindableProperty.CreateAttached("TitleView", typeof(View), typeof(NavigationPage), null, propertyChanging: TitleViewPropertyChanging);
 
-		static readonly BindablePropertyKey CurrentPagePropertyKey = BindableProperty.CreateReadOnly("CurrentPage", typeof(Page), typeof(NavigationPage), null);
+		static readonly BindablePropertyKey CurrentPagePropertyKey = BindableProperty.CreateReadOnly("CurrentPage", typeof(Page), typeof(NavigationPage), null, propertyChanged: OnCurrentPageChanged);
+
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='CurrentPageProperty']/Docs" />
 		public static readonly BindableProperty CurrentPageProperty = CurrentPagePropertyKey.BindableProperty;
 
 		static readonly BindablePropertyKey RootPagePropertyKey = BindableProperty.CreateReadOnly(nameof(RootPage), typeof(Page), typeof(NavigationPage), null);
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='RootPageProperty']/Docs" />
 		public static readonly BindableProperty RootPageProperty = RootPagePropertyKey.BindableProperty;
 
 		INavigationPageController NavigationPageController => this;
 
 		partial void Init();
-		public NavigationPage()
+
+#if WINDOWS || ANDROID || TIZEN
+		const bool UseMauiHandler = true;
+#else
+		const bool UseMauiHandler = false;
+#endif
+
+		bool _setForMaui;
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='.ctor'][1]/Docs" />
+		public NavigationPage() : this(UseMauiHandler)
 		{
+		}
+
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='.ctor'][2]/Docs" />
+		public NavigationPage(Page root) : this(UseMauiHandler, root)
+		{
+		}
+
+		internal NavigationPage(bool setforMaui, Page root = null)
+		{
+			_setForMaui = setforMaui;
 			_platformConfigurationRegistry = new Lazy<PlatformConfigurationRegistry<NavigationPage>>(() => new PlatformConfigurationRegistry<NavigationPage>(this));
 
-			Navigation = new NavigationImpl(this);
+			if (setforMaui)
+				Navigation = new MauiNavigationImpl(this);
+			else
+				Navigation = new NavigationImpl(this);
+
 			Init();
+
+			if (root != null)
+				PushPage(root);
 		}
 
-		public NavigationPage(Page root) : this()
-		{
-			PushPage(root);
-		}
-
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='BarBackgroundColor']/Docs" />
 		public Color BarBackgroundColor
 		{
 			get => (Color)GetValue(BarElement.BarBackgroundColorProperty);
 			set => SetValue(BarElement.BarBackgroundColorProperty, value);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='BarBackground']/Docs" />
 		public Brush BarBackground
 		{
 			get => (Brush)GetValue(BarElement.BarBackgroundProperty);
 			set => SetValue(BarElement.BarBackgroundProperty, value);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='BarTextColor']/Docs" />
 		public Color BarTextColor
 		{
 			get => (Color)GetValue(BarElement.BarTextColorProperty);
@@ -71,6 +109,7 @@ namespace Microsoft.Maui.Controls
 
 		internal Task CurrentNavigationTask { get; set; }
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='Peek']/Docs" />
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public Page Peek(int depth)
 		{
@@ -94,12 +133,14 @@ namespace Microsoft.Maui.Controls
 			get { return InternalChildren.Count; }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='CurrentPage']/Docs" />
 		public Page CurrentPage
 		{
 			get { return (Page)GetValue(CurrentPageProperty); }
 			private set { SetValue(CurrentPagePropertyKey, value); }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='RootPage']/Docs" />
 		public Page RootPage
 		{
 			get { return (Page)GetValue(RootPageProperty); }
@@ -122,11 +163,13 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='GetBackButtonTitle']/Docs" />
 		public static string GetBackButtonTitle(BindableObject page)
 		{
 			return (string)page.GetValue(BackButtonTitleProperty);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='GetHasBackButton']/Docs" />
 		public static bool GetHasBackButton(Page page)
 		{
 			if (page == null)
@@ -134,21 +177,25 @@ namespace Microsoft.Maui.Controls
 			return (bool)page.GetValue(HasBackButtonProperty);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='GetHasNavigationBar']/Docs" />
 		public static bool GetHasNavigationBar(BindableObject page)
 		{
 			return (bool)page.GetValue(HasNavigationBarProperty);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='GetTitleIconImageSource']/Docs" />
 		public static ImageSource GetTitleIconImageSource(BindableObject bindable)
 		{
 			return (ImageSource)bindable.GetValue(TitleIconImageSourceProperty);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='GetTitleView']/Docs" />
 		public static View GetTitleView(BindableObject bindable)
 		{
 			return (View)bindable.GetValue(TitleViewProperty);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='GetIconColor']/Docs" />
 		public static Color GetIconColor(BindableObject bindable)
 		{
 			if (bindable == null)
@@ -159,13 +206,22 @@ namespace Microsoft.Maui.Controls
 			return (Color)bindable.GetValue(IconColorProperty);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='PopAsync'][1]/Docs" />
 		public Task<Page> PopAsync()
 		{
 			return PopAsync(true);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='PopAsync'][2]/Docs" />
 		public async Task<Page> PopAsync(bool animated)
 		{
+			// If Navigation interactions are being handled by the MAUI APIs
+			// this routes the call there instead of through old behavior
+			if (Navigation is MauiNavigationImpl mvi && this is IStackNavigation)
+			{
+				return await mvi.PopAsync(animated);
+			}
+
 			var tcs = new TaskCompletionSource<bool>();
 			try
 			{
@@ -184,7 +240,7 @@ namespace Microsoft.Maui.Controls
 			}
 			catch (Exception e)
 			{
-				Log.Warning(nameof(NavigationPage), $"{e}");
+				Application.Current?.FindMauiContext()?.CreateLogger<NavigationPage>()?.LogWarning(e, null);
 				CurrentNavigationTask = null;
 				tcs.SetCanceled();
 
@@ -196,13 +252,23 @@ namespace Microsoft.Maui.Controls
 
 		public event EventHandler<NavigationEventArgs> PoppedToRoot;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='PopToRootAsync'][1]/Docs" />
 		public Task PopToRootAsync()
 		{
 			return PopToRootAsync(true);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='PopToRootAsync'][2]/Docs" />
 		public async Task PopToRootAsync(bool animated)
 		{
+			// If Navigation interactions are being handled by the MAUI APIs
+			// this routes the call there instead of through old behavior
+			if (Navigation is MauiNavigationImpl mvi && this is IStackNavigation)
+			{
+				await mvi.PopToRootAsync(animated);
+				return;
+			}
+
 			if (CurrentNavigationTask != null && !CurrentNavigationTask.IsCompleted)
 			{
 				var tcs = new TaskCompletionSource<bool>();
@@ -220,13 +286,26 @@ namespace Microsoft.Maui.Controls
 			await result;
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='PushAsync'][1]/Docs" />
 		public Task PushAsync(Page page)
 		{
 			return PushAsync(page, true);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='PushAsync'][2]/Docs" />
 		public async Task PushAsync(Page page, bool animated)
 		{
+			// If Navigation interactions are being handled by the MAUI APIs
+			// this routes the call there instead of through old behavior
+			if (Navigation is MauiNavigationImpl mvi && this is IStackNavigation)
+			{
+				if (InternalChildren.Contains(page))
+					return;
+
+				await mvi.PushAsync(page, animated);
+				return;
+			}
+
 			if (CurrentNavigationTask != null && !CurrentNavigationTask.IsCompleted)
 			{
 				var tcs = new TaskCompletionSource<bool>();
@@ -245,11 +324,13 @@ namespace Microsoft.Maui.Controls
 
 		public event EventHandler<NavigationEventArgs> Pushed;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='SetBackButtonTitle']/Docs" />
 		public static void SetBackButtonTitle(BindableObject page, string value)
 		{
 			page.SetValue(BackButtonTitleProperty, value);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='SetHasBackButton']/Docs" />
 		public static void SetHasBackButton(Page page, bool value)
 		{
 			if (page == null)
@@ -257,21 +338,25 @@ namespace Microsoft.Maui.Controls
 			page.SetValue(HasBackButtonProperty, value);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='SetHasNavigationBar']/Docs" />
 		public static void SetHasNavigationBar(BindableObject page, bool value)
 		{
 			page.SetValue(HasNavigationBarProperty, value);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='SetTitleIconImageSource']/Docs" />
 		public static void SetTitleIconImageSource(BindableObject bindable, ImageSource value)
 		{
 			bindable.SetValue(TitleIconImageSourceProperty, value);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='SetTitleView']/Docs" />
 		public static void SetTitleView(BindableObject bindable, View value)
 		{
 			bindable.SetValue(TitleViewProperty, value);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='SetIconColor']/Docs" />
 		public static void SetIconColor(BindableObject bindable, Color value)
 		{
 			bindable.SetValue(IconColorProperty, value);
@@ -291,77 +376,12 @@ namespace Microsoft.Maui.Controls
 			return base.OnBackButtonPressed();
 		}
 
-		EventHandler<NavigationRequestedEventArgs> _insertPageBeforeRequested;
-		event EventHandler<NavigationRequestedEventArgs> INavigationPageController.InsertPageBeforeRequested
-		{
-			add => _insertPageBeforeRequested += value;
-			remove => _insertPageBeforeRequested -= value;
-		}
-
 		internal void InitialNativeNavigationStackLoaded()
 		{
 			SendNavigated(null);
 		}
 
-		internal async Task<Page> PopAsyncInner(
-			bool animated,
-			bool fast,
-			bool requestedFromHandler)
-		{
-			if (NavigationPageController.StackDepth == 1)
-			{
-				return null;
-			}
 
-			var page = (Page)InternalChildren.Last();
-			var previousPage = CurrentPage;
-			SendNavigating();
-			var removedPage = await RemoveAsyncInner(page, animated, fast, requestedFromHandler);
-			SendNavigated(previousPage);
-			return removedPage;
-		}
-
-		internal async Task<Page> RemoveAsyncInner(
-			Page page,
-			bool animated,
-			bool fast,
-			bool requestedFromHandler)
-		{
-			if (NavigationPageController.StackDepth == 1)
-			{
-				return null;
-			}
-
-			FireDisappearing(page);
-
-			if (InternalChildren.Last() == page)
-				FireAppearing((Page)InternalChildren[NavigationPageController.StackDepth - 2]);
-
-			var args = new NavigationRequestedEventArgs(page, animated);
-
-			var removed = true;
-
-			EventHandler<NavigationRequestedEventArgs> requestPop = PopRequested;
-			if (requestPop != null && !requestedFromHandler)
-			{
-				requestPop(this, args);
-
-				if (args.Task != null && !fast)
-					removed = await args.Task;
-			}
-
-			if (!removed && !fast)
-				return CurrentPage;
-
-			RemoveFromInnerChildren(page);
-
-			CurrentPage = (Page)InternalChildren.Last();
-
-			if (Popped != null)
-				Popped(this, args);
-
-			return page;
-		}
 
 		void SendNavigated(Page previousPage)
 		{
@@ -369,93 +389,11 @@ namespace Microsoft.Maui.Controls
 			CurrentPage.SendNavigatedTo(new NavigatedToEventArgs(previousPage));
 		}
 
-		void SendNavigating()
+		void SendNavigating(Page navigatingFrom = null)
 		{
-			CurrentPage?.SendNavigatingFrom(new NavigatingFromEventArgs());
+			(navigatingFrom ?? CurrentPage)?.SendNavigatingFrom(new NavigatingFromEventArgs());
 		}
 
-
-		Task<Page> INavigationPageController.PopAsyncInner(bool animated, bool fast)
-		{
-			return PopAsyncInner(animated, fast, false);
-		}
-
-		Task<Page> INavigationPageController.RemoveAsyncInner(Page page, bool animated, bool fast)
-		{
-			return RemoveAsyncInner(page, animated, fast, false);
-		}
-
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public event EventHandler<NavigationRequestedEventArgs> PopRequested;
-
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public event EventHandler<NavigationRequestedEventArgs> PopToRootRequested;
-
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public event EventHandler<NavigationRequestedEventArgs> PushRequested;
-
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public event EventHandler<NavigationRequestedEventArgs> RemovePageRequested;
-
-		void InsertPageBefore(Page page, Page before)
-		{
-			if (page == null)
-				throw new ArgumentNullException($"{nameof(page)} cannot be null.");
-
-			if (before == null)
-				throw new ArgumentNullException($"{nameof(before)} cannot be null.");
-
-			if (!InternalChildren.Contains(before))
-				throw new ArgumentException($"{nameof(before)} must be a child of the NavigationPage", nameof(before));
-
-			if (InternalChildren.Contains(page))
-				throw new ArgumentException("Cannot insert page which is already in the navigation stack");
-
-			_insertPageBeforeRequested?.Invoke(this, new NavigationRequestedEventArgs(page, before, false));
-
-			int index = InternalChildren.IndexOf(before);
-			InternalChildren.Insert(index, page);
-
-			if (index == 0)
-				RootPage = page;
-
-			// Shouldn't be required?
-			if (Width > 0 && Height > 0)
-				ForceLayout();
-		}
-
-		async Task PopToRootAsyncInner(bool animated)
-		{
-			if (NavigationPageController.StackDepth == 1)
-				return;
-
-			var previousPage = CurrentPage;
-			SendNavigating();
-			FireDisappearing(CurrentPage);
-			FireAppearing((Page)InternalChildren[0]);
-
-			Element[] childrenToRemove = InternalChildren.Skip(1).ToArray();
-			foreach (Element child in childrenToRemove)
-			{
-				RemoveFromInnerChildren(child);
-			}
-
-			CurrentPage = RootPage;
-
-			var args = new NavigationRequestedEventArgs(RootPage, animated);
-
-			EventHandler<NavigationRequestedEventArgs> requestPopToRoot = PopToRootRequested;
-			if (requestPopToRoot != null)
-			{
-				requestPopToRoot(this, args);
-
-				if (args.Task != null)
-					await args.Task;
-			}
-
-			PoppedToRoot?.Invoke(this, new PoppedToRootEventArgs(RootPage, childrenToRemove.OfType<Page>().ToList()));
-			SendNavigated(previousPage);
-		}
 
 		void FireDisappearing(Page page)
 		{
@@ -469,67 +407,6 @@ namespace Microsoft.Maui.Controls
 				page?.SendAppearing();
 		}
 
-		async Task PushAsyncInner(Page page, bool animated)
-		{
-			if (InternalChildren.Contains(page))
-				return;
-
-			var previousPage = CurrentPage;
-			SendNavigating();
-			FireDisappearing(CurrentPage);
-			FireAppearing(page);
-
-			PushPage(page);
-
-			var args = new NavigationRequestedEventArgs(page, animated);
-
-			EventHandler<NavigationRequestedEventArgs> requestPush = PushRequested;
-			if (requestPush != null)
-			{
-				requestPush(this, args);
-
-				if (args.Task != null)
-					await args.Task;
-			}
-
-			SendNavigated(previousPage);
-			Pushed?.Invoke(this, args);
-		}
-
-		void PushPage(Page page)
-		{
-			InternalChildren.Add(page);
-
-			if (InternalChildren.Count == 1)
-				RootPage = page;
-
-			CurrentPage = page;
-		}
-
-		void RemovePage(Page page)
-		{
-			if (page == null)
-				throw new ArgumentNullException($"{nameof(page)} cannot be null.");
-
-			if (page == CurrentPage && CurrentPage == RootPage)
-				throw new InvalidOperationException("Cannot remove root page when it is also the currently displayed page.");
-
-			if (page == CurrentPage)
-			{
-				Log.Warning("NavigationPage", "RemovePage called for CurrentPage object. This can result in undesired behavior, consider calling PopAsync instead.");
-				PopAsync();
-				return;
-			}
-
-			if (!InternalChildren.Contains(page))
-				throw new ArgumentException("Page to remove must be contained on this Navigation Page");
-
-			RemovePageRequested?.Invoke(this, new NavigationRequestedEventArgs(page, true));
-			RemoveFromInnerChildren(page);
-
-			if (RootPage == page)
-				RootPage = (Page)InternalChildren.First();
-		}
 
 		void RemoveFromInnerChildren(Element page)
 		{
@@ -546,51 +423,9 @@ namespace Microsoft.Maui.Controls
 			});
 		}
 
-		class NavigationImpl : NavigationProxy
-		{
-			readonly Lazy<ReadOnlyCastingList<Page, Element>> _castingList;
-
-			public NavigationImpl(NavigationPage owner)
-			{
-				Owner = owner;
-				_castingList = new Lazy<ReadOnlyCastingList<Page, Element>>(() => new ReadOnlyCastingList<Page, Element>(Owner.InternalChildren));
-			}
-
-			NavigationPage Owner { get; }
-
-			protected override IReadOnlyList<Page> GetNavigationStack()
-			{
-				return _castingList.Value;
-			}
-
-			protected override void OnInsertPageBefore(Page page, Page before)
-			{
-				Owner.InsertPageBefore(page, before);
-			}
-
-			protected override Task<Page> OnPopAsync(bool animated)
-			{
-				return Owner.PopAsync(animated);
-			}
-
-			protected override Task OnPopToRootAsync(bool animated)
-			{
-				return Owner.PopToRootAsync(animated);
-			}
-
-			protected override Task OnPushAsync(Page root, bool animated)
-			{
-				return Owner.PushAsync(root, animated);
-			}
-
-			protected override void OnRemovePage(Page page)
-			{
-				Owner.RemovePage(page);
-			}
-		}
-
 		readonly Lazy<PlatformConfigurationRegistry<NavigationPage>> _platformConfigurationRegistry;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/NavigationPage.xml" path="//Member[@MemberName='On']/Docs" />
 		public new IPlatformElementConfiguration<T, NavigationPage> On<T>() where T : IConfigPlatform
 		{
 			return _platformConfigurationRegistry.Value.On<T>();

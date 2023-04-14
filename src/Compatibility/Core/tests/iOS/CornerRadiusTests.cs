@@ -1,7 +1,8 @@
 using System.Threading.Tasks;
-using NUnit.Framework;
 using Microsoft.Maui.Controls.Compatibility.Platform.iOS;
 using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Platform;
+using NUnit.Framework;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 {
@@ -75,7 +76,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS.UnitTests
 		async Task CheckCornerRadius(View view)
 		{
 			var page = new ContentPage() { Content = view };
-			var centerColor = view.BackgroundColor.ToUIColor();
+			var centerColor = view.BackgroundColor.ToPlatform();
 
 			var screenshot = await GetRendererProperty(view, (ver) => ver.NativeView.ToBitmap(), requiresLayout: true);
 			screenshot.AssertColorAtCenter(centerColor)

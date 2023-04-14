@@ -1,4 +1,5 @@
-﻿using Microsoft.Maui.Handlers;
+﻿using Microsoft.Maui.Controls.Platform;
+using Microsoft.Maui.Handlers;
 
 namespace Microsoft.Maui.Controls
 {
@@ -6,16 +7,19 @@ namespace Microsoft.Maui.Controls
 	{
 		public static void MapTextType(LabelHandler handler, Label label)
 		{
-			Platform.LabelExtensions.UpdateText(handler.NativeView, label);
+			Platform.LabelExtensions.UpdateText(handler.PlatformView, label);
 		}
 
 		public static void MapText(LabelHandler handler, Label label)
 		{
-			Platform.LabelExtensions.UpdateText(handler.NativeView, label);
+			Platform.LabelExtensions.UpdateText(handler.PlatformView, label);
 		}
 
 		public static void MapTextDecorations(LabelHandler handler, Label label)
 		{
+			if (label?.HasFormattedTextSpans ?? false)
+				return;
+
 			if (label?.TextType == TextType.Html)
 			{
 				return;
@@ -26,6 +30,9 @@ namespace Microsoft.Maui.Controls
 
 		public static void MapCharacterSpacing(LabelHandler handler, Label label)
 		{
+			if (label?.HasFormattedTextSpans ?? false)
+				return;
+
 			if (label?.TextType == TextType.Html)
 			{
 				return;
@@ -36,6 +43,9 @@ namespace Microsoft.Maui.Controls
 
 		public static void MapLineHeight(LabelHandler handler, Label label)
 		{
+			if (label?.HasFormattedTextSpans ?? false)
+				return;
+
 			if (label?.TextType == TextType.Html)
 			{
 				return;
@@ -46,6 +56,9 @@ namespace Microsoft.Maui.Controls
 
 		public static void MapFont(LabelHandler handler, Label label)
 		{
+			if (label?.HasFormattedTextSpans ?? false)
+				return;
+
 			if (label?.TextType == TextType.Html)
 			{
 				return;
@@ -56,12 +69,25 @@ namespace Microsoft.Maui.Controls
 
 		public static void MapTextColor(LabelHandler handler, Label label)
 		{
+			if (label?.HasFormattedTextSpans ?? false)
+				return;
+
 			if (label?.TextType == TextType.Html)
 			{
 				return;
 			}
 
 			LabelHandler.MapTextColor(handler, label);
+		}
+
+		public static void MapLineBreakMode(ILabelHandler handler, Label label)
+		{
+			handler.PlatformView?.UpdateLineBreakMode(label);
+		}
+
+		public static void MapMaxLines(ILabelHandler handler, Label label)
+		{
+			handler.PlatformView?.UpdateMaxLines(label);
 		}
 	}
 }

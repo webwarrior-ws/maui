@@ -21,16 +21,17 @@ using WCompositeTransform = Microsoft.UI.Xaml.Media.CompositeTransform;
 using WScaleTransform = Microsoft.UI.Xaml.Media.ScaleTransform;
 using Microsoft.Maui.Graphics;
 using WVisibility = Microsoft.UI.Xaml.Visibility;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Maui.Controls.Platform
 {
-	// TODO MAUI: can we convert this over to using IView
-	public class VisualElementTracker<TElement, TNativeElement> : IDisposable where TElement : VisualElement where TNativeElement : FrameworkElement
+	[Obsolete("VisualElementTracker is obsolete as of .NET 7. This behavior has been built into ViewHandler and is included by default on anything that inherits from `Microsoft.Maui.Controls.View`. If something is missing for you please log an issue. In the mean time, you can try using Microsoft.Maui.Controls.Compatibility.Platform.UWP.VisualElementTracker")]
+	public class VisualElementTracker<TElement, TPlatformElement> : IDisposable where TElement : VisualElement where TPlatformElement : FrameworkElement
 	{
 		readonly NotifyCollectionChangedEventHandler _collectionChangedHandler;
 		readonly List<uint> _fingers = new List<uint>();
 		FrameworkElement? _container;
-		TNativeElement? _control;
+		TPlatformElement? _control;
 		TElement? _element;
 
 		bool _invalidateArrangeNeeded = false;
@@ -64,13 +65,13 @@ namespace Microsoft.Maui.Controls.Platform
 
 				UpdatingGestureRecognizers();
 
-				UpdateNativeControl();
+				UpdatePlatformControl();
 			}
 		}
 
 		public bool PreventGestureBubbling { get; set; }
 
-		public TNativeElement? Control
+		public TPlatformElement? Control
 		{
 			get { return _control; }
 			set
@@ -85,7 +86,7 @@ namespace Microsoft.Maui.Controls.Platform
 				}
 
 				_control = value;
-				UpdateNativeControl();
+				UpdatePlatformControl();
 
 				if (PreventGestureBubbling)
 				{
@@ -139,7 +140,7 @@ namespace Microsoft.Maui.Controls.Platform
 				if (operationPriorToSend != dragEventArgs.AcceptedOperation)
 				{
 					var result = (int)dragEventArgs.AcceptedOperation;
-					e.AcceptedOperation = (Windows.ApplicationModel.DataTransfer.DataPackageOperation)result;
+					e.AcceptedOperation = (global::Windows.ApplicationModel.DataTransfer.DataPackageOperation)result;
 				}
 			});
 		}
@@ -151,15 +152,15 @@ namespace Microsoft.Maui.Controls.Platform
 
 			SendEventArgs<DropGestureRecognizer>(rec =>
 			{
-				if(!rec.AllowDrop)
+				if (!rec.AllowDrop)
 				{
-					e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.None;
+					e.AcceptedOperation = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation.None;
 					return;
 				}
 
 				rec.SendDragOver(dragEventArgs);
 				var result = (int)dragEventArgs.AcceptedOperation;
-				e.AcceptedOperation = (Windows.ApplicationModel.DataTransfer.DataPackageOperation)result;
+				e.AcceptedOperation = (global::Windows.ApplicationModel.DataTransfer.DataPackageOperation)result;
 			});
 		}
 
@@ -185,7 +186,7 @@ namespace Microsoft.Maui.Controls.Platform
 				}
 				catch (Exception dropExc)
 				{
-					Internals.Log.Warning(nameof(DropGestureRecognizer), $"{dropExc}");
+					Application.Current?.FindMauiContext()?.CreateLogger<DropGestureRecognizer>()?.LogWarning(dropExc, "Error sending drop event");
 				}
 			});
 		}
@@ -206,12 +207,12 @@ namespace Microsoft.Maui.Controls.Platform
 
 				if (!args.Handled && renderer != null)
 				{
-					if (renderer.NativeView is Microsoft.UI.Xaml.Controls.Image nativeImage &&
+					if (renderer.PlatformView is Microsoft.UI.Xaml.Controls.Image nativeImage &&
 						nativeImage.Source is BitmapImage bi && bi.UriSource != null)
 					{
 						e.Data.SetBitmap(RandomAccessStreamReference.CreateFromUri(bi.UriSource));
 					}
-					else if(!String.IsNullOrWhiteSpace(args.Data.Text))
+					else if (!String.IsNullOrWhiteSpace(args.Data.Text))
 					{
 						Uri? uri;
 						if (Uri.TryCreate(args.Data.Text, UriKind.Absolute, out uri))
@@ -229,7 +230,7 @@ namespace Microsoft.Maui.Controls.Platform
 				}
 
 				e.Cancel = args.Cancel;
-				e.AllowedOperations = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Copy;
+				e.AllowedOperations = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation.Copy;
 			});
 		}
 
@@ -253,7 +254,7 @@ namespace Microsoft.Maui.Controls.Platform
 						oldRecognizers.CollectionChanged -= _collectionChangedHandler;
 						var gestures = (view as IGestureController)?.CompositeGestureRecognizers as ObservableCollection<IGestureRecognizer>;
 
-						if(gestures != null)
+						if (gestures != null)
 							gestures.CollectionChanged -= _collectionChangedHandler;
 					}
 				}
@@ -277,7 +278,7 @@ namespace Microsoft.Maui.Controls.Platform
 					}
 				}
 
-				UpdateNativeControl();
+				UpdatePlatformControl();
 			}
 		}
 
@@ -403,7 +404,7 @@ namespace Microsoft.Maui.Controls.Platform
 			}
 		}
 
-		protected virtual void UpdateNativeControl()
+		protected virtual void UpdatePlatformControl()
 		{
 			if (Element == null || Container == null)
 				return;
@@ -447,9 +448,9 @@ namespace Microsoft.Maui.Controls.Platform
 			{
 				if (!_wasPanGestureStartedSent)
 				{
-					recognizer.SendPanStarted(view, Application.Current.PanGestureId);
+					recognizer.SendPanStarted(view, PanGestureRecognizer.CurrentId.Value);
 				}
-				recognizer.SendPan(view, e.Delta.Translation.X + e.Cumulative.Translation.X, e.Delta.Translation.Y + e.Cumulative.Translation.Y, Application.Current.PanGestureId);
+				recognizer.SendPan(view, e.Delta.Translation.X + e.Cumulative.Translation.X, e.Delta.Translation.Y + e.Cumulative.Translation.Y, PanGestureRecognizer.CurrentId.Value);
 			}
 			_wasPanGestureStartedSent = true;
 		}
@@ -461,7 +462,7 @@ namespace Microsoft.Maui.Controls.Platform
 
 			_isPinching = true;
 
-			Windows.Foundation.Point translationPoint = e.Container.TransformToVisual(Container).TransformPoint(e.Position);
+			global::Windows.Foundation.Point translationPoint = e.Container.TransformToVisual(Container).TransformPoint(e.Position);
 
 			var scaleOriginPoint = new Point(translationPoint.X / view.Width, translationPoint.Y / view.Height);
 			IEnumerable<PinchGestureRecognizer> pinchGestures = view.GestureRecognizers.GetGesturesFor<PinchGestureRecognizer>();
@@ -478,7 +479,7 @@ namespace Microsoft.Maui.Controls.Platform
 
 		void MaybeInvalidate()
 		{
-			if (Element?.IsInNativeLayout == true)
+			if (Element?.IsInPlatformLayout == true)
 				return;
 
 			var parent = (FrameworkElement?)Container?.Parent;
@@ -583,7 +584,7 @@ namespace Microsoft.Maui.Controls.Platform
 
 		void OnRedrawNeeded(object? sender, EventArgs e)
 		{
-			UpdateNativeControl();
+			UpdatePlatformControl();
 		}
 
 		void OnTap(object? sender, TappedRoutedEventArgs e)
@@ -646,15 +647,15 @@ namespace Microsoft.Maui.Controls.Platform
 			{
 				if (success)
 				{
-					recognizer.SendPanCompleted(view, Application.Current.PanGestureId);
+					recognizer.SendPanCompleted(view, PanGestureRecognizer.CurrentId.Value);
 				}
 				else
 				{
-					recognizer.SendPanCanceled(view, Application.Current.PanGestureId);
+					recognizer.SendPanCanceled(view, PanGestureRecognizer.CurrentId.Value);
 				}
 			}
 
-			Application.Current.PanGestureId++;
+			PanGestureRecognizer.CurrentId.Increment();
 			_isPanning = false;
 		}
 
@@ -783,7 +784,7 @@ namespace Microsoft.Maui.Controls.Platform
 		{
 			double anchorX = view.AnchorX;
 			double anchorY = view.AnchorY;
-			frameworkElement.RenderTransformOrigin = new Windows.Foundation.Point(anchorX, anchorY);
+			frameworkElement.RenderTransformOrigin = new global::Windows.Foundation.Point(anchorX, anchorY);
 			frameworkElement.RenderTransform = new WScaleTransform { ScaleX = view.Scale * view.ScaleX, ScaleY = view.Scale * view.ScaleY };
 
 			UpdateRotation(view, frameworkElement);
@@ -817,7 +818,7 @@ namespace Microsoft.Maui.Controls.Platform
 				_container.DropCompleted += HandleDropCompleted;
 			}
 
-			if(_container.AllowDrop)
+			if (_container.AllowDrop)
 			{
 				_container.DragOver += HandleDragOver;
 				_container.Drop += HandleDrop;
@@ -874,12 +875,14 @@ namespace Microsoft.Maui.Controls.Platform
 			//We can't handle ManipulationMode.Scale and System , so we don't support pinch/pan on a scrollview 
 			if (Element is ScrollView)
 			{
+				var logger = Application.Current?.FindMauiContext()?.CreateLogger<GestureManager>();
+
 				if (hasPinchGesture)
-					Log.Warning("Gestures", "PinchGestureRecognizer is not supported on a ScrollView in Windows Platforms");
+					logger?.LogWarning("PinchGestureRecognizer is not supported on a ScrollView in Windows Platforms");
 				if (hasPanGesture)
-					Log.Warning("Gestures", "PanGestureRecognizer is not supported on a ScrollView in Windows Platforms");
+					logger?.LogWarning("PanGestureRecognizer is not supported on a ScrollView in Windows Platforms");
 				if (hasSwipeGesture)
-					Log.Warning("Gestures", "SwipeGestureRecognizer is not supported on a ScrollView in Windows Platforms");
+					logger?.LogWarning("SwipeGestureRecognizer is not supported on a ScrollView in Windows Platforms");
 				return;
 			}
 

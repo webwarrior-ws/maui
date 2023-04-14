@@ -1,6 +1,6 @@
 ﻿using System;
 using Gtk;
-using Microsoft.Maui.Graphics.Native.Gtk;
+using Microsoft.Maui.Graphics.Platform.Gtk;
 
 namespace Microsoft.Maui.Handlers
 {
@@ -10,7 +10,7 @@ namespace Microsoft.Maui.Handlers
 	public partial class EntryHandler : ViewHandler<IEntry, Entry>
 	{
 
-		protected override Entry CreateNativeView()
+		protected override Entry CreatePlatformView()
 		{
 			return new();
 		}
@@ -38,7 +38,7 @@ namespace Microsoft.Maui.Handlers
 
 		void HandleSelectionChanged()
 		{
-			if (NativeView is not { } nativeView || VirtualView is not { } virtualView)
+			if (PlatformView is not { } nativeView || VirtualView is not { } virtualView)
 				return;
 
 			var actual = nativeView.GetSelection();
@@ -52,16 +52,16 @@ namespace Microsoft.Maui.Handlers
 
 		void OnNativeViewCursorMoved(object sender, MoveCursorArgs args)
 		{
-			if (sender != NativeView)
+			if (sender != PlatformView)
 				return;
 
-			NativeView.OnCursorPositionChanged(VirtualView);
+			PlatformView.OnCursorPositionChanged(VirtualView);
 			HandleSelectionChanged();
 		}
 
 		void OnNativeViewMotionNotified(object sender, MotionNotifyEventArgs args)
 		{
-			if (sender != NativeView)
+			if (sender != PlatformView)
 				return;
 
 			if (_isMouseSelection)
@@ -71,7 +71,7 @@ namespace Microsoft.Maui.Handlers
 
 		void OnNativeViewOnButtonPressed(object sender, Gtk.ButtonPressEventArgs args)
 		{
-			if (sender != NativeView)
+			if (sender != PlatformView)
 				return;
 
 			if (args.Event.Button == 1)
@@ -92,93 +92,98 @@ namespace Microsoft.Maui.Handlers
 
 		protected void OnNativeViewChanged(object? sender, EventArgs e)
 		{
-			if (sender != NativeView)
+			if (sender != PlatformView)
 				return;
 
-			if (NativeView?.OnTextChanged(VirtualView) ?? false)
+			if (PlatformView?.OnTextChanged(VirtualView) ?? false)
 				HandleSelectionChanged();
 		}
 
-		public static void MapText(EntryHandler handler, IEntry entry)
+		public static void MapText(IEntryHandler handler, IEntry entry)
 		{
-			handler.NativeView?.UpdateText(entry);
+			handler.PlatformView?.UpdateText(entry);
 		}
 
-		public static void MapTextColor(EntryHandler handler, IEntry entry)
+		public static void MapTextColor(IEntryHandler handler, IEntry entry)
 		{
-			handler.NativeView?.UpdateTextColor(entry.TextColor);
+			handler.PlatformView?.UpdateTextColor(entry.TextColor);
 		}
 
-		public static void MapIsPassword(EntryHandler handler, IEntry entry)
+		public static void MapIsPassword(IEntryHandler handler, IEntry entry)
 		{
-			if (handler.NativeView is { } nativeView)
+			if (handler.PlatformView is { } nativeView)
 			{
 				nativeView.Visibility = !entry.IsPassword;
 			}
 		}
 
-		public static void MapHorizontalTextAlignment(EntryHandler handler, IEntry entry)
+		public static void MapHorizontalTextAlignment(IEntryHandler handler, IEntry entry)
 		{
-			if (handler.NativeView is { } nativeView)
+			if (handler.PlatformView is { } nativeView)
 				nativeView.Alignment = entry.HorizontalTextAlignment.ToXyAlign();
 		}
 
 		[MissingMapper]
-		public static void MapVerticalTextAlignment(EntryHandler handler, IEntry entry)
+		public static void MapVerticalTextAlignment(IEntryHandler handler, IEntry entry)
 		{ }
 
 		[MissingMapper]
-		public static void MapIsTextPredictionEnabled(EntryHandler handler, IEntry entry) { }
+		public static void MapIsTextPredictionEnabled(IEntryHandler handler, IEntry entry) { }
 
-		public static void MapMaxLength(EntryHandler handler, IEntry entry)
+		public static void MapMaxLength(IEntryHandler handler, IEntry entry)
 		{
-			if (handler.NativeView is { } nativeView)
+			if (handler.PlatformView is { } nativeView)
 				nativeView.MaxLength = entry.MaxLength;
 		}
 
-		public static void MapPlaceholder(EntryHandler handler, IEntry entry)
+		public static void MapPlaceholder(IEntryHandler handler, IEntry entry)
 		{
-			handler.NativeView?.UpdatePlaceholder(entry);
-		}
-
-		public static void MapIsReadOnly(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateIsReadOnly(entry);
-		}
-
-		public static void MapFont(EntryHandler handler, IEntry entry)
-		{
-			handler.MapFont(entry);
-		}
-
-		public static void MapCursorPosition(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateCursorPosition(entry);
-		}
-
-		public static void MapSelectionLength(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateSelectionLength(entry);
+			handler.PlatformView?.UpdatePlaceholder(entry);
 		}
 
 		[MissingMapper]
-		public static void MapReturnType(EntryHandler handler, IEntry entry) { }
+		public static void MapPlaceholderColor(IEntryHandler handler, IEntry entry) { }
+
+		public static void MapIsReadOnly(IEntryHandler handler, IEntry entry)
+		{
+			handler.PlatformView?.UpdateIsReadOnly(entry);
+		}
+
+		public static void MapFont(IEntryHandler handler, IEntry entry)
+		{
+			var fontManager = handler.GetRequiredService<IFontManager>();
+
+			handler.PlatformView?.UpdateFont(entry, fontManager);
+		}
+
+		public static void MapCursorPosition(IEntryHandler handler, IEntry entry)
+		{
+			handler.PlatformView?.UpdateCursorPosition(entry);
+		}
+
+		public static void MapSelectionLength(IEntryHandler handler, IEntry entry)
+		{
+			handler.PlatformView?.UpdateSelectionLength(entry);
+		}
 
 		[MissingMapper]
-		public static void MapClearButtonVisibility(EntryHandler handler, IEntry entry) { }
+		public static void MapReturnType(IEntryHandler handler, IEntry entry) { }
 
-		public static void MapCharacterSpacing(EntryHandler handler, IEntry entry)
+		[MissingMapper]
+		public static void MapClearButtonVisibility(IEntryHandler handler, IEntry entry) { }
+
+		public static void MapCharacterSpacing(IEntryHandler handler, IEntry entry)
 		{
-			if (handler.NativeView is not { } nativeView)
+			if (handler.PlatformView is not { } nativeView)
 				return;
 
 			nativeView.Attributes = nativeView.Attributes.AttrListFor(entry.CharacterSpacing);
 		}
 
 		[MissingMapper]
-		public static void MapKeyboard(EntryHandler handler, IEntry entry)
+		public static void MapKeyboard(IEntryHandler handler, IEntry entry)
 		{
-			if (handler.NativeView is not { } nativeView)
+			if (handler.PlatformView is not { } nativeView)
 				return;
 
 			// https://docs.gtk.org/gtk3/method.Entry.set_input_purpose.html

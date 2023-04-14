@@ -2,6 +2,7 @@ using System;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.Xaml.Internals;
 #if __MOBILE__
+using ObjCRuntime;
 using UIKit;
 
 [assembly: Microsoft.Maui.Controls.Dependency(typeof(Microsoft.Maui.Controls.Compatibility.Platform.iOS.NativeValueConverterService))]
@@ -19,6 +20,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 	{
 		public bool ConvertTo(object value, Type toType, out object nativeValue)
 		{
+			Hosting.MauiAppBuilderExtensions.CheckForCompatibility();
 			nativeValue = null;
 			if (typeof(UIView).IsInstanceOfType(value) && toType.IsAssignableFrom(typeof(View)))
 			{

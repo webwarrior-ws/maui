@@ -1,14 +1,18 @@
-﻿using CoreAnimation;
+﻿using System;
+using CoreAnimation;
 using CoreGraphics;
 using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Graphics.Native;
+using Microsoft.Maui.Graphics.Platform;
+using ObjCRuntime;
 using UIKit;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
-	public partial class WrapperView : UIView
+	public partial class WrapperView : UIView, IDisposable
 	{
-		SizeF _lastMaskSize;
+		CAShapeLayer? _maskLayer;
+		CAShapeLayer? _shadowLayer;
+		UIView? BorderView;
 
 		public WrapperView()
 		{
@@ -19,10 +23,34 @@ namespace Microsoft.Maui
 		{
 		}
 
-		CAShapeLayer? Mask
+		CAShapeLayer? MaskLayer
 		{
-			get => Layer.Mask as CAShapeLayer;
-			set => Layer.Mask = value;
+			get => _maskLayer;
+			set
+			{
+				var layer = GetLayer();
+
+				if (layer != null && _maskLayer != null)
+					layer.Mask = null;
+
+				_maskLayer = value;
+
+				if (layer != null)
+					layer.Mask = value;
+			}
+		}
+
+		CAShapeLayer? ShadowLayer
+		{
+			get => _shadowLayer;
+			set
+			{
+				_shadowLayer?.RemoveFromSuperLayer();
+				_shadowLayer = value;
+
+				if (_shadowLayer != null)
+					Layer.InsertSublayer(_shadowLayer, 0);
+			}
 		}
 
 		public override void LayoutSubviews()
@@ -32,14 +60,34 @@ namespace Microsoft.Maui
 			if (Subviews.Length == 0)
 				return;
 
+			if (BorderView != null)
+				BringSubviewToFront(BorderView);
+
 			var child = Subviews[0];
 
 			child.Frame = Bounds;
 
-			if (Mask != null)
-				Mask.Frame = Bounds;
+			if (MaskLayer != null)
+				MaskLayer.Frame = Bounds;
+
+			if (ShadowLayer != null)
+				ShadowLayer.Frame = Bounds;
+
+			if (BorderView != null)
+				BorderView.Frame = Bounds;
 
 			SetClip();
+			SetShadow();
+			SetBorder();
+		}
+
+		public new void Dispose()
+		{
+			DisposeClip();
+			DisposeShadow();
+			DisposeBorder();
+
+			base.Dispose();
 		}
 
 		public override CGSize SizeThatFits(CGSize size)
@@ -61,29 +109,97 @@ namespace Microsoft.Maui
 
 		partial void ClipChanged()
 		{
-			_lastMaskSize = SizeF.Zero;
-
-			if (Frame == CGRect.Empty)
-				return;
+			SetClip();
 		}
+
+		partial void ShadowChanged()
+		{
+			SetShadow();
+		}
+
+		partial void BorderChanged() => SetBorder();
 
 		void SetClip()
 		{
-			var mask = Mask;
+			var mask = MaskLayer;
 
 			if (mask == null && Clip == null)
 				return;
 
-			mask ??= Mask = new CAShapeLayer();
+			mask ??= MaskLayer = new CAShapeLayer();
 			var frame = Frame;
-			var bounds = new RectangleF(0, 0, (float)frame.Width, (float)frame.Height);
+			var bounds = new RectF(0, 0, (float)frame.Width, (float)frame.Height);
 
-			if (bounds.Size == _lastMaskSize)
+			var path = _clip?.PathForBounds(bounds);
+			var nativePath = path?.AsCGPath();
+			mask.Path = nativePath;
+		}
+
+		void DisposeClip()
+		{
+			MaskLayer = null;
+		}
+
+		void SetShadow()
+		{
+			var shadowLayer = ShadowLayer;
+
+			if (shadowLayer == null && Shadow == null)
 				return;
 
-			_lastMaskSize = bounds.Size;
+			shadowLayer ??= ShadowLayer = new CAShapeLayer();
+
+			var frame = Frame;
+			var bounds = new RectF(0, 0, (float)frame.Width, (float)frame.Height);
+
+			shadowLayer.FillColor = new CGColor(0, 0, 0, 1);
+
 			var path = _clip?.PathForBounds(bounds);
-			mask.Path = path?.AsCGPath();
+			var nativePath = path?.AsCGPath();
+			shadowLayer.Path = nativePath;
+
+			if (Shadow == null)
+				shadowLayer.ClearShadow();
+			else
+				shadowLayer.SetShadow(Shadow);
+		}
+
+		void DisposeShadow()
+		{
+			ShadowLayer = null;
+		}
+
+		void SetBorder()
+		{
+			if (Border == null)
+			{
+				BorderView?.RemoveFromSuperview();
+				return;
+			}
+
+			if (BorderView == null)
+			{
+				AddSubview(BorderView = new UIView(Bounds) { UserInteractionEnabled = false });
+			}
+
+			BorderView.UpdateMauiCALayer(Border);
+		}
+
+		void DisposeBorder()
+		{
+			BorderView?.RemoveFromSuperview();
+		}
+
+		CALayer? GetLayer()
+		{
+			if (Layer == null || Layer.Sublayers == null)
+				return null;
+
+			foreach (var subLayer in Layer.Sublayers)
+				if (subLayer.Delegate != null)
+					return subLayer;
+
+			return Layer;
 		}
 	}
 }

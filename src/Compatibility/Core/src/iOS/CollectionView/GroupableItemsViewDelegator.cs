@@ -1,9 +1,11 @@
 using System;
 using CoreGraphics;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[System.Obsolete]
 	public class GroupableItemsViewDelegator<TItemsView, TViewController> : SelectableItemsViewDelegator<TItemsView, TViewController>
 		where TItemsView : GroupableItemsView
 		where TViewController : GroupableItemsViewController<TItemsView>

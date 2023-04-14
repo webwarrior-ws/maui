@@ -1,29 +1,40 @@
 using System.IO;
 using System.Threading.Tasks;
 using Foundation;
-using MessageUI;
 using UIKit;
+#if !(MACCATALYST || MACOS)
+using MessageUI;
+#endif
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.ApplicationModel.Communication
 {
-	public static partial class Email
+	partial class EmailImplementation : IEmail
 	{
-		internal static bool IsComposeSupported =>
+		public bool IsComposeSupported =>
+#if !(MACCATALYST || MACOS)
 			MFMailComposeViewController.CanSendMail ||
 			MainThread.InvokeOnMainThread(() => UIApplication.SharedApplication.CanOpenUrl(NSUrl.FromString("mailto:")));
+#else
+			false;
+#endif
 
-		static Task PlatformComposeAsync(EmailMessage message)
+		Task PlatformComposeAsync(EmailMessage message)
 		{
+#if !(MACCATALYST || MACOS)
 			if (MFMailComposeViewController.CanSendMail)
 				return ComposeWithMailCompose(message);
 			else
 				return ComposeWithUrl(message);
+#else
+			return Task.CompletedTask;
+#endif
 		}
 
-		static Task ComposeWithMailCompose(EmailMessage message)
+		Task ComposeWithMailCompose(EmailMessage message)
 		{
+#if !(MACCATALYST || MACOS)
 			// do this first so we can throw as early as possible
-			var parentController = Platform.GetCurrentViewController();
+			var parentController = WindowStateManager.Default.GetCurrentUIViewController(true);
 
 			// create the controller
 			var controller = new MFMailComposeViewController();
@@ -57,16 +68,26 @@ namespace Microsoft.Maui.Essentials
 				controller.DismissViewController(true, null);
 				tcs.TrySetResult(e.Result == MFMailComposeResult.Sent);
 			};
+
+			if (controller.PresentationController != null)
+			{
+				controller.PresentationController.Delegate =
+					new UIPresentationControllerDelegate(() => tcs.TrySetResult(false));
+			}
+
 			parentController.PresentViewController(controller, true, null);
 
 			return tcs.Task;
+#else
+			return Task.CompletedTask;
+#endif
 		}
 
-		static async Task ComposeWithUrl(EmailMessage message)
+		Task ComposeWithUrl(EmailMessage message)
 		{
 			var url = GetMailToUri(message);
 			var nsurl = NSUrl.FromString(url);
-			await Launcher.PlatformOpenAsync(nsurl);
+			return Launcher.Default.OpenAsync(nsurl);
 		}
 	}
 }

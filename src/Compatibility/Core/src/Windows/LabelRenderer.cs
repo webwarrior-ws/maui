@@ -8,30 +8,31 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Windows.UI.Text;
+using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Controls.Compatibility.Platform.UAP;
 using Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific;
 using Specifics = Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific.Label;
 using WRect = Windows.Foundation.Rect;
 using WThickness = Microsoft.UI.Xaml.Thickness;
 using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Controls.Platform;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
 	public static class FormattedStringExtensions
 	{
-		public static Run ToRun(this Span span)
+		public static Run ToRun(this Span span, IFontManager fontManager)
 		{
 			var run = new Run { Text = span.Text ?? string.Empty };
 
 			if (span.TextColor.IsNotDefault())
-				run.Foreground = Maui.ColorExtensions.ToNative(span.TextColor);
+				run.Foreground = span.TextColor.ToPlatform();
 
-			if (!span.IsDefault())
-				run.ApplyFont(span);
+			var font = span.ToFont();
+			if (!font.IsDefault)
+				run.ApplyFont(font, fontManager);
 
 			if (span.IsSet(Span.TextDecorationsProperty))
-				run.TextDecorations = (Windows.UI.Text.TextDecorations)span.TextDecorations;
+				run.TextDecorations = (global::Windows.UI.Text.TextDecorations)span.TextDecorations;
 
 			run.CharacterSpacing = span.CharacterSpacing.ToEm();
 
@@ -39,6 +40,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		}
 	}
 
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class LabelRenderer : ViewRenderer<Label, TextBlock>
 	{
 		bool _fontApplied;
@@ -66,7 +68,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		{
 		}
 
-		protected override Windows.Foundation.Size ArrangeOverride(Windows.Foundation.Size finalSize)
+		protected override global::Windows.Foundation.Size ArrangeOverride(global::Windows.Foundation.Size finalSize)
 		{
 			if (Element == null)
 				return finalSize;
@@ -144,7 +146,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 					SetNativeControl(new TextBlock());
 				}
 
-				_isInitiallyDefault = Element.IsDefault();
+				_isInitiallyDefault = Element.ToFont().IsDefault;
 
 				UpdateText(Control);
 				UpdateTextDecorations(Control);
@@ -199,14 +201,14 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			var elementTextDecorations = Element.TextDecorations;
 
 			if ((elementTextDecorations & TextDecorations.Underline) == 0)
-				textBlock.TextDecorations &= ~Windows.UI.Text.TextDecorations.Underline;
+				textBlock.TextDecorations &= ~global::Windows.UI.Text.TextDecorations.Underline;
 			else
-				textBlock.TextDecorations |= Windows.UI.Text.TextDecorations.Underline;
+				textBlock.TextDecorations |= global::Windows.UI.Text.TextDecorations.Underline;
 
 			if ((elementTextDecorations & TextDecorations.Strikethrough) == 0)
-				textBlock.TextDecorations &= ~Windows.UI.Text.TextDecorations.Strikethrough;
+				textBlock.TextDecorations &= ~global::Windows.UI.Text.TextDecorations.Strikethrough;
 			else
-				textBlock.TextDecorations |= Windows.UI.Text.TextDecorations.Strikethrough;
+				textBlock.TextDecorations |= global::Windows.UI.Text.TextDecorations.Strikethrough;
 
 			//TextDecorations are not updated in the UI until the text changes
 			if (textBlock.Inlines != null && textBlock.Inlines.Count > 0)
@@ -236,8 +238,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			if (label == null)
 				return;
 
-			textBlock.TextAlignment = label.HorizontalTextAlignment.ToNativeTextAlignment(((IVisualElementController)Element).EffectiveFlowDirection);
-			textBlock.VerticalAlignment = label.VerticalTextAlignment.ToNativeVerticalAlignment();
+			textBlock.TextAlignment = label.HorizontalTextAlignment.ToPlatformTextAlignment(((IVisualElementController)Element).EffectiveFlowDirection);
+			textBlock.VerticalAlignment = label.VerticalTextAlignment.ToPlatformVerticalAlignment();
 		}
 
 		void UpdateColor(TextBlock textBlock)
@@ -248,7 +250,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			Label label = Element;
 			if (label != null && label.TextColor.IsNotDefault())
 			{
-				textBlock.Foreground = Maui.ColorExtensions.ToNative(label.TextColor);
+				textBlock.Foreground = label.TextColor.ToPlatform();
 			}
 			else
 			{
@@ -264,13 +266,20 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				return;
 
 			Label label = Element;
-			if (label == null || (label.IsDefault() && !_fontApplied))
+
+			if (label == null)
 				return;
 
-			if (label.IsDefault() && _isInitiallyDefault)
-				textBlock.ApplyFont(Font.SystemFontOfSize(Device.GetNamedSize(NamedSize.Medium, Element.GetType(), false)));
+			var isLabelDefault = label.ToFont().IsDefault;
+			if (isLabelDefault && !_fontApplied)
+				return;
+
+			if (isLabelDefault && _isInitiallyDefault)
+#pragma warning disable CS0612 // Type or member is obsolete
+				textBlock.ApplyFont(Font.SystemFontOfSize(Device.GetNamedSize(NamedSize.Medium, Element.GetType(), false)), Element.RequireFontManager());
+#pragma warning restore CS0612 // Type or member is obsolete
 			else
-				textBlock.ApplyFont(label);
+				textBlock.ApplyFont(label.ToFont(), Element.RequireFontManager());
 
 			_fontApplied = true;
 		}
@@ -334,16 +343,17 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				}
 				else
 				{
+					var fontManager = label.RequireFontManager();
 					textBlock.Inlines.Clear();
 					// Have to implement a measure here, otherwise inline.ContentStart and ContentEnd will be null, when used in RecalculatePositions
-					textBlock.Measure(new Windows.Foundation.Size(double.MaxValue, double.MaxValue));
+					textBlock.Measure(new global::Windows.Foundation.Size(double.MaxValue, double.MaxValue));
 
 					var heights = new List<double>();
 					for (var i = 0; i < formatted.Spans.Count; i++)
 					{
 						var span = formatted.Spans[i];
 
-						var run = span.ToRun();
+						var run = span.ToRunAndColorsTuple(fontManager).Item1;
 						heights.Add(Control.FindDefaultLineHeight(run));
 						textBlock.Inlines.Add(run);
 					}
@@ -369,7 +379,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			catch (Exception)
 			{
 				// if anything goes wrong just show the html
-				textBlock.Text = Windows.Data.Html.HtmlUtilities.ConvertToText(Element.Text);
+				textBlock.Text = global::Windows.Data.Html.HtmlUtilities.ConvertToText(Element.Text);
 			}
 		}
 

@@ -7,15 +7,12 @@ namespace Microsoft.Maui
 	public static class HandlerExtensions
 	{
 
-		public static Widget ToNative(this IView view, IMauiContext context)
+		public static Widget ToPlatform(this IView view, IMauiContext context)
 		{
 			_ = view ?? throw new ArgumentNullException(nameof(view));
 			_ = context ?? throw new ArgumentNullException(nameof(context));
 
-			var handler = view.Handler;
-
-			if (handler == null)
-				handler = context.Handlers.GetHandler(view.GetType()) as IViewHandler;
+			var handler = view.Handler ?? context.Handlers.GetHandler(view.GetType()) as IViewHandler;
 
 			if (handler == null)
 				throw new Exception($"Handler not found for view {view}");
@@ -26,7 +23,7 @@ namespace Microsoft.Maui
 
 			handler.SetVirtualView(view);
 
-			if (handler.NativeView is not Widget result)
+			if (handler.PlatformView is not Widget result)
 			{
 				throw new InvalidOperationException($"Unable to convert {view} to {typeof(Widget)}");
 			}

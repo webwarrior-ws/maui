@@ -2,63 +2,48 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using NUnit.Framework;
+using Xunit;
 
 namespace Microsoft.Maui.Controls.Core.UnitTests
 {
-	[TestFixture]
-	public class ImageButtonTests
-		: CommandSourceTests<ImageButton>
+
+	public class ImageButtonTests : CommandSourceTests<ImageButton>
 	{
-		[SetUp]
-		public override void Setup()
-		{
-			base.Setup();
-			Device.PlatformServices = new MockPlatformServices(getStreamAsync: GetStreamAsync);
-		}
-
-		[TearDown]
-		public override void TearDown()
-		{
-			base.TearDown();
-			Device.PlatformServices = null;
-		}
-
-		[Test]
+		[Fact]
 		public void TestSizing()
 		{
 			var image = new ImageButton { Source = ImageSource.FromFile("File.png"), IsPlatformEnabled = true };
 
 			var result = image.Measure(double.PositiveInfinity, double.PositiveInfinity);
 
-			Assert.AreEqual(100, result.Request.Width);
-			Assert.AreEqual(20, result.Request.Height);
+			Assert.Equal(100, result.Request.Width);
+			Assert.Equal(20, result.Request.Height);
 		}
 
-		[Test]
+		[Fact]
 		public void TestAspectSizingWithConstrainedHeight()
 		{
 			var image = new ImageButton { Source = ImageSource.FromFile("File.png"), IsPlatformEnabled = true };
 
 			var result = image.Measure(double.PositiveInfinity, 10);
 
-			Assert.AreEqual(50, result.Request.Width);
-			Assert.AreEqual(10, result.Request.Height);
+			Assert.Equal(50, result.Request.Width);
+			Assert.Equal(10, result.Request.Height);
 		}
 
-		[Test]
+		[Fact]
 		public void TestAspectSizingWithConstrainedWidth()
 		{
 			var image = new ImageButton { Source = ImageSource.FromFile("File.png"), IsPlatformEnabled = true };
 
 			var result = image.Measure(25, double.PositiveInfinity);
 
-			Assert.AreEqual(25, result.Request.Width);
-			Assert.AreEqual(5, result.Request.Height);
+			Assert.Equal(25, result.Request.Width);
+			Assert.Equal(5, result.Request.Height);
 		}
 
 
-		[Test]
+		[Fact]
 		public void TestAspectFillSizingWithConstrainedHeight()
 		{
 			var image = new ImageButton { Source = ImageSource.FromFile("File.png"), IsPlatformEnabled = true };
@@ -66,11 +51,11 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			image.Aspect = Aspect.AspectFill;
 			var result = image.Measure(double.PositiveInfinity, 10);
 
-			Assert.AreEqual(50, result.Request.Width);
-			Assert.AreEqual(10, result.Request.Height);
+			Assert.Equal(50, result.Request.Width);
+			Assert.Equal(10, result.Request.Height);
 		}
 
-		[Test]
+		[Fact]
 		public void TestAspectFillSizingWithConstrainedWidth()
 		{
 			var image = new ImageButton { Source = ImageSource.FromFile("File.png"), IsPlatformEnabled = true };
@@ -78,11 +63,11 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			image.Aspect = Aspect.AspectFill;
 			var result = image.Measure(25, double.PositiveInfinity);
 
-			Assert.AreEqual(25, result.Request.Width);
-			Assert.AreEqual(5, result.Request.Height);
+			Assert.Equal(25, result.Request.Width);
+			Assert.Equal(5, result.Request.Height);
 		}
 
-		[Test]
+		[Fact]
 		public void TestFillSizingWithConstrainedHeight()
 		{
 			var image = new ImageButton { Source = ImageSource.FromFile("File.png"), IsPlatformEnabled = true };
@@ -90,11 +75,11 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			image.Aspect = Aspect.AspectFill;
 			var result = image.Measure(double.PositiveInfinity, 10);
 
-			Assert.AreEqual(50, result.Request.Width);
-			Assert.AreEqual(10, result.Request.Height);
+			Assert.Equal(50, result.Request.Width);
+			Assert.Equal(10, result.Request.Height);
 		}
 
-		[Test]
+		[Fact]
 		public void TestFillSizingWithConstrainedWidth()
 		{
 			var image = new ImageButton { Source = ImageSource.FromFile("File.png"), IsPlatformEnabled = true };
@@ -102,30 +87,30 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			image.Aspect = Aspect.AspectFill;
 			var result = image.Measure(25, double.PositiveInfinity);
 
-			Assert.AreEqual(25, result.Request.Width);
-			Assert.AreEqual(5, result.Request.Height);
+			Assert.Equal(25, result.Request.Width);
+			Assert.Equal(5, result.Request.Height);
 		}
 
-		[Test]
+		[Fact]
 		public void TestSizeChanged()
 		{
 			var image = new ImageButton { Source = "File0.png" };
-			Assert.AreEqual("File0.png", ((FileImageSource)image.Source).File);
+			Assert.Equal("File0.png", ((FileImageSource)image.Source).File);
 
 			var preferredSizeChanged = false;
 			image.MeasureInvalidated += (sender, args) => preferredSizeChanged = true;
 
 			image.Source = "File1.png";
-			Assert.AreEqual("File1.png", ((FileImageSource)image.Source).File);
+			Assert.Equal("File1.png", ((FileImageSource)image.Source).File);
 			Assert.True(preferredSizeChanged);
 		}
 
-		[Test]
+		[Fact]
 		public void TestSource()
 		{
 			var image = new ImageButton();
 
-			Assert.IsNull(image.Source);
+			Assert.Null(image.Source);
 
 			bool signaled = false;
 			image.PropertyChanged += (sender, e) =>
@@ -137,11 +122,11 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			var source = ImageSource.FromFile("File.png");
 			image.Source = source;
 
-			Assert.AreEqual(source, image.Source);
+			Assert.Equal(source, image.Source);
 			Assert.True(signaled);
 		}
 
-		[Test]
+		[Fact]
 		public void TestSourceDoubleSet()
 		{
 			var image = new ImageButton { Source = ImageSource.FromFile("File.png") };
@@ -158,7 +143,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			Assert.False(signaled);
 		}
 
-		[Test]
+		[Fact]
 		public void TestFileImageSourceChanged()
 		{
 			var source = (FileImageSource)ImageSource.FromFile("File.png");
@@ -170,12 +155,12 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			};
 
 			source.File = "Other.png";
-			Assert.AreEqual("Other.png", source.File);
+			Assert.Equal("Other.png", source.File);
 
 			Assert.True(signaled);
 		}
 
-		[Test]
+		[Fact]
 		public void TestFileImageSourcePropertiesChangedTriggerResize()
 		{
 			var source = new FileImageSource();
@@ -188,7 +173,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			Assert.True(fired);
 		}
 
-		[Test]
+		[Fact]
 		public void TestStreamImageSourcePropertiesChangedTriggerResize()
 		{
 			var source = new StreamImageSource();
@@ -202,41 +187,44 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			Assert.True(fired);
 		}
 
-		[Test]
+		[Fact]
 		public void TestImageSourceToNullCancelsLoading()
 		{
+			var cancelled = false;
+
 			var image = new ImageButton();
 			var mockImageRenderer = new MockImageRenderer(image);
-			var loader = new UriImageSource { Uri = new Uri("http://www.public-domain-image.com/free-images/miscellaneous/big-high-border-fence.jpg") };
+			var loader = new StreamImageSource { Stream = GetStreamAsync };
+
 			image.Source = loader;
-			Assert.IsTrue(image.IsLoading);
+			Assert.True(image.IsLoading);
+
 			image.Source = null;
-			Assert.IsFalse(image.IsLoading);
-			Assert.IsTrue(cancelled);
-		}
+			mockImageRenderer.CompletionSource.Task.Wait();
+			Assert.False(image.IsLoading);
+			Assert.True(cancelled);
 
-		static bool cancelled;
-
-		static async Task<Stream> GetStreamAsync(Uri uri, CancellationToken cancellationToken)
-		{
-			try
+			async Task<Stream> GetStreamAsync(CancellationToken cancellationToken)
 			{
-				await Task.Delay(5000, cancellationToken);
-			}
-			catch (TaskCanceledException ex)
-			{
-				cancelled = true;
-				throw ex;
-			}
+				try
+				{
+					await Task.Delay(5000, cancellationToken);
+				}
+				catch (TaskCanceledException ex)
+				{
+					cancelled = true;
+					throw ex;
+				}
 
-			if (cancellationToken.IsCancellationRequested)
-			{
-				cancelled = true;
-				throw new TaskCanceledException();
-			}
+				if (cancellationToken.IsCancellationRequested)
+				{
+					cancelled = true;
+					throw new TaskCanceledException();
+				}
 
-			var stream = typeof(ImageTests).Assembly.GetManifestResourceStream(uri.LocalPath.Substring(1));
-			return stream;
+				var stream = typeof(ImageTests).Assembly.GetManifestResourceStream("dummy");
+				return stream;
+			}
 		}
 
 		class MockImageRenderer
@@ -253,23 +241,36 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			public ImageButton Element { get; set; }
 
+			public TaskCompletionSource<bool> CompletionSource { get; private set; } = new TaskCompletionSource<bool>();
+
 			public async void Load()
 			{
 				if (initialLoad && Element.Source != null)
 				{
 					initialLoad = false;
-					Element.SetIsLoading(true);
-					await ((IStreamImageSource)Element.Source).GetStreamAsync();
-					Element.SetIsLoading(false);
+					try
+					{
+						Element.SetIsLoading(true);
+						await ((IStreamImageSource)Element.Source).GetStreamAsync();
+					}
+					catch (OperationCanceledException)
+					{
+						// this is expected
+					}
+					finally
+					{
+						Element.SetIsLoading(false);
+						CompletionSource.SetResult(true);
+					}
 				}
 			}
 
 			bool initialLoad = true;
 		}
 
-		[Test]
-		[TestCase(true)]
-		[TestCase(false)]
+		[Theory]
+		[InlineData(true)]
+		[InlineData(false)]
 		public void TestClickedvent(bool isEnabled)
 		{
 			var view = new ImageButton()
@@ -285,9 +286,9 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			Assert.True(activated == isEnabled ? true : false);
 		}
 
-		[Test]
-		[TestCase(true)]
-		[TestCase(false)]
+		[Theory]
+		[InlineData(true)]
+		[InlineData(false)]
 		public void TestPressedEvent(bool isEnabled)
 		{
 			var view = new ImageButton()
@@ -303,9 +304,9 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			Assert.True(pressed == isEnabled ? true : false);
 		}
 
-		[Test]
-		[TestCase(true)]
-		[TestCase(false)]
+		[Theory]
+		[InlineData(true)]
+		[InlineData(false)]
 		public void TestReleasedEvent(bool isEnabled)
 		{
 			var view = new ImageButton()
@@ -347,7 +348,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 		}
 
 
-		[Test]
+		[Fact]
 		public void TestBindingContextPropagation()
 		{
 			var context = new object();
@@ -355,16 +356,16 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			button.BindingContext = context;
 			var source = new FileImageSource();
 			button.Source = source;
-			Assert.AreSame(context, source.BindingContext);
+			Assert.Same(context, source.BindingContext);
 
 			button = new ImageButton();
 			source = new FileImageSource();
 			button.Source = source;
 			button.BindingContext = context;
-			Assert.AreSame(context, source.BindingContext);
+			Assert.Same(context, source.BindingContext);
 		}
 
-		[Test]
+		[Fact]
 		public void TestImageSourcePropertiesChangedTriggerResize()
 		{
 			var source = new FileImageSource();
@@ -378,7 +379,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 		}
 
 
-		[Test]
+		[Fact]
 		public void CommandCanExecuteUpdatesEnabled()
 		{
 			var button = new ImageButton();
@@ -402,7 +403,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			Assert.True(button.IsEnabled);
 		}
 
-		[Test]
+		[Fact]
 		public void ButtonClickWhenCommandCanExecuteFalse()
 		{
 			bool invoked = false;

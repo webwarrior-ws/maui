@@ -1,11 +1,12 @@
 using System.Threading.Tasks;
+using Microsoft.Maui.Controls.CustomAttributes;
+using Microsoft.Maui.Dispatching;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
-using Microsoft.Maui.Controls.CustomAttributes;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.UnitTests
 {
-	public class CollectionViewTests : PlatformTestFixture 
+	public class CollectionViewTests : PlatformTestFixture
 	{
 		[Issue(IssueTracker.Github, 9030, "[Bug] ClassNotFoundException when using snap points on API < 23")]
 		[Test(Description = "CollectionView with SnapPointsType set should not crash")]
@@ -20,7 +21,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.UnitTests
 			cv.ItemsLayout = itemsLayout;
 
 			// Creating the renderer is enough to cause the ClassNotFoundException on older APIs
-			await Device.InvokeOnMainThreadAsync(() => { GetRenderer(cv).Dispose(); });
+			await cv.Dispatcher.DispatchAsync(() => { GetRenderer(cv).Dispose(); });
 		}
 	}
 }

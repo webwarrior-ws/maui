@@ -2,10 +2,12 @@ using System;
 using CoreGraphics;
 using Foundation;
 using Microsoft.Maui.Graphics;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[System.Obsolete]
 	public class CarouselTemplatedCell : TemplatedCell
 	{
 		public static NSString ReuseId = new NSString("Microsoft.Maui.Controls.Compatibility.Platform.iOS.CarouselTemplatedCell");

@@ -1,70 +1,75 @@
-﻿using System;
-using System.Linq;
+using System;
+using System.Collections.Generic;
 using UIKit;
-using NativeView = UIKit.UIView;
+
 
 namespace Microsoft.Maui.Handlers
 {
-	public partial class PageHandler : ViewHandler<IView, PageView>, INativeViewHandler
+	public partial class PageHandler : ContentViewHandler, IPlatformViewHandler
 	{
-		PageViewController? _pageViewController;
-		UIViewController? INativeViewHandler.ViewController => _pageViewController;
-
-		protected override PageView CreateNativeView()
+		protected override ContentView CreatePlatformView()
 		{
 			_ = VirtualView ?? throw new InvalidOperationException($"{nameof(VirtualView)} must be set to create a LayoutView");
 			_ = MauiContext ?? throw new InvalidOperationException($"{nameof(MauiContext)} cannot be null");
 
-			_pageViewController = new PageViewController(VirtualView, this.MauiContext);
+			if (ViewController == null)
+				ViewController = new PageViewController(VirtualView, MauiContext);
 
-			if (_pageViewController.CurrentNativeView is PageView pv)
+			if (ViewController is PageViewController pc && pc.CurrentPlatformView is ContentView pv)
 				return pv;
 
-			throw new InvalidOperationException($"PageViewController.View must be a PageView");
+			if (ViewController.View is ContentView cv)
+				return cv;
+
+			throw new InvalidOperationException($"PageViewController.View must be a {nameof(ContentView)}");
 		}
 
-		public override void SetVirtualView(IView view)
+		protected override void ConnectHandler(ContentView nativeView)
 		{
-			base.SetVirtualView(view);
-			_ = NativeView ?? throw new InvalidOperationException($"{nameof(NativeView)} should have been set by base class.");
-			_ = VirtualView ?? throw new InvalidOperationException($"{nameof(VirtualView)} should have been set by base class.");
+			var uiTapGestureRecognizer = new UITapGestureRecognizer(a => nativeView?.EndEditing(true));
 
-			NativeView.View = view;
-			NativeView.CrossPlatformArrange = VirtualView.Arrange;
+			uiTapGestureRecognizer.ShouldRecognizeSimultaneously = (recognizer, gestureRecognizer) => true;
+			uiTapGestureRecognizer.ShouldReceiveTouch = OnShouldReceiveTouch;
+			uiTapGestureRecognizer.DelaysTouchesBegan =
+				uiTapGestureRecognizer.DelaysTouchesEnded = uiTapGestureRecognizer.CancelsTouchesInView = false;
+			nativeView.AddGestureRecognizer(uiTapGestureRecognizer);
+
+			base.ConnectHandler(nativeView);
 		}
 
-		void UpdateContent()
+		protected override void DisconnectHandler(ContentView nativeView)
 		{
-			_ = NativeView ?? throw new InvalidOperationException($"{nameof(NativeView)} should have been set by base class.");
-			_ = VirtualView ?? throw new InvalidOperationException($"{nameof(VirtualView)} should have been set by base class.");
-			_ = MauiContext ?? throw new InvalidOperationException($"{nameof(MauiContext)} should have been set by base class.");
-
-			//Cleanup the old view when reused
-			var oldChildren = NativeView.Subviews.ToList();
-			oldChildren.ForEach(x => x.RemoveFromSuperview());
-
-			if (VirtualView is IContentView cv && cv.Content is IView view)
-				NativeView.AddSubview(view.ToNative(MauiContext));
+			base.DisconnectHandler(nativeView);
 		}
 
-		public static void MapTitle(PageHandler handler, IView page)
+		public static void MapTitle(IPageHandler handler, IContentView page)
 		{
-			if (handler._pageViewController != null && page is ITitledElement titled)
-				handler._pageViewController.Title = titled.Title;
+			if (handler is IPlatformViewHandler invh && invh.ViewController != null)
+			{
+				if (page is ITitledElement titled)
+				{
+					invh.ViewController.Title = titled.Title;
+				}
+			}
 		}
 
-		public static void MapContent(PageHandler handler, IView page)
+		bool OnShouldReceiveTouch(UIGestureRecognizer recognizer, UITouch touch)
 		{
-			handler.UpdateContent();
+			foreach (UIView v in ViewAndSuperviewsOfView(touch.View))
+			{
+				if (v != null && (v is UITableView || v is UITableViewCell || v.CanBecomeFirstResponder))
+					return false;
+			}
+			return true;
 		}
 
-		public static void MapFrame(PageHandler handler, IView view)
+		IEnumerable<UIView> ViewAndSuperviewsOfView(UIView view)
 		{
-			ViewHandler.MapFrame(handler, view, null);
-
-			// TODO MAUI: Currently the background layer frame is tied to the layout system
-			// which needs to be investigated more
-			handler.NativeView?.UpdateBackgroundLayerFrame();
+			while (view != null)
+			{
+				yield return view;
+				view = view.Superview;
+			}
 		}
 	}
 }

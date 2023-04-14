@@ -27,7 +27,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			return layout;
 		}
 
-		void SetLayoutBounds(IAbsoluteLayout layout, IView child, Rectangle bounds)
+		void SetLayoutBounds(IAbsoluteLayout layout, IView child, Rect bounds)
 		{
 			layout.GetLayoutBounds(child).Returns(bounds);
 		}
@@ -41,13 +41,13 @@ namespace Microsoft.Maui.UnitTests.Layouts
 		{
 			var manager = new AbsoluteLayoutManager(absoluteLayout);
 			var measuredSize = manager.Measure(widthConstraint, heightConstraint);
-			manager.ArrangeChildren(new Rectangle(new Point(left, top), measuredSize));
+			manager.ArrangeChildren(new Rect(new Point(left, top), measuredSize));
 
 			return measuredSize;
 		}
 
 		static double AutoSize = -1;
-		static Rectangle DefaultBounds = new Rectangle(0, 0, AutoSize, AutoSize);
+		static Rect DefaultBounds = new Rect(0, 0, AutoSize, AutoSize);
 
 		[Fact]
 		public void DefaultLayoutBoundsUsesDefaultMeasure()
@@ -58,7 +58,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			// Have GetLayoutBounds return the "default" value of 0,0,-1,-1
 			abs.GetLayoutBounds(child).Returns(DefaultBounds);
 
-			var expectedRectangle = new Rectangle(0, 0, 50, 75);
+			var expectedRectangle = new Rect(0, 0, 50, 75);
 
 			SubstituteChildren(abs, child);
 
@@ -75,7 +75,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var abs = CreateTestLayout();
 			var child = CreateTestView();
 
-			var expectedRectangle = new Rectangle(10, 15, 100, 100);
+			var expectedRectangle = new Rect(10, 15, 100, 100);
 
 			SubstituteChildren(abs, child);
 			SetLayoutBounds(abs, child, expectedRectangle);
@@ -95,7 +95,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var abs = CreateTestLayout();
 			var child = CreateTestView();
 
-			var childBounds = new Rectangle(10, 15, 100, 100);
+			var childBounds = new Rect(10, 15, 100, 100);
 
 			SubstituteChildren(abs, child);
 			SetLayoutBounds(abs, child, childBounds);
@@ -106,7 +106,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var expectedSize = new Size(childBounds.Left + childBounds.Width, childBounds.Top + childBounds.Height);
 
 			// We expect that the child will be arranged at a spot that respects the offsets
-			var expectedRectangle = new Rectangle(childBounds.Left + 10, childBounds.Top + 10, childBounds.Width, childBounds.Height);
+			var expectedRectangle = new Rect(childBounds.Left + 10, childBounds.Top + 10, childBounds.Width, childBounds.Height);
 
 			Assert.Equal(expectedSize, measure);
 			AssertArranged(child, expectedRectangle);
@@ -119,19 +119,19 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var child = CreateTestView();
 			SubstituteChildren(abs, child);
 
-			var childBounds = new Rectangle(10, 20, 0.4, 0.5);
+			var childBounds = new Rect(10, 20, 0.4, 0.5);
 			SetLayoutBounds(abs, child, childBounds);
 			SetLayoutFlags(abs, child, AbsoluteLayoutFlags.SizeProportional);
 
 			var manager = new AbsoluteLayoutManager(abs);
 
 			var measure = manager.Measure(100, 100);
-			manager.ArrangeChildren(new Rectangle(0, 0, 100, 100));
+			manager.ArrangeChildren(new Rect(0, 0, 100, 100));
 
 			var expectedMeasure = new Size(10 + 40, 20 + 50);
 
 			Assert.Equal(expectedMeasure, measure);
-			child.Received().Arrange(Arg.Is<Rectangle>(r => r.X == 10 && r.Y == 20 && r.Width == 40 && r.Height == 50));
+			child.Received().Arrange(Arg.Is<Rect>(r => r.X == 10 && r.Y == 20 && r.Width == 40 && r.Height == 50));
 		}
 
 		[InlineData(30, 40, 0.2, 0.3)]
@@ -145,7 +145,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var child = CreateTestView();
 			SubstituteChildren(abs, child);
 
-			var childBounds = new Rectangle(propX, propY, width, height);
+			var childBounds = new Rect(propX, propY, width, height);
 
 			SetLayoutBounds(abs, child, childBounds);
 			SetLayoutFlags(abs, child, AbsoluteLayoutFlags.PositionProportional);
@@ -153,12 +153,12 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var manager = new AbsoluteLayoutManager(abs);
 
 			manager.Measure(100, 100);
-			manager.ArrangeChildren(new Rectangle(0, 0, 100, 100));
+			manager.ArrangeChildren(new Rect(0, 0, 100, 100));
 
 			double expectedX = (100 - width) * propX;
 			double expectedY = (100 - height) * propY;
 
-			var expectedRectangle = new Rectangle(expectedX, expectedY, width, height);
+			var expectedRectangle = new Rect(expectedX, expectedY, width, height);
 			child.Received().Arrange(Arg.Is(expectedRectangle));
 		}
 
@@ -172,20 +172,20 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var abs = CreateTestLayout();
 			var child = CreateTestView();
 			SubstituteChildren(abs, child);
-			var childBounds = new Rectangle(propX, propY, propWidth, propHeight);
+			var childBounds = new Rect(propX, propY, propWidth, propHeight);
 			SetLayoutBounds(abs, child, childBounds);
 			SetLayoutFlags(abs, child, AbsoluteLayoutFlags.All);
 
 			var manager = new AbsoluteLayoutManager(abs);
 			manager.Measure(100, 100);
-			manager.ArrangeChildren(new Rectangle(0, 0, 100, 100));
+			manager.ArrangeChildren(new Rect(0, 0, 100, 100));
 
 			double expectedWidth = 100 * propWidth;
 			double expectedHeight = 100 * propHeight;
 			double expectedX = (100 - expectedWidth) * propX;
 			double expectedY = (100 - expectedHeight) * propY;
 
-			var expectedRectangle = new Rectangle(expectedX, expectedY, expectedWidth, expectedHeight);
+			var expectedRectangle = new Rect(expectedX, expectedY, expectedWidth, expectedHeight);
 			child.Received().Arrange(Arg.Is(expectedRectangle));
 		}
 
@@ -209,7 +209,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var child = CreateTestView();
 			SubstituteChildren(abs, child);
 
-			var childBounds = new Rectangle(propX, propY, width, height);
+			var childBounds = new Rect(propX, propY, width, height);
 
 			SetLayoutBounds(abs, child, childBounds);
 			SetLayoutFlags(abs, child, AbsoluteLayoutFlags.PositionProportional);
@@ -217,9 +217,9 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var manager = new AbsoluteLayoutManager(abs);
 
 			manager.Measure(100, 100);
-			manager.ArrangeChildren(new Rectangle(0, 0, 100, 100));
+			manager.ArrangeChildren(new Rect(0, 0, 100, 100));
 
-			var expectedRectangle = new Rectangle(expectedX, expectedY, width, height);
+			var expectedRectangle = new Rect(expectedX, expectedY, width, height);
 			child.Received().Arrange(Arg.Is(expectedRectangle));
 		}
 
@@ -233,7 +233,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var abs = CreateTestLayout();
 			var child = CreateTestView();
 			SubstituteChildren(abs, child);
-			var childBounds = new Rectangle(0, 0, 100, viewHeight);
+			var childBounds = new Rect(0, 0, 100, viewHeight);
 			SetLayoutBounds(abs, child, childBounds);
 
 			abs.MaximumHeight.Returns(maxHeight);
@@ -254,7 +254,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var abs = CreateTestLayout();
 			var child = CreateTestView();
 			SubstituteChildren(abs, child);
-			var childBounds = new Rectangle(0, 0, viewWidth, 100);
+			var childBounds = new Rect(0, 0, viewWidth, 100);
 			SetLayoutBounds(abs, child, childBounds);
 
 			abs.MaximumWidth.Returns(maxWidth);
@@ -274,7 +274,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var abs = CreateTestLayout();
 			var child = CreateTestView();
 			SubstituteChildren(abs, child);
-			var childBounds = new Rectangle(0, 0, 100, viewHeight);
+			var childBounds = new Rect(0, 0, 100, viewHeight);
 			SetLayoutBounds(abs, child, childBounds);
 
 			abs.MinimumHeight.Returns(minHeight);
@@ -294,7 +294,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var abs = CreateTestLayout();
 			var child = CreateTestView();
 			SubstituteChildren(abs, child);
-			var childBounds = new Rectangle(0, 0, viewWidth, 100);
+			var childBounds = new Rect(0, 0, viewWidth, 100);
 			SetLayoutBounds(abs, child, childBounds);
 
 			abs.MinimumWidth.Returns(minWidth);
@@ -311,7 +311,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var abs = CreateTestLayout();
 			var child = CreateTestView();
 			SubstituteChildren(abs, child);
-			var childBounds = new Rectangle(0, 0, 100, 100);
+			var childBounds = new Rect(0, 0, 100, 100);
 			SetLayoutBounds(abs, child, childBounds);
 
 			abs.Width.Returns(75);
@@ -330,7 +330,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var abs = CreateTestLayout();
 			var child = CreateTestView();
 			SubstituteChildren(abs, child);
-			var childBounds = new Rectangle(0, 0, 100, 100);
+			var childBounds = new Rect(0, 0, 100, 100);
 			SetLayoutBounds(abs, child, childBounds);
 
 			abs.MinimumWidth.Returns(75);
@@ -349,7 +349,7 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var abs = CreateTestLayout();
 			var child = CreateTestView();
 			SubstituteChildren(abs, child);
-			var childBounds = new Rectangle(0, 0, 100, 100);
+			var childBounds = new Rect(0, 0, 100, 100);
 			SetLayoutBounds(abs, child, childBounds);
 
 			abs.Height.Returns(75);
@@ -368,17 +368,103 @@ namespace Microsoft.Maui.UnitTests.Layouts
 			var abs = CreateTestLayout();
 			var child = CreateTestView();
 			SubstituteChildren(abs, child);
-			var childBounds = new Rectangle(0, 0, 100, 100);
+			var childBounds = new Rect(0, 0, 100, 100);
 			SetLayoutBounds(abs, child, childBounds);
 
 			abs.MinimumHeight.Returns(75);
 			abs.MaximumHeight.Returns(50);
 
-			var gridLayoutManager = new AbsoluteLayoutManager(abs);
-			var measure = gridLayoutManager.Measure(double.PositiveInfinity, double.PositiveInfinity);
+			var layoutManager = new AbsoluteLayoutManager(abs);
+			var measure = layoutManager.Measure(double.PositiveInfinity, double.PositiveInfinity);
 
 			// The minimum value should beat out the maximum value
 			Assert.Equal(75, measure.Height);
+		}
+
+		[Fact]
+		public void ArrangeAccountsForFill()
+		{
+			var abs = CreateTestLayout();
+			var child = CreateTestView();
+			SubstituteChildren(abs, child);
+			var childBounds = new Rect(0, 0, 100, 100);
+			SetLayoutBounds(abs, child, childBounds);
+
+			var layoutManager = new AbsoluteLayoutManager(abs);
+			_ = layoutManager.Measure(double.PositiveInfinity, double.PositiveInfinity);
+
+			var arrangedWidth = 1000;
+			var arrangedHeight = 1000;
+
+			var target = new Rect(Point.Zero, new Size(arrangedWidth, arrangedHeight));
+
+			var actual = layoutManager.ArrangeChildren(target);
+
+			// Since we're arranging in a space larger than needed and the layout is set to Fill in both directions,
+			// we expect the returned actual arrangement size to be as large as the target space
+			Assert.Equal(arrangedWidth, actual.Width);
+			Assert.Equal(arrangedHeight, actual.Height);
+		}
+
+		[Fact]
+		public void ChildMeasureRespectsAbsoluteBounds()
+		{
+			double expectedWidth = 115;
+			double expectedHeight = 230;
+
+			var abs = CreateTestLayout();
+			var child = CreateTestView();
+			SubstituteChildren(abs, child);
+			var childBounds = new Rect(0, 0, expectedWidth, expectedHeight);
+			SetLayoutBounds(abs, child, childBounds);
+
+			var gridLayoutManager = new AbsoluteLayoutManager(abs);
+			var measure = gridLayoutManager.Measure(double.PositiveInfinity, double.PositiveInfinity);
+
+			child.Received().Measure(Arg.Is(expectedWidth), Arg.Is(expectedHeight));
+		}
+
+		[Fact]
+		public void ChildMeasureRespectsProportionalBounds()
+		{
+			double expectedWidth = 0.5;
+			double expectedHeight = 0.6;
+
+			double widthConstraint = 200;
+			double heightConstraint = 200;
+
+			var abs = CreateTestLayout();
+			var child = CreateTestView();
+			SubstituteChildren(abs, child);
+			var childBounds = new Rect(0, 0, expectedWidth, expectedHeight);
+			SetLayoutBounds(abs, child, childBounds);
+			SetLayoutFlags(abs, child, AbsoluteLayoutFlags.SizeProportional);
+
+			var gridLayoutManager = new AbsoluteLayoutManager(abs);
+			var measure = gridLayoutManager.Measure(widthConstraint, heightConstraint);
+
+			child.Received().Measure(Arg.Is(expectedWidth * widthConstraint), Arg.Is(expectedHeight * heightConstraint));
+		}
+
+		[Fact(DisplayName = "First View in LTR Absolute Layout is on the left")]
+		public void LtrShouldHaveFirstItemOnTheLeft()
+		{
+			var abs = CreateTestLayout();
+			var child = CreateTestView();
+			SubstituteChildren(abs, child);
+			var childBounds = new Rect(10, 0, 100, 100);
+			SetLayoutBounds(abs, child, childBounds);
+
+			abs.FlowDirection.Returns(FlowDirection.LeftToRight);
+
+			var manager = new AbsoluteLayoutManager(abs);
+			var measuredSize = manager.Measure(double.PositiveInfinity, 100);
+			manager.ArrangeChildren(new Rect(Point.Zero, measuredSize));
+
+			// We expect that the view should be arranged on the left
+			var expectedRectangle = new Rect(10, 0, 100, 100);
+
+			abs[0].Received().Arrange(Arg.Is(expectedRectangle));
 		}
 	}
 }

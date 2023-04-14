@@ -11,12 +11,14 @@ using Android.Views.InputMethods;
 using Android.Widget;
 using AndroidX.Core.Content;
 using Java.Lang;
+using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific;
 using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class EntryRenderer : EntryRendererBase<FormsEditText>
 	{
 		TextColorSwitcher _hintColorSwitcher;
@@ -40,6 +42,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			EditText.SetCursorVisible(isReadOnly);
 		}
 
+		[PortHandler]
 		protected override void UpdatePlaceholderColor()
 		{
 			_hintColorSwitcher = _hintColorSwitcher ?? new TextColorSwitcher(EditText.HintTextColors, Element.UseLegacyColorManagement());
@@ -59,6 +62,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		}
 	}
 
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public abstract partial class EntryRendererBase<TControl> : ViewRenderer<Entry, TControl>, ITextWatcher, TextView.IOnEditorActionListener
 		where TControl : global::Android.Views.View
 	{
@@ -292,6 +296,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			return LocalizedDigitsKeyListener.Create(inputTypes);
 		}
 
+		[PortHandler]
 		protected virtual void UpdateImeOptions()
 		{
 			if (Element == null || Control == null)
@@ -398,10 +403,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		[PortHandler]
 		void UpdateCharacterSpacing()
 		{
-			if (Forms.IsLollipopOrNewer)
-			{
-				EditText.LetterSpacing = Element.CharacterSpacing.ToEm();
-			}
+			EditText.LetterSpacing = Element.CharacterSpacing.ToEm();
 		}
 
 		[PortHandler]
@@ -456,7 +458,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 				}
 				catch (System.Exception ex)
 				{
-					Internals.Log.Warning("Entry", $"Failed to set Control.Selection from CursorPosition/SelectionLength: {ex}");
+					Application.Current?.FindMauiContext()?.CreateLogger<EntryRenderer>()?.LogWarning(ex, "Failed to set Control.Selection from CursorPosition/SelectionLength");
 				}
 				finally
 				{
@@ -503,7 +505,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			}
 			catch (System.Exception ex)
 			{
-				Internals.Log.Warning("Entry", $"Failed to set CursorPosition from renderer: {ex}");
+				Application.Current?.FindMauiContext()?.CreateLogger<EntryRenderer>()?.LogWarning(ex, "Failed to set CursorPosition from renderer");
 			}
 			finally
 			{
@@ -520,7 +522,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			}
 			catch (System.Exception ex)
 			{
-				Internals.Log.Warning("Entry", $"Failed to set SelectionLength from renderer: {ex}");
+				Application.Current?.FindMauiContext()?.CreateLogger<EntryRenderer>()?.LogWarning(ex, "Failed to set SelectionLength from renderer");
 			}
 			finally
 			{

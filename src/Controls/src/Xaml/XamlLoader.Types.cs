@@ -6,7 +6,7 @@
 //       Stephane Delcroix <stephane@mi8.be>
 //
 // Copyright (c) 2013 Mobile Inception
-// Copyright (c) 2013-2014 Microsoft.Maui.Controls, Inc
+// Copyright (c) 2013-2014 Xamarin, Inc
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -40,21 +40,6 @@ namespace Microsoft.Maui.Controls.Xaml
 			}
 
 			public object Root { get; internal set; }
-		}
-
-		public struct FallbackTypeInfo
-		{
-			public string ClrNamespace { get; internal set; }
-			public string TypeName { get; internal set; }
-			public string AssemblyName { get; internal set; }
-			public string XmlNamespace { get; internal set; }
-		}
-
-		public struct CallbackTypeInfo
-		{
-			public string XmlNamespace { get; internal set; }
-			public string XmlTypeName { get; internal set; }
-
 		}
 	}
 }

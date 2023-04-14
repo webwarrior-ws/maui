@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Globalization;
 
+#nullable disable
 namespace Microsoft.Maui.Controls
 {
 	public class FlowDirectionConverter : TypeConverter
@@ -28,7 +29,7 @@ namespace Microsoft.Maui.Controls
 				if (strValue.Equals("inherit", StringComparison.OrdinalIgnoreCase))
 					return FlowDirection.MatchParent;
 			}
-			throw new InvalidOperationException(string.Format("Cannot convert \"{0}\" into {1}", strValue, typeof(FlowDirection)));
+			throw new InvalidOperationException($"Cannot convert \"{strValue}\" into {typeof(FlowDirection)}");
 		}
 
 		public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)

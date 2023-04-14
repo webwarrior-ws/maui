@@ -2,9 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:blazor="http://schemas.microsoft.com/winfx/2006/xaml/presentation/blazor"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:BlazorWpfApp"
-        xmlns:blazor="clr-namespace:Microsoft.AspNetCore.Components.WebView.Wpf;assembly=Microsoft.AspNetCore.Components.WebView.Wpf"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <DockPanel>
@@ -13,10 +13,22 @@
             <Button Click="Button_Click" Margin="4" Padding="4">Check counter</Button>
             <Button Click="WebViewAlertButton_Click" Margin="4" Padding="4">WebView alert</Button>
         </StackPanel>
-        <blazor:BlazorWebView HostPage="wwwroot\index.html" Services="{StaticResource services}" x:Name="blazorWebView1">
-            <blazor:BlazorWebView.RootComponents>
-                <blazor:RootComponent Selector="#app" ComponentType="{x:Type local:Main}" />
-            </blazor:BlazorWebView.RootComponents>
-        </blazor:BlazorWebView>
+
+        <TabControl>
+            <TabItem Header="BlazorWebView">
+                <blazor:BlazorWebView HostPage="wwwroot\index.html" Services="{StaticResource services1}" x:Name="blazorWebView1">
+                    <blazor:BlazorWebView.RootComponents>
+                        <blazor:RootComponent Selector="#app" ComponentType="{x:Type local:Main}" />
+                    </blazor:BlazorWebView.RootComponents>
+                </blazor:BlazorWebView>
+            </TabItem>
+            <TabItem Header="Custom Files BlazorWebView">
+                <local:CustomFilesBlazorWebView HostPage="wwwroot\customindex.html" Services="{StaticResource services2}" x:Name="blazorWebView2">
+                    <blazor:BlazorWebView.RootComponents>
+                        <blazor:RootComponent Selector="#app" ComponentType="{x:Type local:Main}" />
+                    </blazor:BlazorWebView.RootComponents>
+                </local:CustomFilesBlazorWebView>
+            </TabItem>
+        </TabControl>
     </DockPanel>
 </Window>

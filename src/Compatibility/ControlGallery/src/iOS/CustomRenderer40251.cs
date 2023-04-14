@@ -1,15 +1,19 @@
-using UIKit;
-using Microsoft.Maui.Controls.Compatibility;
-using Microsoft.Maui.Controls;
 using System.Collections.Generic;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Compatibility;
 using Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS;
 using Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues;
 using Microsoft.Maui.Controls.Compatibility.Platform.iOS;
 using Microsoft.Maui.Controls.Platform;
+using ObjCRuntime;
+using UIKit;
 
+#pragma warning disable CS0612 // Type or member is obsolete
 [assembly: ExportRenderer(typeof(Button), typeof(CustomRenderer40251))]
+#pragma warning restore CS0612 // Type or member is obsolete
 namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 {
+	[System.Obsolete]
 	public class CustomRenderer40251 : ButtonRenderer
 	{
 		Dictionary<string, object> originalValues = new Dictionary<string, object>();
@@ -40,7 +44,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 			if (e.NewElement != null)
 			{
 				if (Control != null)
-					Control.TitleShadowOffset = new CoreGraphics.CGSize(2, 2);
+					Control.TitleLabel.ShadowOffset = new CoreGraphics.CGSize(2, 2);
 			}
 		}
 

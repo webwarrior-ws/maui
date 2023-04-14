@@ -15,7 +15,7 @@ namespace Microsoft.Maui
 		string AutomationId { get; }
 
 		/// <summary>
-		/// Direction in which the UI elements on the page are scanned by the eye
+		/// Direction in which the UI elements are scanned by the eye
 		/// </summary>
 		FlowDirection FlowDirection { get; }
 
@@ -32,7 +32,7 @@ namespace Microsoft.Maui
 		/// <summary>
 		/// Adds semantics to every View for accessibility
 		/// </summary>
-		Semantics Semantics { get; }
+		Semantics? Semantics { get; }
 
 		/// <summary>
 		/// Gets the Path used to define the outline of the contents of a View.
@@ -40,9 +40,19 @@ namespace Microsoft.Maui
 		IShape? Clip { get; }
 
 		/// <summary>
+		/// Paints a shadow around the target View.
+		/// </summary>
+		IShadow? Shadow { get; }
+
+		/// <summary>
 		/// Gets a value indicating whether this View is enabled in the user interface. 
 		/// </summary>
 		bool IsEnabled { get; }
+
+		/// <summary>
+		/// Gets a value indicating whether this View is focused currently.
+		/// </summary>
+		bool IsFocused { get; set; }
 
 		/// <summary>
 		/// Gets a value that determines whether this View should be part of the visual tree or not.
@@ -62,7 +72,7 @@ namespace Microsoft.Maui
 		/// <summary>
 		/// Gets the bounds of the View within its container.
 		/// </summary>
-		Rectangle Frame { get; set; }
+		Rect Frame { get; set; }
 
 		/// <summary>
 		/// Gets the specified width of the IView. 
@@ -100,21 +110,26 @@ namespace Microsoft.Maui
 		Thickness Margin { get; }
 
 		/// <summary>
+		/// Gets the current desired Size of this View. 
+		/// </summary>
+		Size DesiredSize { get; }
+
+		/// <summary>
+		/// Determines the drawing order of this IView within an ILayout; higher z-indexes will draw over lower z-indexes.
+		/// </summary>
+		int ZIndex { get; }
+
+		/// <summary>
 		/// Gets or sets the View Handler of the View.
 		/// </summary>
 		new IViewHandler? Handler { get; set; }
-
-		/// <summary>
-		/// Gets the Parent of the Element.
-		/// </summary>
-		new IView? Parent { get; }
 
 		/// <summary>
 		/// Positions child elements and determines a size for an Element.
 		/// </summary>
 		/// <param name="bounds">The size that the parent computes for the child element.</param>
 		/// <returns>Return the actual arranged Size for this element.</returns>
-		Size Arrange(Rectangle bounds);
+		Size Arrange(Rect bounds);
 
 		/// <summary>
 		/// Updates the size of an View.
@@ -125,11 +140,6 @@ namespace Microsoft.Maui
 		Size Measure(double widthConstraint, double heightConstraint);
 
 		/// <summary>
-		/// Gets the current desired Size of this View. 
-		/// </summary>
-		Size DesiredSize { get; }
-
-		/// <summary>
 		/// Signals that the current measure value of this View is no longer valid and must be recomputed during the next measure pass.
 		/// </summary>
 		void InvalidateMeasure();
@@ -138,5 +148,21 @@ namespace Microsoft.Maui
 		/// Method that is called to invalidate the layout of this View.
 		/// </summary>
 		void InvalidateArrange();
+
+		/// <summary>
+		/// Attempts to set focus to this View.
+		/// </summary>
+		/// <returns>true if the keyboard focus was set to this element; false if the call to this method did not force a focus change.</returns>
+		bool Focus();
+
+		/// <summary>
+		/// Unsets focus to this View.
+		/// </summary>
+		void Unfocus();
+
+		/// <summary>
+		/// Gets a value indicating whether this element should be involved in the user interaction cycle.
+		/// </summary>
+		bool InputTransparent { get; }
 	}
 }

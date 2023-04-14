@@ -10,16 +10,18 @@ using WStretch = Microsoft.UI.Xaml.Media.Stretch;
 using WThickness = Microsoft.UI.Xaml.Thickness;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Controls.Platform;
+using System;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class ButtonRenderer : ViewRenderer<Button, FormsButton>
 	{
 		bool _fontApplied;
 		TextBlock _textBlock = null;
 
 		FormsButton _button;
-		PointerEventHandler _pointerPressedHandler;		
+		PointerEventHandler _pointerPressedHandler;
 
 		protected override void OnElementChanged(ElementChangedEventArgs<Button> e)
 		{
@@ -80,7 +82,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			UpdateLineBreakMode();
 		}
 
-
+		[PortHandler]
 		void UpdateLineBreakMode()
 		{
 			_textBlock = Control.GetTextBlock(Control.Content);
@@ -116,7 +118,10 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			{
 				UpdateTextColor();
 			}
-			else if (e.PropertyName == FontElement.FontProperty.PropertyName)
+			else if (e.PropertyName == FontElement.FontAttributesProperty.PropertyName
+					 || e.PropertyName == FontElement.FontAutoScalingEnabledProperty.PropertyName
+					 || e.PropertyName == FontElement.FontFamilyProperty.PropertyName
+					 || e.PropertyName == FontElement.FontSizeProperty.PropertyName)
 			{
 				UpdateFont();
 			}
@@ -169,21 +174,24 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		void UpdateBackgroundBrush()
 		{
 			if (Brush.IsNullOrEmpty(Element.Background))
-				Control.BackgroundColor = Element.BackgroundColor.IsNotDefault() ? Maui.ColorExtensions.ToNative(Element.BackgroundColor) : (WBrush)Microsoft.UI.Xaml.Application.Current.Resources["ButtonBackgroundThemeBrush"];
+				Control.BackgroundColor = Element.BackgroundColor.IsNotDefault() ? Element.BackgroundColor.ToPlatform() : (WBrush)Microsoft.UI.Xaml.Application.Current.Resources["ButtonBackgroundThemeBrush"];
 			else
 				Control.BackgroundColor = Element.Background.ToBrush();
 		}
 
+		[PortHandler]
 		void UpdateBorderColor()
 		{
-			Control.BorderBrush = !Element.BorderColor.IsDefault() ? Maui.ColorExtensions.ToNative(Element.BorderColor) : (WBrush)Microsoft.UI.Xaml.Application.Current.Resources["ButtonBorderThemeBrush"];
+			Control.BorderBrush = !Element.BorderColor.IsDefault() ? Element.BorderColor.ToPlatform() : (WBrush)Microsoft.UI.Xaml.Application.Current.Resources["ButtonBorderThemeBrush"];
 		}
 
+		[PortHandler]
 		void UpdateBorderRadius()
 		{
 			Control.BorderRadius = Element.CornerRadius;
 		}
 
+		[PortHandler]
 		void UpdateBorderWidth()
 		{
 			Control.BorderThickness = Element.BorderWidth == (double)Button.BorderWidthProperty.DefaultValue ? WinUIHelpers.CreateThickness(3) : WinUIHelpers.CreateThickness(Element.BorderWidth);
@@ -301,15 +309,19 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			if (textStyle.Font == Font.Default && !_fontApplied)
 				return;
 
-			Font fontToApply = textStyle.Font == Font.Default ? Font.SystemFontOfSize(Device.GetNamedSize(NamedSize.Medium, Element.GetType(), false)) : textStyle.Font;
+			Font fontToApply = textStyle.Font == Font.Default
+#pragma warning disable CS0612 // Type or member is obsolete
+				? Font.SystemFontOfSize(Device.GetNamedSize(NamedSize.Medium, Element.GetType(), false))
+#pragma warning restore CS0612 // Type or member is obsolete
+				: textStyle.Font;
 
-			Control.ApplyFont(fontToApply);
+			Control.ApplyFont(fontToApply, Element.RequireFontManager());
 			_fontApplied = true;
 		}
 
 		void UpdateTextColor()
 		{
-			Control.Foreground = Element.TextColor.IsNotDefault() ? Maui.ColorExtensions.ToNative(Element.TextColor) : (WBrush)Microsoft.UI.Xaml.Application.Current.Resources["DefaultTextForegroundThemeBrush"];
+			Control.Foreground = Element.TextColor.IsNotDefault() ? Element.TextColor.ToPlatform() : (WBrush)Microsoft.UI.Xaml.Application.Current.Resources["DefaultTextForegroundThemeBrush"];
 		}
 
 		void UpdatePadding()
@@ -331,7 +343,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			{
 				_button.Click -= OnButtonClick;
 				_button.RemoveHandler(PointerPressedEvent, _pointerPressedHandler);
-				_button.Loaded -= ButtonOnLoaded;				
+				_button.Loaded -= ButtonOnLoaded;
 
 				_pointerPressedHandler = null;
 			}

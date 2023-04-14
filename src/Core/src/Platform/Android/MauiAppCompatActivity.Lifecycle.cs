@@ -3,6 +3,7 @@ using Android.Content;
 using Android.Content.PM;
 using Android.Content.Res;
 using Android.OS;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.LifecycleEvents;
 
 namespace Microsoft.Maui
@@ -13,24 +14,20 @@ namespace Microsoft.Maui
 		{
 			base.OnActivityResult(requestCode, resultCode, data);
 
+			ActivityResultCallbackRegistry.InvokeCallback(requestCode, resultCode, data);
 			MauiApplication.Current?.Services?.InvokeLifecycleEvents<AndroidLifecycle.OnActivityResult>(del => del(this, requestCode, resultCode, data));
 		}
 
 		public override void OnBackPressed()
 		{
-			var preventBack = false;
-
-			MauiApplication.Current?.Services?.InvokeLifecycleEvents<AndroidLifecycle.OnPressingBack>(del =>
+			var preventBackPropagation = false;
+			MauiApplication.Current?.Services?.InvokeLifecycleEvents<AndroidLifecycle.OnBackPressed>(del =>
 			{
-				preventBack = del(this) || preventBack;
+				preventBackPropagation = del(this) || preventBackPropagation;
 			});
 
-			if (!preventBack)
-			{
-				MauiApplication.Current?.Services?.InvokeLifecycleEvents<AndroidLifecycle.OnBackPressed>(del => del(this));
-
+			if (!preventBackPropagation)
 				base.OnBackPressed();
-			}
 		}
 
 		public override void OnConfigurationChanged(Configuration newConfig)
@@ -39,11 +36,19 @@ namespace Microsoft.Maui
 
 			var mauiApp = MauiApplication.Current;
 
-			if (mauiApp != null)
+			if (mauiApp is not null)
 			{
 				mauiApp.Application?.ThemeChanged();
 
 				mauiApp.Services?.InvokeLifecycleEvents<AndroidLifecycle.OnConfigurationChanged>(del => del(this, newConfig));
+			}
+
+			var mauiWindow = this.GetWindowFromActivity();
+
+			if (mauiWindow is not null && newConfig is not null)
+			{
+				var density = newConfig.DensityDpi / DeviceDisplay.BaseLogicalDpi;
+				mauiWindow.DisplayDensityChanged(density);
 			}
 		}
 
@@ -75,11 +80,12 @@ namespace Microsoft.Maui
 			MauiApplication.Current?.Services?.InvokeLifecycleEvents<AndroidLifecycle.OnRestart>(del => del(this));
 		}
 
+		[System.Runtime.Versioning.SupportedOSPlatform("android23.0")]
 		public override void OnRequestPermissionsResult(int requestCode, string[] permissions, Permission[] grantResults)
 		{
-			base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
-
 			MauiApplication.Current?.Services?.InvokeLifecycleEvents<AndroidLifecycle.OnRequestPermissionsResult>(del => del(this, requestCode, permissions, grantResults));
+
+			base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
 		}
 
 		protected override void OnRestoreInstanceState(Bundle savedInstanceState)
@@ -87,6 +93,13 @@ namespace Microsoft.Maui
 			base.OnRestoreInstanceState(savedInstanceState);
 
 			MauiApplication.Current?.Services?.InvokeLifecycleEvents<AndroidLifecycle.OnRestoreInstanceState>(del => del(this, savedInstanceState));
+		}
+
+		protected override void OnDestroy()
+		{
+			base.OnDestroy();
+
+			MauiApplication.Current?.Services?.InvokeLifecycleEvents<AndroidLifecycle.OnDestroy>(del => del(this));
 		}
 	}
 }

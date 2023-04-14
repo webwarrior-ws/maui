@@ -1,106 +1,142 @@
+#nullable enable
+using System;
 using Microsoft.Maui.Graphics;
-using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public static class TextBoxExtensions
 	{
-		public static void UpdateText(this MauiTextBox nativeControl, IEditor editor)
+		public static void UpdateIsPassword(this TextBox platformControl, IEntry entry)
 		{
-			string newText = editor.Text;
+			if (platformControl is MauiPasswordTextBox passwordTextBox)
+				passwordTextBox.IsPassword = entry.IsPassword;
+		}
 
-			if (nativeControl.Text == newText)
+		public static void UpdateText(this TextBox platformControl, ITextInput textInput)
+		{
+			var newText = textInput.Text;
+
+			if (platformControl is MauiPasswordTextBox passwordTextBox && passwordTextBox.Password == newText)
 				return;
 
-			nativeControl.Text = newText;
-
-			if (!string.IsNullOrEmpty(nativeControl.Text))
-				nativeControl.SelectionStart = nativeControl.Text.Length;
-		}
-
-		public static void UpdateText(this MauiTextBox textBox, IEntry entry)
-		{
-			textBox.Text = entry.Text;
-		}
-
-		public static void UpdateTextColor(this MauiTextBox textBox, ITextStyle textStyle)
-		{
-			if (textStyle.TextColor == null)
+			if (platformControl.Text == newText)
 				return;
 
-			var brush = textStyle.TextColor.ToNative();
+			platformControl.Text = newText ?? string.Empty;
 
-			textBox.Foreground = brush;
-			textBox.ForegroundFocusBrush = brush;
+			if (!string.IsNullOrEmpty(platformControl.Text))
+				platformControl.Select(platformControl.Text.Length, 0);
 		}
 
-		public static void UpdateCharacterSpacing(this MauiTextBox textBox, ITextStyle textStyle)
+		public static void UpdateBackground(this TextBox textBox, IView view)
+		{
+			var brush = view.Background?.ToPlatform();
+
+			if (brush is null)
+				textBox.Resources.RemoveKeys(BackgroundResourceKeys);
+			else
+				textBox.Resources.SetValueForAllKey(BackgroundResourceKeys, brush);
+
+			textBox.RefreshThemeResources();
+		}
+
+		static readonly string[] BackgroundResourceKeys =
+		{
+			"TextControlBackground",
+			"TextControlBackgroundPointerOver",
+			"TextControlBackgroundFocused",
+			"TextControlBackgroundDisabled",
+		};
+
+		public static void UpdateTextColor(this TextBox textBox, ITextStyle textStyle)
+		{
+			var brush = textStyle.TextColor?.ToPlatform();
+
+			if (brush is null)
+				textBox.Resources.RemoveKeys(TextColorResourceKeys);
+			else
+				textBox.Resources.SetValueForAllKey(TextColorResourceKeys, brush);
+
+			textBox.RefreshThemeResources();
+		}
+
+		static readonly string[] TextColorResourceKeys =
+		{
+			"TextControlForeground",
+			"TextControlForegroundPointerOver",
+			"TextControlForegroundFocused",
+			"TextControlForegroundDisabled",
+		};
+
+		public static void UpdateCharacterSpacing(this TextBox textBox, ITextStyle textStyle)
 		{
 			textBox.CharacterSpacing = textStyle.CharacterSpacing.ToEm();
 		}
 
-		public static void UpdateCharacterSpacing(this MauiTextBox textBox, IEntry entry)
+		public static void UpdateReturnType(this TextBox textBox, ITextInput textInput)
 		{
-			textBox.CharacterSpacing = entry.CharacterSpacing.ToEm();
+			textBox.UpdateInputScope(textInput);
 		}
 
-		public static void UpdateReturnType(this MauiTextBox textBox, IEntry entry)
-		{
-			textBox.InputScope = entry.ReturnType.ToNative();
-    	}
+		internal static bool GetClearButtonVisibility(this TextBox textBox) =>
+			MauiTextBox.GetIsDeleteButtonEnabled(textBox);
 
-		public static void UpdateClearButtonVisibility(this MauiTextBox textBox, IEntry entry)
+		public static void UpdateClearButtonVisibility(this TextBox textBox, IEntry entry) =>
+			MauiTextBox.SetIsDeleteButtonEnabled(textBox, entry.ClearButtonVisibility == ClearButtonVisibility.WhileEditing);
+
+		public static void UpdatePlaceholder(this TextBox textBox, IPlaceholder placeholder)
 		{
-			textBox.ClearButtonVisible = entry.ClearButtonVisibility == ClearButtonVisibility.WhileEditing;
+			textBox.PlaceholderText = placeholder.Placeholder ?? string.Empty;
 		}
 
-		public static void UpdatePlaceholder(this MauiTextBox textBox, IEditor editor)
+		public static void UpdatePlaceholderColor(this TextBox textBox, IPlaceholder placeholder)
 		{
-			textBox.PlaceholderText = editor.Placeholder ?? string.Empty;
+			var brush = placeholder.PlaceholderColor?.ToPlatform();
+
+			if (brush is null)
+			{
+				// Windows.Foundation.UniversalApiContract < 5
+				textBox.Resources.RemoveKeys(PlaceholderColorResourceKeys);
+				// Windows.Foundation.UniversalApiContract >= 5
+				textBox.ClearValue(TextBox.PlaceholderForegroundProperty);
+			}
+			else
+			{
+				// Windows.Foundation.UniversalApiContract < 5
+				textBox.Resources.SetValueForAllKey(PlaceholderColorResourceKeys, brush);
+				// Windows.Foundation.UniversalApiContract >= 5
+				textBox.PlaceholderForeground = brush;
+			}
+
+			textBox.RefreshThemeResources();
 		}
 
-		public static void UpdatePlaceholder(this MauiTextBox textBox, IEntry entry)
+		static readonly string[] PlaceholderColorResourceKeys =
 		{
-			textBox.PlaceholderText = entry.Placeholder ?? string.Empty;
+			"TextControlPlaceholderForeground",
+			"TextControlPlaceholderForegroundPointerOver",
+			"TextControlPlaceholderForegroundFocused",
+			"TextControlPlaceholderForegroundDisabled",
+		};
+
+		public static void UpdateFont(this TextBox platformControl, IText text, IFontManager fontManager) =>
+			platformControl.UpdateFont(text.Font, fontManager);
+
+		public static void UpdateIsReadOnly(this TextBox textBox, ITextInput textInput)
+		{
+			textBox.IsReadOnly = textInput.IsReadOnly;
 		}
 
-		public static void UpdatePlaceholderColor(this MauiTextBox textBox, IEditor editor, Brush? placeholderDefaultBrush, Brush? defaultPlaceholderColorFocusBrush)
+		public static void UpdateMaxLength(this TextBox textBox, ITextInput textInput)
 		{
-			Color placeholderColor = editor.PlaceholderColor;
+			var maxLength = textInput.MaxLength;
 
-			BrushHelpers.UpdateColor(placeholderColor, ref placeholderDefaultBrush,
-				() => textBox.PlaceholderForegroundBrush, brush => textBox.PlaceholderForegroundBrush = brush);
-
-			BrushHelpers.UpdateColor(placeholderColor, ref defaultPlaceholderColorFocusBrush,
-				() => textBox.PlaceholderForegroundFocusBrush, brush => textBox.PlaceholderForegroundFocusBrush = brush);
-		}
-
-		public static void UpdateFont(this MauiTextBox nativeControl, IText text, IFontManager fontManager) =>
-			nativeControl.UpdateFont(text.Font, fontManager);
-
-		public static void UpdateIsReadOnly(this MauiTextBox textBox, IEditor editor)
-		{
-			textBox.IsReadOnly = editor.IsReadOnly;
-		}
-
-		public static void UpdateIsReadOnly(this MauiTextBox textBox, IEntry entry)
-		{
-			textBox.IsReadOnly = entry.IsReadOnly;
-		}
-
-		public static void UpdateMaxLength(this MauiTextBox textBox, IEditor editor)
-		{
-			textBox.MaxLength = editor.MaxLength;
-
-			var currentControlText = textBox.Text;
-
-			if (currentControlText.Length > editor.MaxLength)
-				textBox.Text = currentControlText.Substring(0, editor.MaxLength);
-		}
-
-		public static void UpdateMaxLength(this MauiTextBox textBox, IEntry entry)
-		{
-			var maxLength = entry.MaxLength;
+			if (maxLength == 0)
+				textBox.IsReadOnly = true;
+			else
+				textBox.IsReadOnly = textInput.IsReadOnly;
 
 			if (maxLength == -1)
 				maxLength = int.MaxValue;
@@ -112,18 +148,18 @@ namespace Microsoft.Maui
 			if (currentControlText.Length > maxLength)
 				textBox.Text = currentControlText.Substring(0, maxLength);
 		}
-    
-		public static void UpdateIsPassword(this MauiTextBox textBox, IEntry entry)
+
+		public static void UpdateIsTextPredictionEnabled(this TextBox textBox, ITextInput textInput)
 		{
-			textBox.IsPassword = entry.IsPassword;
+			textBox.UpdateInputScope(textInput);
 		}
 
-		public static void UpdateKeyboard(this MauiTextBox textBox, IEditor editor)
+		public static void UpdateKeyboard(this TextBox textBox, ITextInput textInput)
 		{
-			textBox.UpdateInputScope(editor);
+			textBox.UpdateInputScope(textInput);
 		}
 
-		internal static void UpdateInputScope(this MauiTextBox textBox, ITextInput textInput)
+		internal static void UpdateInputScope(this TextBox textBox, ITextInput textInput)
 		{
 			if (textInput.Keyboard is CustomKeyboard custom)
 			{
@@ -133,24 +169,53 @@ namespace Microsoft.Maui
 			else
 			{
 				textBox.IsTextPredictionEnabled = textInput.IsTextPredictionEnabled;
-
-				// TODO: Update IsSpellCheckEnabled
+				textBox.IsSpellCheckEnabled = textInput.IsTextPredictionEnabled;
 			}
 
-			textBox.InputScope = textInput.Keyboard.ToInputScope();
+			var inputScope = new InputScope();
+
+			if (textInput is IEntry entry && entry.ReturnType == ReturnType.Search)
+				inputScope.Names.Add(new InputScopeName(InputScopeNameValue.Search));
+
+			inputScope.Names.Add(textInput.Keyboard?.ToInputScopeName() ?? new InputScopeName(InputScopeNameValue.Default));
+
+			textBox.InputScope = inputScope;
 		}
-    
-		public static void UpdateHorizontalTextAlignment(this MauiTextBox textBox, IEntry entry)
+
+		public static void UpdateHorizontalTextAlignment(this TextBox textBox, ITextAlignment textAlignment)
 		{
 			// We don't have a FlowDirection yet, so there's nothing to pass in here. 
 			// TODO: Update this when FlowDirection is available 
 			// (or update the extension to take an ILabel instead of an alignment and work it out from there) 
-			textBox.TextAlignment = entry.HorizontalTextAlignment.ToNative(true);
+			textBox.TextAlignment = textAlignment.HorizontalTextAlignment.ToPlatform(true);
 		}
 
-		public static void UpdateVerticalTextAlignment(this MauiTextBox textBox, IEntry entry)
+		public static void UpdateVerticalTextAlignment(this TextBox textBox, ITextAlignment textAlignment) =>
+			MauiTextBox.SetVerticalTextAlignment(textBox, textAlignment.VerticalTextAlignment.ToPlatformVerticalAlignment());
+
+		public static void UpdateCursorPosition(this TextBox textBox, ITextInput entry)
 		{
-			textBox.VerticalAlignment = entry.VerticalTextAlignment.ToNativeVerticalAlignment();
-    }
+			// It seems that the TextBox does not limit the CursorPosition to the Text.Length natively
+			entry.CursorPosition = Math.Min(entry.CursorPosition, textBox.Text.Length);
+
+			if (textBox.SelectionStart != entry.CursorPosition)
+				textBox.SelectionStart = entry.CursorPosition;
+		}
+
+		public static void UpdateSelectionLength(this TextBox textBox, ITextInput entry)
+		{
+			// It seems that the TextBox does not limit the SelectionLength to the Text.Length natively
+			entry.SelectionLength = Math.Min(entry.SelectionLength, textBox.Text.Length - textBox.SelectionStart);
+
+			if (textBox.SelectionLength != entry.SelectionLength)
+				textBox.SelectionLength = entry.SelectionLength;
+		}
+
+		// TODO: NET7 issoto - Revisit this, marking this method as `internal` to avoid breaking public API changes
+		internal static int GetCursorPosition(this TextBox textBox, int cursorOffset = 0)
+		{
+			var newCursorPosition = textBox.SelectionStart + cursorOffset;
+			return Math.Max(0, newCursorPosition);
+		}
 	}
 }

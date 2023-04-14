@@ -1,9 +1,10 @@
 ﻿using System;
 using CoreGraphics;
 using Foundation;
+using ObjCRuntime;
 using UIKit;
 
-namespace Microsoft.Maui.Platform.iOS
+namespace Microsoft.Maui.Platform
 {
 	public class MauiTextField : UITextField
 	{
@@ -44,6 +45,21 @@ namespace Microsoft.Maui.Platform.iOS
 			}
 		}
 
+		public override UITextRange? SelectedTextRange
+		{
+			get => base.SelectedTextRange;
+			set
+			{
+				var old = base.SelectedTextRange;
+
+				base.SelectedTextRange = value;
+
+				if (old?.Start != value?.Start || old?.End != value?.End)
+					SelectionChanged?.Invoke(this, EventArgs.Empty);
+			}
+		}
+
 		public event EventHandler? TextPropertySet;
+		internal event EventHandler? SelectionChanged;
 	}
 }

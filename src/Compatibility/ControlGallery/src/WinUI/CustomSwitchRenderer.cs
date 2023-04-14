@@ -7,10 +7,13 @@ using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Graphics;
 using WResourceDictionary = Microsoft.UI.Xaml.ResourceDictionary;
 
+#pragma warning disable CS0612 // Type or member is obsolete
 [assembly: ExportRenderer(typeof(CustomSwitch), typeof(CustomSwitchRenderer))]
+#pragma warning restore CS0612 // Type or member is obsolete
 namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.WinUI
 {
 	// Used in Issue7253.cs
+	[System.Obsolete]
 	public class CustomSwitchRenderer : SwitchRenderer
 	{
 		protected CustomSwitch CustomSwitch => Element as CustomSwitch;
@@ -54,20 +57,20 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.WinUI
 		protected class CustomSwitchStyle : WResourceDictionary
 		{
 			public void ToggleSwitchStrokeOn(global::Windows.UI.Color c) => this["ToggleSwitchStrokeOn"] = c;
-			public void ToggleSwitchStrokeOff(Windows.UI.Color c) => this["ToggleSwitchStrokeOff"] = c;
-			public void ToggleSwitchKnobFillOn(Windows.UI.Color c) => this["ToggleSwitchKnobFillOn"] = c;
-			public void ToggleSwitchKnobFillOff(Windows.UI.Color c) => this["ToggleSwitchKnobFillOff"] = c;
-			public void ToggleSwitchStrokeOnPointerOver(Windows.UI.Color c) => this["ToggleSwitchStrokeOnPointerOver"] = c;
-			public void ToggleSwitchStrokeOffPointerOver(Windows.UI.Color c) => this["ToggleSwitchStrokeOffPointerOver"] = c;
-			public void ToggleSwitchKnobFillOffPointerOver(Windows.UI.Color c) => this["ToggleSwitchKnobFillOffPointerOver"] = c;
-			public void ToggleSwitchKnobFillOnPointerOver(Windows.UI.Color c) => this["ToggleSwitchKnobFillOnPointerOver"] = c;
+			public void ToggleSwitchStrokeOff(global::Windows.UI.Color c) => this["ToggleSwitchStrokeOff"] = c;
+			public void ToggleSwitchKnobFillOn(global::Windows.UI.Color c) => this["ToggleSwitchKnobFillOn"] = c;
+			public void ToggleSwitchKnobFillOff(global::Windows.UI.Color c) => this["ToggleSwitchKnobFillOff"] = c;
+			public void ToggleSwitchStrokeOnPointerOver(global::Windows.UI.Color c) => this["ToggleSwitchStrokeOnPointerOver"] = c;
+			public void ToggleSwitchStrokeOffPointerOver(global::Windows.UI.Color c) => this["ToggleSwitchStrokeOffPointerOver"] = c;
+			public void ToggleSwitchKnobFillOffPointerOver(global::Windows.UI.Color c) => this["ToggleSwitchKnobFillOffPointerOver"] = c;
+			public void ToggleSwitchKnobFillOnPointerOver(global::Windows.UI.Color c) => this["ToggleSwitchKnobFillOnPointerOver"] = c;
 
 		}
 	}
 
 	public static class ColorHelper
 	{
-		public static Windows.UI.Color ToUwpColor(this Color xColor) =>
-			Windows.UI.Color.FromArgb((byte)(xColor.Alpha * 255), (byte)(xColor.Red * 255), (byte)(xColor.Green * 255), (byte)(xColor.Blue * 255));
+		public static global::Windows.UI.Color ToUwpColor(this Color xColor) =>
+			global::Windows.UI.Color.FromArgb((byte)(xColor.Alpha * 255), (byte)(xColor.Red * 255), (byte)(xColor.Green * 255), (byte)(xColor.Blue * 255));
 	}
 }

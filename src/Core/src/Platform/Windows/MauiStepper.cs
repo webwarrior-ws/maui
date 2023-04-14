@@ -11,7 +11,7 @@ using WVisualStateManager = Microsoft.UI.Xaml.VisualStateManager;
 using WVisualStateGroup = Microsoft.UI.Xaml.VisualStateGroup;
 using WVisualState = Microsoft.UI.Xaml.VisualState;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public class MauiStepper : Control
 	{
@@ -223,7 +223,7 @@ namespace Microsoft.Maui
 				return;
 			}
 
-			ButtonBackground = value.ToNative();
+			ButtonBackground = value.ToPlatform();
 			UpdateButtonBackground();
 		}
 

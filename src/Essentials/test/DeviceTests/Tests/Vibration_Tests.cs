@@ -1,9 +1,10 @@
 using System;
-using Microsoft.Maui.Essentials;
+using Microsoft.Maui.Devices;
 using Xunit;
 
 namespace Microsoft.Maui.Essentials.DeviceTests
 {
+	[Category("Vibration")]
 	public class Vibration_Tests
 	{
 		[Fact]
@@ -12,13 +13,13 @@ namespace Microsoft.Maui.Essentials.DeviceTests
 #if __ANDROID__
             // API 23+ we need user interaction for camera permission
             // can't really test so easily on device.
-            if (Platform.HasApiLevel(Android.OS.BuildVersionCodes.M))
+            if (OperatingSystem.IsAndroidVersionAtLeast((int)Android.OS.BuildVersionCodes.M))
                 return;
 #elif __IOS__
-            // TODO: remove this as soon as the test harness can filter
-            // the iOS simulator does not emulate a flashlight
-            if (DeviceInfo.DeviceType == DeviceType.Virtual && DeviceInfo.Platform == DevicePlatform.iOS)
-                return;
+			// TODO: remove this as soon as the test harness can filter
+			// the iOS simulator does not emulate a flashlight
+			if (DeviceInfo.DeviceType == DeviceType.Virtual && DeviceInfo.Platform == DevicePlatform.iOS)
+				return;
 #endif
 
 			Vibration.Vibrate();
@@ -30,13 +31,13 @@ namespace Microsoft.Maui.Essentials.DeviceTests
 #if __ANDROID__
             // API 23+ we need user interaction for camera permission
             // can't really test so easily on device.
-            if (Platform.HasApiLevel(Android.OS.BuildVersionCodes.M))
+            if (OperatingSystem.IsAndroidVersionAtLeast((int)Android.OS.BuildVersionCodes.M))
                 return;
 #elif __IOS__
-            // TODO: remove this as soon as the test harness can filter
-            // the iOS simulator does not emulate a flashlight
-            if (DeviceInfo.DeviceType == DeviceType.Virtual && DeviceInfo.Platform == DevicePlatform.iOS)
-                return;
+			// TODO: remove this as soon as the test harness can filter
+			// the iOS simulator does not emulate a flashlight
+			if (DeviceInfo.DeviceType == DeviceType.Virtual && DeviceInfo.Platform == DevicePlatform.iOS)
+				return;
 #endif
 
 			Vibration.Vibrate();

@@ -5,22 +5,27 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using CoreGraphics;
 using Foundation;
-using UIKit;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS;
 using Microsoft.Maui.Controls.Compatibility;
-using Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues;
-using IOPath = System.IO.Path;
 using Microsoft.Maui.Controls.Compatibility.ControlGallery;
+using Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS;
+using Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues;
 using Microsoft.Maui.Controls.Compatibility.Platform.iOS;
-using Size = Microsoft.Maui.Graphics.Size;
 using Microsoft.Maui.Controls.Platform;
+using Microsoft.Maui.Hosting;
+using Microsoft.Maui.Platform;
+using ObjCRuntime;
+using UIKit;
+using IOPath = System.IO.Path;
+using Size = Microsoft.Maui.Graphics.Size;
 
 [assembly: Dependency(typeof(TestCloudService))]
 [assembly: Dependency(typeof(CacheService))]
+#pragma warning disable CS0612 // Type or member is obsolete
 [assembly: ExportRenderer(typeof(DisposePage), typeof(DisposePageRenderer))]
 [assembly: ExportRenderer(typeof(DisposeLabel), typeof(DisposeLabelRenderer))]
+#pragma warning restore CS0612 // Type or member is obsolete
 [assembly: ExportEffect(typeof(BorderEffect), nameof(BorderEffect))]
 namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 {
@@ -54,6 +59,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 		}
 	}
 
+	[System.Obsolete]
 	public class DisposePageRenderer : PageRenderer
 	{
 		protected override void Dispose(bool disposing)
@@ -67,6 +73,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 		}
 	}
 
+	[System.Obsolete]
 	public class DisposeLabelRenderer : LabelRenderer
 	{
 		protected override void Dispose(bool disposing)
@@ -86,7 +93,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 		{
 			var isInTestCloud = Environment.GetEnvironmentVariable("XAMARIN_TEST_CLOUD");
 
-			return isInTestCloud != null && isInTestCloud.Equals("1");
+			return isInTestCloud != null && isInTestCloud.Equals("1", StringComparison.Ordinal);
 		}
 
 		public string GetTestCloudDeviceName()
@@ -112,7 +119,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 			App.IOSVersion = int.Parse(versionPart[0]);
 
 #if ENABLE_TEST_CLOUD
-			Xamarin.Calabash.Start();
+			//Xamarin.Calabash.Start();
 #endif
 
 			//Forms.Init();
@@ -166,6 +173,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 			var longerText =
 				"I am a native UILabel with considerably more text. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
 
+#pragma warning disable CA1416 // TODO: UILabel.MinimumFontSize has [UnsupportedOSPlatform("ios6.0")]
 			var uilabel = new UILabel
 			{
 				MinimumFontSize = 14f,
@@ -180,7 +188,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 			// Create and add a native Button 
 			var uibutton = new UIButton(UIButtonType.System);
 			uibutton.SetTitle("Toggle Text Amount", UIControlState.Normal);
-			uibutton.Font = UIFont.FromName("Helvetica", 14f);
+			uibutton.TitleLabel.Font = UIFont.FromName("Helvetica", 14f);
 
 
 			uibutton.TouchUpInside += (sender, args) =>
@@ -227,6 +235,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 				LineBreakMode = UILineBreakMode.WordWrap,
 				Font = UIFont.FromName("Helvetica", 24f)
 			};
+#pragma warning restore CA1416
 
 			// Add a misbehaving control
 			sl?.Children.Add(explanation0);
@@ -270,7 +279,9 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 
 			var uilabel = new UILabel(new CGRect(0, 0, width, heightCustomLabelView))
 			{
+#pragma warning disable CA1416 // TODO: UILabel.MinimumFontSize has [UnsupportedOSPlatform("ios6.0")]
 				MinimumFontSize = 14f,
+#pragma warning restore CA1416
 				Lines = 0,
 				LineBreakMode = UILineBreakMode.WordWrap,
 				Font = UIFont.FromName("Helvetica", 24f),
@@ -279,7 +290,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 
 			var uibuttonColor = new UIButton(UIButtonType.System);
 			uibuttonColor.SetTitle("Toggle Text Color Binding", UIControlState.Normal);
-			uibuttonColor.Font = UIFont.FromName("Helvetica", 14f);
+			uibuttonColor.TitleLabel.Font = UIFont.FromName("Helvetica", 14f);
 			uibuttonColor.TouchUpInside += (sender, args) => uilabel.TextColor = UIColor.Blue;
 
 			var nativeColorConverter = new ColorConverter();
@@ -297,13 +308,14 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 			uiView.Add(uilabel);
 			sl?.Children.Add(uiView);
 			sl?.Children.Add(uibuttonColor.ToView());
-			var colorPicker = new AdvancedColorPicker.ColorPickerView(new CGRect(0, 0, width, 300));
-			colorPicker.SetBinding("SelectedColor", new Binding("NativeLabelColor", BindingMode.TwoWay, nativeColorConverter), "ColorPicked");
-			sl?.Children.Add(colorPicker);
+			// TODO: Replace with a new plugin or API
+			//var colorPicker = new AdvancedColorPicker.ColorPickerView(new CGRect(0, 0, width, 300));
+			//colorPicker.SetBinding("SelectedColor", new Binding("NativeLabelColor", BindingMode.TwoWay, nativeColorConverter), "ColorPicked");
+			//sl?.Children.Add(colorPicker);
 			page.NativeControlsAdded = true;
 		}
 
-#region Stuff for repro of Bugzilla case 40911
+		#region Stuff for repro of Bugzilla case 40911
 
 		void SetUp40911Test(Bugzilla40911 page)
 		{
@@ -331,7 +343,9 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 				loginViewController.DismissViewController(true, null);
 			};
 
+#pragma warning disable CA1416 // TODO: 'UIApplication.KeyWindow' is unsupported on: 'ios' 13.0 and later
 			var window = UIApplication.SharedApplication.KeyWindow;
+#pragma warning restore CA1416
 			var vc = window.RootViewController;
 			while (vc.PresentedViewController != null)
 			{
@@ -341,7 +355,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 			vc.PresentViewController(loginViewController, true, null);
 		}
 
-#endregion
+		#endregion
 
 		[Export("navigateToTest:")]
 		public string NavigateToTest(string test)
@@ -419,7 +433,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
 		{
 			if (value is Graphics.Color)
-				return ((Graphics.Color)value).ToUIColor();
+				return ((Graphics.Color)value).ToPlatform();
 			return value;
 		}
 

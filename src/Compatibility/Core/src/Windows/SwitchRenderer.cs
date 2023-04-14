@@ -15,6 +15,7 @@ using Microsoft.Maui.Controls.Platform;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class SwitchRenderer : ViewRenderer<Switch, ToggleSwitch>
 	{
 		const string ToggleSwitchCommonStates = "CommonStates";
@@ -86,6 +87,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			Control.UpdateFlowDirection(Element);
 		}
 
+		[PortHandler]
 		void UpdateOnColor()
 		{
 			if (Control == null)
@@ -156,6 +158,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			}
 		}
 
+		[PortHandler]
 		void UpdateThumbColor()
 		{
 			if (Control == null)
@@ -191,7 +194,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 							{
 								if (_originalThumbOnBrush == null)
 								{
-									if (frame.Value is Windows.UI.Color color)
+									if (frame.Value is global::Windows.UI.Color color)
 										_originalOnColorBrush = new WSolidColorBrush(color);
 
 									if (frame.Value is WBrush brush)
@@ -200,7 +203,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 								if (!Element.ThumbColor.IsDefault())
 								{
-									var brush = Maui.ColorExtensions.ToNative(Element.ThumbColor);
+									var brush = Element.ThumbColor.ToPlatform();
 									brush.Opacity = _originalThumbOnBrush.Opacity;
 									frame.Value = brush;
 								}
@@ -219,7 +222,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 					_originalThumbOnBrush = thumb.Fill;
 
 				if (!Element.ThumbColor.IsDefault())
-					thumb.Fill = Maui.ColorExtensions.ToNative(Element.ThumbColor);
+					thumb.Fill = Element.ThumbColor.ToPlatform();
 				else
 					thumb.Fill = _originalThumbOnBrush;
 			}

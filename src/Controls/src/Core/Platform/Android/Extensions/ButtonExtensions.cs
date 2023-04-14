@@ -2,13 +2,25 @@ using System;
 using AndroidX.AppCompat.Widget;
 using AndroidX.Core.Widget;
 using Google.Android.Material.Button;
+using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Handlers;
 using static Microsoft.Maui.Controls.Button;
+using AButton = AndroidX.AppCompat.Widget.AppCompatButton;
 
 namespace Microsoft.Maui.Controls.Platform
 {
 	public static class ButtonExtensions
 	{
+		public static void UpdateText(this MaterialButton platformButton, Button button)
+		{
+			var text = TextTransformUtilites.GetTransformedText(button.Text, button.TextTransform);
+			platformButton.Text = text;
+
+			// Content layout depends on whether or not the text is empty; changing the text means
+			// we may need to update the content layout
+			platformButton.UpdateContentLayout(button);
+		}
+
 		public static void UpdateContentLayout(this MaterialButton materialButton, Button button)
 		{
 			var context = materialButton.Context;
@@ -57,6 +69,11 @@ namespace Microsoft.Maui.Controls.Platform
 				materialButton.IconPadding = 0;
 				materialButton.IconGravity = MaterialButton.IconGravityTextStart;
 			}
+		}
+
+		public static void UpdateLineBreakMode(this AButton nativeControl, Button button)
+		{
+			nativeControl.SetLineBreakMode(button.LineBreakMode);
 		}
 	}
 }

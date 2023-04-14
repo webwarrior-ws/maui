@@ -1,17 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Android.Animation;
 using Android.Content;
+using Android.Graphics;
 using Android.Runtime;
 using Android.Util;
 using Android.Views;
 using Android.Widget;
 using AndroidX.Core.Widget;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
-	public class MauiScrollView : NestedScrollView, IScrollBarView
+	public class MauiScrollView : NestedScrollView, IScrollBarView, NestedScrollView.IOnScrollChangeListener
 	{
 		View? _content;
 
@@ -20,6 +19,7 @@ namespace Microsoft.Maui
 		ScrollOrientation _scrollOrientation = ScrollOrientation.Vertical;
 		ScrollBarVisibility _defaultHorizontalScrollVisibility = 0;
 		ScrollBarVisibility _defaultVerticalScrollVisibility = 0;
+		ScrollBarVisibility _horizontalScrollVisibility = 0;
 
 		internal float LastX { get; set; }
 		internal float LastY { get; set; }
@@ -44,6 +44,7 @@ namespace Microsoft.Maui
 
 		public void SetHorizontalScrollBarVisibility(ScrollBarVisibility scrollBarVisibility)
 		{
+			_horizontalScrollVisibility = scrollBarVisibility;
 			if (_hScrollView == null)
 			{
 				return;
@@ -92,6 +93,7 @@ namespace Microsoft.Maui
 					_hScrollView = new MauiHorizontalScrollView(Context, this);
 					_hScrollView.HorizontalFadingEdgeEnabled = HorizontalFadingEdgeEnabled;
 					_hScrollView.SetFadingEdgeLength(HorizontalFadingEdgeLength);
+					SetHorizontalScrollBarVisibility(_horizontalScrollVisibility);
 				}
 
 				_hScrollView.IsBidirectional = _isBidirectional = orientation == ScrollOrientation.Both;
@@ -189,6 +191,15 @@ namespace Microsoft.Maui
 			{
 				_hScrollView.Layout(0, 0, right - left, bottom - top);
 			}
+
+			if (CrossPlatformArrange == null)
+			{
+				return;
+			}
+
+			var destination = Context!.ToCrossPlatformRectInReferenceFrame(left, top, right, bottom);
+
+			CrossPlatformArrange(destination);
 		}
 
 		public void ScrollTo(int x, int y, bool instant, Action finished)
@@ -265,6 +276,13 @@ namespace Microsoft.Maui
 
 			animator.Start();
 		}
+
+		void IOnScrollChangeListener.OnScrollChange(NestedScrollView v, int scrollX, int scrollY, int oldScrollX, int oldScrollY)
+		{
+			OnScrollChanged(scrollX, scrollY, oldScrollX, oldScrollY);
+		}
+
+		internal Func<Graphics.Rect, Graphics.Size>? CrossPlatformArrange { get; set; }
 	}
 
 	internal class MauiHorizontalScrollView : HorizontalScrollView, IScrollBarView
@@ -294,6 +312,24 @@ namespace Microsoft.Maui
 
 		internal bool IsBidirectional { get; set; }
 
+		public override void Draw(Canvas? canvas)
+		{
+			try
+			{
+				if (canvas != null)
+					canvas.ClipRect(canvas.ClipBounds);
+
+				base.Draw(canvas);
+			}
+			catch (Java.Lang.NullPointerException)
+			{
+				// This will most likely never run since UpdateScrollBars is called 
+				// when the scrollbars visibilities are updated but I left it here
+				// just in case there's an edge case that causes an exception
+				this.HandleScrollBarVisibilityChange();
+			}
+		}
+
 		public override bool OnInterceptTouchEvent(MotionEvent? ev)
 		{
 			if (ev == null || _parentScrollView == null)
@@ -301,7 +337,7 @@ namespace Microsoft.Maui
 
 			// TODO ezhart 2021-07-12 The previous version of this checked _renderer.Element.InputTransparent; we don't have acces to that here,
 			// and I'm not sure it even applies. We need to determine whether touch events will get here at all if we've marked the ScrollView InputTransparent
-			// We _should_ be able to deal with it at the handler level by force-setting an OnTouchListener for the NativeView that always returns false; then we
+			// We _should_ be able to deal with it at the handler level by force-setting an OnTouchListener for the PlatformView that always returns false; then we
 			// can just stop worrying about it here because the touches _can't_ reach this.
 
 			// set the start point for the bidirectional scroll; 
@@ -365,6 +401,16 @@ namespace Microsoft.Maui
 		}
 
 		bool IScrollBarView.ScrollBarsInitialized { get; set; } = false;
+
+		protected override void OnScrollChanged(int l, int t, int oldl, int oldt)
+		{
+			base.OnScrollChanged(l, t, oldl, oldt);
+
+			if (_parentScrollView is NestedScrollView.IOnScrollChangeListener scrollChangeListener)
+			{
+				scrollChangeListener.OnScrollChange(_parentScrollView, l, t, oldl, oldt);
+			}
+		}
 	}
 
 	internal interface IScrollBarView
@@ -372,35 +418,5 @@ namespace Microsoft.Maui
 		bool ScrollBarsInitialized { get; set; }
 		bool ScrollbarFadingEnabled { get; set; }
 		void AwakenScrollBars();
-	}
-
-	internal static class ScrollViewExtensions
-	{
-		internal static void HandleScrollBarVisibilityChange(this IScrollBarView scrollView)
-		{
-			// According to the Android Documentation
-			// * <p>AwakenScrollBars method should be invoked every time a subclass directly updates
-			// *the scroll parameters.</ p >
-
-			// If AwakenScrollBars is never called there are cases where the ScrollDrawable is never called
-			// which causes a crash during draw
-
-			if (scrollView.ScrollBarsInitialized)
-				scrollView.AwakenScrollBars();
-
-			// The scrollbar drawable won't initialize if ScrollbarFadingEnabled == false
-			if (!scrollView.ScrollbarFadingEnabled)
-			{
-				scrollView.ScrollbarFadingEnabled = true;
-				scrollView.AwakenScrollBars();
-				scrollView.ScrollbarFadingEnabled = false;
-			}
-			else
-			{
-				scrollView.AwakenScrollBars();
-			}
-
-			scrollView.ScrollBarsInitialized = true;
-		}
 	}
 }

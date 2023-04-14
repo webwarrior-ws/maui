@@ -1,8 +1,10 @@
 using System;
+using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 {
+	[System.Obsolete]
 	public static class VisualElementExtensions
 	{
 		public static IVisualElementRenderer GetRenderer(this VisualElement self)

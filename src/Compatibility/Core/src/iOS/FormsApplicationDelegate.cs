@@ -3,11 +3,13 @@ using System.ComponentModel;
 using System.Globalization;
 using CoreSpotlight;
 using Foundation;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
-	public class FormsApplicationDelegate : UIApplicationDelegate
+	[Obsolete]
+	class FormsApplicationDelegate : UIApplicationDelegate
 	{
 		Application _application;
 		bool _isSuspended;

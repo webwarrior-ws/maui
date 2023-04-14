@@ -7,10 +7,13 @@ using Microsoft.Maui.Controls.Platform;
 using Microsoft.UI.Xaml.Input;
 using Windows.UI.Input;
 
+#pragma warning disable CS0612 // Type or member is obsolete
 [assembly: ExportRenderer(typeof(Bugzilla60122._60122Image), typeof(_60122ImageRenderer))]
+#pragma warning restore CS0612 // Type or member is obsolete
 
 namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.WinUI
 {
+	[System.Obsolete]
 	public class _60122ImageRenderer : ImageRenderer
 	{
 		Bugzilla60122._60122Image _customControl;
@@ -34,7 +37,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.WinUI
 
 		void OnHolding(object sender, HoldingRoutedEventArgs holdingRoutedEventArgs)
 		{
-			if (holdingRoutedEventArgs.HoldingState == HoldingState.Completed)
+			if (holdingRoutedEventArgs.HoldingState == Microsoft.UI.Input.HoldingState.Completed)
 			{
 				_customControl?.HandleLongPress(_customControl, new EventArgs());
 			}

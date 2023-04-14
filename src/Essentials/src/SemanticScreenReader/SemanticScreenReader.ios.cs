@@ -1,11 +1,12 @@
 ﻿using Foundation;
+using ObjCRuntime;
 using UIKit;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.Accessibility
 {
-	public static partial class SemanticScreenReader
+	partial class SemanticScreenReaderImplementation : ISemanticScreenReader
 	{
-		static void PlatformAnnounce(string text)
+		public void Announce(string text)
 		{
 			if (!UIAccessibility.IsVoiceOverRunning)
 				return;

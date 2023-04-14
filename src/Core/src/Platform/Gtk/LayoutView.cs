@@ -6,12 +6,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Gtk;
-using Microsoft.Maui.Graphics.Native.Gtk;
-using Rectangle = Microsoft.Maui.Graphics.Rectangle;
+using Microsoft.Maui.Graphics.Platform.Gtk;
+using Rectangle = Microsoft.Maui.Graphics.Rect;
 using Size = Microsoft.Maui.Graphics.Size;
 using Point = Microsoft.Maui.Graphics.Point;
 
-namespace Microsoft.Maui.Native
+namespace Microsoft.Maui.Platform
 {
 
 	// refactored from: https://github.com/mono/xwt/blob/501f6b529fca632655295169094f637627c74c47/Xwt.Gtk/Xwt.GtkBackend/BoxBackend.cs
@@ -166,10 +166,10 @@ namespace Microsoft.Maui.Native
 
 		protected void ArrangeAllocation(Rectangle allocation)
 		{
-			if (VirtualView is not { LayoutManager: { } layoutManager } virtualView)
+			if (VirtualView is not { } virtualView)
 				return;
 
-			layoutManager.ArrangeChildren(allocation);
+			VirtualView.CrossPlatformArrange(allocation);
 
 		}
 
@@ -221,7 +221,7 @@ namespace Microsoft.Maui.Native
 			{
 				IsReallocating = true;
 
-				var mAllocation = allocation.ToRectangle();
+				var mAllocation = allocation.ToRect();
 
 				clearCache = LastAllocation.IsEmpty || mAllocation.IsEmpty || LastAllocation != mAllocation;
 				ClearMeasured(clearCache);
@@ -269,7 +269,7 @@ namespace Microsoft.Maui.Native
 			{
 				try
 				{
-					LastAllocation = Allocation.ToRectangle();
+					LastAllocation = Allocation.ToRect();
 					Measure(Allocation.Width, Allocation.Height);
 
 				}
@@ -294,7 +294,7 @@ namespace Microsoft.Maui.Native
 
 			bool CanBeCached() => !double.IsPositiveInfinity(widthConstraint) && !double.IsPositiveInfinity(heightConstraint);
 
-			if (VirtualView is not { LayoutManager: { } layoutManager } virtualView)
+			if (VirtualView is not {  } virtualView)
 				return Size.Zero;
 
 			var key = (widthConstraint, heightConstraint, mode);
@@ -312,7 +312,7 @@ namespace Microsoft.Maui.Native
 
 			}
 
-			var measured = layoutManager.Measure(widthConstraint, heightConstraint);
+			var measured = VirtualView.CrossPlatformMeasure(widthConstraint, heightConstraint);
 
 #if TRACE_ALLOCATION
 			if (_checkCacheHitFailed && cacheHit && measured != cached)
@@ -357,7 +357,7 @@ namespace Microsoft.Maui.Native
 				return;
 			}
 
-			if (VirtualView is not { LayoutManager: { } layoutManager } virtualView)
+			if (VirtualView is not { } virtualView)
 				return;
 
 			var measuredMinimum = MeasureMinimum();
@@ -427,7 +427,7 @@ namespace Microsoft.Maui.Native
 			if (rect.IsEmpty)
 				return;
 
-			if (rect == Allocation.ToRectangle()) return;
+			if (rect == Allocation.ToRect()) return;
 
 			if (IsSizeAllocating)
 			{

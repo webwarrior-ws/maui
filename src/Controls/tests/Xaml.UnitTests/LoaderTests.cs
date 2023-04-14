@@ -395,9 +395,7 @@ namespace Microsoft.Maui.Controls.Xaml.UnitTests
 		[Test]
 		public void StaticResourceLookForApplicationResources()
 		{
-			Device.PlatformServices = new MockPlatformServices();
 			Application.Current = null;
-
 			Application.Current = new MyApp();
 			var xaml = @"
 				<ContentView
@@ -506,7 +504,8 @@ namespace Microsoft.Maui.Controls.Xaml.UnitTests
 			var page = new ContentPage();
 			page.LoadFromXaml(xaml);
 			var template = page.Resources["datatemplate"] as Maui.Controls.DataTemplate;
-			Assert.Throws<InvalidOperationException>(() => template.CreateContent());
+
+			Assert.NotNull(template.CreateContent());
 		}
 
 		[Test]

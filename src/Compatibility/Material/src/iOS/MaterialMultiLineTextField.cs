@@ -1,6 +1,7 @@
 using System;
 using CoreGraphics;
 using MaterialComponents;
+using ObjCRuntime;
 using UIKit;
 using MMultilineTextField = MaterialComponents.MultilineTextField;
 using MTextInputControllerBase = MaterialComponents.TextInputControllerBase;
@@ -80,7 +81,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Material.iOS
 			if (!UpdateIfTextViewShouldCollapse() &&
 				!AutoSizeWithChanges &&
 				ExpandsOnOverflow &&
-				ShouldRestrainSize()) 
+				ShouldRestrainSize())
 			{
 				ExpandsOnOverflow = false;
 			}

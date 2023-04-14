@@ -4,49 +4,48 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Android.OS;
+using Android.App;
 using Android.Speech.Tts;
+using Microsoft.Maui.ApplicationModel;
 using AndroidTextToSpeech = Android.Speech.Tts.TextToSpeech;
 using Debug = System.Diagnostics.Debug;
 using JavaLocale = Java.Util.Locale;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.Media
 {
-	public static partial class TextToSpeech
+	partial class TextToSpeechImplementation : ITextToSpeech
 	{
 		const int maxSpeechInputLengthDefault = 4000;
 
-		static WeakReference<TextToSpeechImplementation> textToSpeechRef = null;
+		WeakReference<TextToSpeechInternalImplementation> textToSpeechRef = null;
 
-		static TextToSpeechImplementation GetTextToSpeech()
+		TextToSpeechInternalImplementation GetTextToSpeech()
 		{
 			if (textToSpeechRef == null || !textToSpeechRef.TryGetTarget(out var tts))
 			{
-				tts = new TextToSpeechImplementation();
-				textToSpeechRef = new WeakReference<TextToSpeechImplementation>(tts);
+				tts = new TextToSpeechInternalImplementation();
+				textToSpeechRef = new WeakReference<TextToSpeechInternalImplementation>(tts);
 			}
 
 			return tts;
 		}
 
-		internal static Task PlatformSpeakAsync(string text, SpeechOptions options, CancellationToken cancelToken = default)
+		Task PlatformSpeakAsync(string text, SpeechOptions options, CancellationToken cancelToken)
 		{
 			var textToSpeech = GetTextToSpeech();
-
 			if (textToSpeech == null)
 				throw new PlatformNotSupportedException("Unable to start text-to-speech engine, not supported on device.");
 
 			var max = maxSpeechInputLengthDefault;
-			if (Platform.HasApiLevel(BuildVersionCodes.JellyBeanMr2))
+			if (OperatingSystem.IsAndroidVersionAtLeast(18))
 				max = AndroidTextToSpeech.MaxSpeechInputLength;
 
 			return textToSpeech.SpeakAsync(text, max, options, cancelToken);
 		}
 
-		internal static Task<IEnumerable<Locale>> PlatformGetLocalesAsync()
+		Task<IEnumerable<Locale>> PlatformGetLocalesAsync()
 		{
 			var textToSpeech = GetTextToSpeech();
-
 			if (textToSpeech == null)
 				throw new PlatformNotSupportedException("Unable to start text-to-speech engine, not supported on device.");
 
@@ -54,7 +53,7 @@ namespace Microsoft.Maui.Essentials
 		}
 	}
 
-	class TextToSpeechImplementation : Java.Lang.Object, AndroidTextToSpeech.IOnInitListener,
+	class TextToSpeechInternalImplementation : Java.Lang.Object, AndroidTextToSpeech.IOnInitListener,
 #pragma warning disable CS0618
 		AndroidTextToSpeech.IOnUtteranceCompletedListener
 #pragma warning restore CS0618
@@ -72,7 +71,7 @@ namespace Microsoft.Maui.Essentials
 			try
 			{
 				// set up the TextToSpeech object
-				tts = new AndroidTextToSpeech(Platform.AppContext, this);
+				tts = new AndroidTextToSpeech(Application.Context, this);
 #pragma warning disable CS0618
 				tts.SetOnUtteranceCompletedListener(this);
 #pragma warning restore CS0618
@@ -109,6 +108,8 @@ namespace Microsoft.Maui.Essentials
 			if (tcsUtterances?.Task != null)
 				await tcsUtterances.Task;
 
+			tcsUtterances = new TaskCompletionSource<bool>();
+
 			if (cancelToken != default)
 			{
 				cancelToken.Register(() =>
@@ -143,14 +144,13 @@ namespace Microsoft.Maui.Essentials
 			if (options?.Pitch.HasValue ?? false)
 				tts.SetPitch(options.Pitch.Value);
 			else
-				tts.SetPitch(TextToSpeech.PitchDefault);
+				tts.SetPitch(TextToSpeechImplementation.PitchDefault);
 
 			tts.SetSpeechRate(1.0f);
 
-			var parts = text.SplitSpeak(max);
+			var parts = TextToSpeech.SplitSpeak(text, max);
 
 			numExpectedUtterances = parts.Count;
-			tcsUtterances = new TaskCompletionSource<bool>();
 
 			var guid = Guid.NewGuid().ToString();
 
@@ -187,16 +187,13 @@ namespace Microsoft.Maui.Essentials
 		{
 			await Initialize();
 
-			if (Platform.HasApiLevel(BuildVersionCodes.Lollipop))
+			try
 			{
-				try
-				{
-					return tts.AvailableLanguages.Select(a => new Locale(a.Language, a.Country, a.DisplayName, string.Empty));
-				}
-				catch (Exception ex)
-				{
-					Debug.WriteLine("Unable to query language on new API, attempting older api: " + ex);
-				}
+				return tts.AvailableLanguages.Select(a => new Locale(a.Language, a.Country, a.DisplayName, string.Empty));
+			}
+			catch (Exception ex)
+			{
+				Debug.WriteLine("Unable to query language on new API, attempting older api: " + ex);
 			}
 
 			return JavaLocale.GetAvailableLocales()
@@ -233,22 +230,14 @@ namespace Microsoft.Maui.Essentials
 #pragma warning disable 0618
 		void SetDefaultLanguage()
 		{
-			if (Platform.HasApiLevel(BuildVersionCodes.JellyBeanMr2))
+			try
 			{
-				try
-				{
-					if (tts.DefaultLanguage == null && tts.Language != null)
-						tts.SetLanguage(tts.Language);
-					else if (tts.DefaultLanguage != null)
-						tts.SetLanguage(tts.DefaultLanguage);
-				}
-				catch
-				{
-					if (tts.Language != null)
-						tts.SetLanguage(tts.Language);
-				}
+				if (tts.DefaultLanguage == null && tts.Language != null)
+					tts.SetLanguage(tts.Language);
+				else if (tts.DefaultLanguage != null)
+					tts.SetLanguage(tts.DefaultLanguage);
 			}
-			else
+			catch
 			{
 				if (tts.Language != null)
 					tts.SetLanguage(tts.Language);

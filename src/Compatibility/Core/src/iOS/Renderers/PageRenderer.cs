@@ -1,17 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Runtime.Versioning;
 using Foundation;
 using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;
 using Microsoft.Maui.Graphics;
+using ObjCRuntime;
 using UIKit;
 using PageSpecific = Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific.Page;
 using PageUIStatusBarAnimation = Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific.UIStatusBarAnimation;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
-	public class PageRenderer : UIViewController, IVisualElementRenderer, IEffectControlProvider, IShellContentInsetObserver, IDisconnectable
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
+	public class PageRenderer : UIViewController, IVisualElementRenderer, IEffectControlProvider, IShellContentInsetObserver, Controls.Platform.Compatibility.IDisconnectable
 	{
 		bool _appeared;
 		bool _disposed;
@@ -98,7 +101,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			if (rect != _pageContainer.Frame)
 				_pageContainer.Frame = rect;
 
-			Element.Layout(new Rectangle(Element.X, Element.Y, size.Width, size.Height));
+			Element.Layout(new Rect(Element.X, Element.Y, size.Width, size.Height));
 		}
 
 		public override void LoadView()
@@ -137,6 +140,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				NativeView?.UpdateBackgroundLayer();
 		}
 
+		[SupportedOSPlatform("ios11.0")]
+		[SupportedOSPlatform("tvos11.0")]
 		public override void ViewSafeAreaInsetsDidChange()
 		{
 			_safeAreasSet = true;
@@ -155,7 +160,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 			_appeared = true;
 			UpdateStatusBarPrefersHidden();
-			if (Forms.RespondsToSetNeedsUpdateOfHomeIndicatorAutoHidden)
+			if (OperatingSystem.IsIOSVersionAtLeast(11))
 				SetNeedsUpdateOfHomeIndicatorAutoHidden();
 
 			if (Element.Parent is CarouselPage)
@@ -212,7 +217,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			NativeView?.Window?.EndEditing(true);
 		}
 
-		void IDisconnectable.Disconnect()
+		void Controls.Platform.Compatibility.IDisconnectable.Disconnect()
 		{
 			if (_shellSection != null)
 			{
@@ -242,7 +247,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 			if (disposing)
 			{
-				(this as IDisconnectable).Disconnect();
+				(this as Controls.Platform.Compatibility.IDisconnectable).Disconnect();
 
 				_packager?.Dispose();
 				_tracker?.Dispose();
@@ -321,7 +326,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			if (Forms.IsiOS13OrNewer &&
 				previousTraitCollection.UserInterfaceStyle != TraitCollection.UserInterfaceStyle &&
 				UIApplication.SharedApplication.ApplicationState != UIApplicationState.Background)
-				Application.Current?.TriggerThemeChanged(new AppThemeChangedEventArgs(Application.Current.RequestedTheme));
+				((IApplication)Application.Current)?.ThemeChanged();
 		}
 
 		bool ShouldUseSafeArea()
@@ -429,6 +434,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			NativeView?.SetNeedsLayout();
 		}
 
+		[PortHandler]
 		bool OnShouldReceiveTouch(UIGestureRecognizer recognizer, UITouch touch)
 		{
 			foreach (UIView v in ViewAndSuperviewsOfView(touch.View))
@@ -474,7 +480,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 						NativeView.UpdateBackground(Element.Background);
 					else
 					{
-						NativeView.BackgroundColor = Element.BackgroundColor?.ToUIColor() ?? ColorExtensions.BackgroundColor;
+						NativeView.BackgroundColor = Element.BackgroundColor?.ToPlatform() ?? Maui.Platform.ColorExtensions.BackgroundColor;
 					}
 				}
 			});
@@ -486,6 +492,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				NavigationItem.Title = Page.Title;
 		}
 
+		[PortHandler]
 		IEnumerable<UIView> ViewAndSuperviewsOfView(UIView view)
 		{
 			while (view != null)
@@ -497,7 +504,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 		void UpdateHomeIndicatorAutoHidden()
 		{
-			if (Element == null || !Forms.RespondsToSetNeedsUpdateOfHomeIndicatorAutoHidden)
+			if (Element == null || !OperatingSystem.IsIOSVersionAtLeast(11))
 				return;
 
 			SetNeedsUpdateOfHomeIndicatorAutoHidden();

@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Maui.DeviceTests.Stubs;
 using Microsoft.Maui.Handlers;
-using Microsoft.Maui.Platform.iOS;
+using Microsoft.Maui.Platform;
+using ObjCRuntime;
 using UIKit;
 using Xunit;
 using Xunit.Sdk;
@@ -31,11 +32,18 @@ namespace Microsoft.Maui.DeviceTests
 
 				var scrollViewHandler = CreateHandler(scrollView);
 
-				foreach (var nativeView in scrollViewHandler.NativeView.Subviews)
+				foreach (var platformView in scrollViewHandler.PlatformView.Subviews)
 				{
-					if (nativeView is MauiTextField)
+					// ScrollView on iOS uses an intermediate ContentView to handle conetent measurement/arrangement
+					if (platformView is ContentView contentView)
 					{
-						return true;
+						foreach (var content in contentView.Subviews)
+						{
+							if (content is MauiTextField)
+							{
+								return true;
+							}
+						}
 					}
 				}
 

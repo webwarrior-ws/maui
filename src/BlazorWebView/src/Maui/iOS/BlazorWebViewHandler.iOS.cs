@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
-using System.Linq;
+using System.Runtime.Versioning;
 using Foundation;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Handlers;
 using UIKit;
 using WebKit;
@@ -17,11 +13,15 @@ using RectangleF = CoreGraphics.CGRect;
 
 namespace Microsoft.AspNetCore.Components.WebView.Maui
 {
+	/// <summary>
+	/// The iOS and Mac Catalyst <see cref="ViewHandler"/> for <see cref="BlazorWebView"/>.
+	/// </summary>
 	public partial class BlazorWebViewHandler : ViewHandler<IBlazorWebView, WKWebView>
 	{
 		private IOSWebViewManager? _webviewManager;
 
-		private const string AppOrigin = "app://0.0.0.0/";
+		internal const string AppOrigin = "app://" + BlazorWebView.AppHostAddress + "/";
+		internal static readonly Uri AppOriginUri = new(AppOrigin);
 		private const string BlazorInitScript = @"
 			window.__receiveMessageCallbacks = [];
 			window.__dispatchMessageCallback = function(message) {
@@ -47,11 +47,18 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 			})();
 		";
 
-		protected override WKWebView CreateNativeView()
+		/// <inheritdoc />
+		[SupportedOSPlatform("ios11.0")]
+		protected override WKWebView CreatePlatformView()
 		{
 			var config = new WKWebViewConfiguration();
 
-			config.Preferences.SetValueForKey(NSObject.FromObject(true), new NSString("developerExtrasEnabled"));
+			VirtualView.BlazorWebViewInitializing(new BlazorWebViewInitializingEventArgs()
+			{
+				Configuration = config
+			});
+
+			config.Preferences.SetValueForKey(NSObject.FromObject(DeveloperTools.Enabled), new NSString("developerExtrasEnabled"));
 
 			config.UserContentController.AddScriptMessageHandler(new WebViewScriptMessageHandler(MessageReceived), "webwindowinterop");
 			config.UserContentController.AddUserScript(new WKUserScript(
@@ -60,11 +67,18 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 			// iOS WKWebView doesn't allow handling 'http'/'https' schemes, so we use the fake 'app' scheme
 			config.SetUrlSchemeHandler(new SchemeHandler(this), urlScheme: "app");
 
-			return new WKWebView(RectangleF.Empty, config)
+			var webview = new WKWebView(RectangleF.Empty, config)
 			{
 				BackgroundColor = UIColor.Clear,
 				AutosizesSubviews = true
 			};
+
+			VirtualView.BlazorWebViewInitialized(new BlazorWebViewInitializedEventArgs
+			{
+				WebView = webview
+			});
+
+			return webview;
 		}
 
 		private void MessageReceived(Uri uri, string message)
@@ -72,9 +86,10 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 			_webviewManager?.MessageReceivedInternal(uri, message);
 		}
 
-		protected override void DisconnectHandler(WKWebView nativeView)
+		/// <inheritdoc />
+		protected override void DisconnectHandler(WKWebView platformView)
 		{
-			nativeView.StopLoading();
+			platformView.StopLoading();
 
 			if (_webviewManager != null)
 			{
@@ -83,7 +98,6 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 				_webviewManager?
 					.DisposeAsync()
 					.AsTask()
-					.ConfigureAwait(false)
 					.GetAwaiter()
 					.GetResult();
 
@@ -103,7 +117,7 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 			{
 				return;
 			}
-			if (NativeView == null)
+			if (PlatformView == null)
 			{
 				throw new InvalidOperationException($"Can't start {nameof(BlazorWebView)} without native web view instance.");
 			}
@@ -113,10 +127,20 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 			var contentRootDir = Path.GetDirectoryName(HostPage!) ?? string.Empty;
 			var hostPageRelativePath = Path.GetRelativePath(contentRootDir, HostPage!);
 
-			var mauiAssetFileProvider = new iOSMauiAssetFileProvider(contentRootDir);
+			var fileProvider = VirtualView.CreateFileProvider(contentRootDir);
 
-			var jsComponents = new JSComponentConfigurationStore();
-			_webviewManager = new IOSWebViewManager(this, NativeView, Services!, MauiDispatcher.Instance, mauiAssetFileProvider, jsComponents, hostPageRelativePath);
+			_webviewManager = new IOSWebViewManager(
+				this,
+				PlatformView,
+				Services!,
+				new MauiDispatcher(Services!.GetRequiredService<IDispatcher>()),
+				fileProvider,
+				VirtualView.JSComponents,
+				contentRootDir,
+				hostPageRelativePath);
+
+			StaticContentHotReloadManager.AttachToWebViewManagerIfEnabled(_webviewManager);
+
 			if (RootComponents != null)
 			{
 				foreach (var rootComponent in RootComponents)
@@ -127,6 +151,11 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 			}
 
 			_webviewManager.Navigate("/");
+		}
+
+		internal IFileProvider CreateFileProvider(string contentRootDir)
+		{
+			return new iOSMauiAssetFileProvider(contentRootDir);
 		}
 
 		private sealed class WebViewScriptMessageHandler : NSObject, IWKScriptMessageHandler
@@ -144,7 +173,7 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 				{
 					throw new ArgumentNullException(nameof(message));
 				}
-				_messageReceivedAction(new Uri(AppOrigin), ((NSString)message.Body).ToString());
+				_messageReceivedAction(AppOriginUri, ((NSString)message.Body).ToString());
 			}
 		}
 
@@ -158,6 +187,7 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 			}
 
 			[Export("webView:startURLSchemeTask:")]
+			[SupportedOSPlatform("ios11.0")]
 			public void StartUrlSchemeTask(WKWebView webView, IWKUrlSchemeTask urlSchemeTask)
 			{
 				var responseBytes = GetResponseBytes(urlSchemeTask.Request.Url.AbsoluteString, out var contentType, statusCode: out var statusCode);
@@ -179,7 +209,8 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 
 			private byte[] GetResponseBytes(string url, out string contentType, out int statusCode)
 			{
-				var allowFallbackOnHostPage = url.EndsWith("/");
+				var allowFallbackOnHostPage = AppOriginUri.IsBaseOfPage(url);
+				url = QueryStringHelper.RemovePossibleQueryString(url);
 				if (_webViewHandler._webviewManager!.TryGetResponseContentInternal(url, allowFallbackOnHostPage, out statusCode, out var statusMessage, out var content, out var headers))
 				{
 					statusCode = 200;

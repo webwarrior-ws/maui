@@ -1,10 +1,13 @@
+using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using Foundation;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[Obsolete("Use Microsoft.Maui.Controls.Platform.Compatibility.ImageCellRenderer instead")]
 	public class ImageCellRenderer : TextCellRenderer
 	{
 		[Preserve(Conditional = true)]
@@ -40,6 +43,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 		{
 			var source = cell.ImageSource;
 
+#pragma warning disable CA1416 // TODO: 'UITableViewCell.ImageView' is unsupported on: 'ios' 14.0 and later
 			target.ImageView.Image = null;
 
 			var uiimage = await source.GetNativeImageAsync().ConfigureAwait(false);
@@ -58,6 +62,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 					}
 				});
 			}
+#pragma warning restore CA1416
 		}
 	}
 }

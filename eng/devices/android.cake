@@ -32,6 +32,10 @@ bool DEVICE_BOOT_WAIT = Argument("wait", true);
 var ANDROID_SDK_ROOT = GetAndroidSDKPath();
 
 SetEnvironmentVariable("PATH", $"{ANDROID_SDK_ROOT}/tools/bin", prepend: true);
+SetEnvironmentVariable("PATH", $"{ANDROID_SDK_ROOT}/cmdline-tools/5.0/bin", prepend: true);
+SetEnvironmentVariable("PATH", $"{ANDROID_SDK_ROOT}/cmdline-tools/7.0/bin", prepend: true);
+SetEnvironmentVariable("PATH", $"{ANDROID_SDK_ROOT}/cmdline-tools/latest/bin", prepend: true);
+
 SetEnvironmentVariable("PATH", $"{ANDROID_SDK_ROOT}/platform-tools", prepend: true);
 SetEnvironmentVariable("PATH", $"{ANDROID_SDK_ROOT}/emulator", prepend: true);
 
@@ -42,7 +46,10 @@ Information("Build Configuration: {0}", CONFIGURATION);
 
 var avdSettings = new AndroidAvdManagerToolSettings { SdkRoot = ANDROID_SDK_ROOT };
 var adbSettings = new AdbToolSettings { SdkRoot = ANDROID_SDK_ROOT };
-var emuSettings = new AndroidEmulatorToolSettings { SdkRoot = ANDROID_SDK_ROOT, ArgumentCustomization = args => args.Append("-no-window") };
+var emuSettings = new AndroidEmulatorToolSettings { SdkRoot = ANDROID_SDK_ROOT };
+
+if (IsCIBuild())
+	emuSettings.ArgumentCustomization = args => args.Append("-no-window");
 
 AndroidEmulatorProcess emulatorProcess = null;
 
@@ -145,6 +152,9 @@ Task("Build")
 		DotNetCoreBuild(PROJECT.FullPath, new DotNetCoreBuildSettings {
 			Configuration = CONFIGURATION,
 			Framework = TARGET_FRAMEWORK,
+			MSBuildSettings = new DotNetCoreMSBuildSettings {
+				MaxCpuCount = 0
+			},
 			ArgumentCustomization = args => args
 				.Append("/p:EmbedAssembliesIntoApk=true")
 				.Append("/bl:" + binlog),
@@ -155,6 +165,7 @@ Task("Build")
 	{
 		MSBuild(PROJECT.FullPath, c => {
 			c.Configuration = CONFIGURATION;
+			c.MaxCpuCount = 0;
 			c.Restore = true;
 			c.Properties["ContinuousIntegrationBuild"] = new List<string> { "false" };
 			if (!string.IsNullOrEmpty(TARGET_FRAMEWORK))

@@ -1,9 +1,10 @@
 ﻿using System;
 using CoreGraphics;
 using Microsoft.Maui.Graphics;
+using ObjCRuntime;
 using UIKit;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public class MauiCheckBox : UIButton
 	{
@@ -13,12 +14,14 @@ namespace Microsoft.Maui
 
 		static UIImage? Checked;
 		static UIImage? Unchecked;
+		UIImage? CheckedDisabledAndTinted;
+		UIImage? UncheckedDisabledAndTinted;
+
 		UIAccessibilityTrait _accessibilityTraits;
 
 		Color? _tintColor;
 		bool _isChecked;
 		bool _isEnabled;
-		float _minimumViewSize;
 		bool _disposed;
 
 		public EventHandler? CheckedChanged;
@@ -27,10 +30,12 @@ namespace Microsoft.Maui
 		{
 			ContentMode = UIViewContentMode.Center;
 			ImageView.ContentMode = UIViewContentMode.ScaleAspectFit;
-			HorizontalAlignment = UIControlContentHorizontalAlignment.Left;
+			HorizontalAlignment = UIControlContentHorizontalAlignment.Center;
 			VerticalAlignment = UIControlContentVerticalAlignment.Center;
+#pragma warning disable CA1416 // TODO: both has [UnsupportedOSPlatform("ios15.0")]
 			AdjustsImageWhenDisabled = false;
 			AdjustsImageWhenHighlighted = false;
+#pragma warning restore CA1416
 			TouchUpInside += OnTouchUpInside;
 		}
 
@@ -40,16 +45,7 @@ namespace Microsoft.Maui
 			CheckedChanged?.Invoke(this, EventArgs.Empty);
 		}
 
-		internal float MinimumViewSize
-		{
-			get { return _minimumViewSize; }
-			set
-			{
-				_minimumViewSize = value;
-				var xOffset = (value - DefaultSize + LineWidth) / 4;
-				ContentEdgeInsets = new UIEdgeInsets(0, xOffset, 0, 0);
-			}
-		}
+		internal float MinimumViewSize { get; set; }
 
 		public bool IsChecked
 		{
@@ -86,8 +82,10 @@ namespace Microsoft.Maui
 				if (_tintColor == value)
 					return;
 
+				CheckedDisabledAndTinted = null;
+				UncheckedDisabledAndTinted = null;
 				_tintColor = value;
-				CheckBoxTintUIColor = CheckBoxTintColor?.ToNative();
+				CheckBoxTintUIColor = CheckBoxTintColor?.ToPlatform();
 			}
 		}
 
@@ -131,43 +129,44 @@ namespace Microsoft.Maui
 			}
 		}
 
-		protected virtual UIImage GetCheckBoximage()
+		protected virtual UIImage GetCheckBoxImage()
 		{
 			// Ideally I would use the static images here but when disabled it always tints them grey
 			// and I don't know how to make it not tint them gray
 			if (!Enabled && CheckBoxTintColor != null)
 			{
 				if (IsChecked)
-					return CreateCheckBox(CreateCheckMark()).ImageWithRenderingMode(UIImageRenderingMode.AlwaysOriginal);
+				{
+					return CheckedDisabledAndTinted ??=
+						CreateCheckBox(CreateCheckMark()).ImageWithRenderingMode(UIImageRenderingMode.AlwaysOriginal);
+				}
 
-				return CreateCheckBox(null).ImageWithRenderingMode(UIImageRenderingMode.AlwaysOriginal);
+				return UncheckedDisabledAndTinted ??=
+					CreateCheckBox(null).ImageWithRenderingMode(UIImageRenderingMode.AlwaysOriginal);
 			}
 
-			if (Checked == null)
-				Checked = CreateCheckBox(CreateCheckMark()).ImageWithRenderingMode(UIImageRenderingMode.AlwaysTemplate);
-
-			if (Unchecked == null)
-				Unchecked = CreateCheckBox(null).ImageWithRenderingMode(UIImageRenderingMode.AlwaysTemplate);
+			Checked ??= CreateCheckBox(CreateCheckMark()).ImageWithRenderingMode(UIImageRenderingMode.AlwaysTemplate);
+			Unchecked ??= CreateCheckBox(null).ImageWithRenderingMode(UIImageRenderingMode.AlwaysTemplate);
 
 			return IsChecked ? Checked : Unchecked;
 		}
 
-		internal virtual UIBezierPath CreateBoxPath(CGRect backgroundRect) => UIBezierPath.FromOval(backgroundRect);
-		internal virtual UIBezierPath CreateCheckPath() => new UIBezierPath
+		UIBezierPath CreateBoxPath(CGRect backgroundRect) => UIBezierPath.FromOval(backgroundRect);
+		UIBezierPath CreateCheckPath() => new UIBezierPath
 		{
 			LineWidth = (nfloat)0.077,
 			LineCapStyle = CGLineCap.Round,
 			LineJoinStyle = CGLineJoin.Round
 		};
 
-		internal virtual void DrawCheckMark(UIBezierPath path)
+		void DrawCheckMark(UIBezierPath path)
 		{
 			path.MoveTo(new CGPoint(0.72f, 0.22f));
 			path.AddLineTo(new CGPoint(0.33f, 0.6f));
 			path.AddLineTo(new CGPoint(0.15f, 0.42f));
 		}
 
-		internal virtual UIImage CreateCheckBox(UIImage? check)
+		UIImage CreateCheckBox(UIImage? check)
 		{
 			UIGraphics.BeginImageContextWithOptions(new CGSize(DefaultSize, DefaultSize), false, 0);
 			var context = UIGraphics.GetCurrentContext();
@@ -203,7 +202,7 @@ namespace Microsoft.Maui
 			return img;
 		}
 
-		internal UIImage CreateCheckMark()
+		UIImage CreateCheckMark()
 		{
 			UIGraphics.BeginImageContextWithOptions(new CGSize(DefaultSize, DefaultSize), false, 0);
 			var context = UIGraphics.GetCurrentContext();
@@ -258,7 +257,7 @@ namespace Microsoft.Maui
 
 		void UpdateDisplay()
 		{
-			SetImage(GetCheckBoximage(), UIControlState.Normal);
+			SetImage(GetCheckBoxImage(), UIControlState.Normal);
 			SetNeedsDisplay();
 		}
 

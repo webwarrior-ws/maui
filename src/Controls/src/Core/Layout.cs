@@ -22,7 +22,6 @@ namespace Microsoft.Maui.Controls.Compatibility
 
 		public ILayoutHandler LayoutHandler => Handler as ILayoutHandler;
 
-		ILayoutManager Maui.ILayout.LayoutManager => this;
 		IList IBindableLayout.Children => _children;
 
 		bool ISafeAreaView.IgnoreSafeArea => false;
@@ -56,7 +55,7 @@ namespace Microsoft.Maui.Controls.Compatibility
 			return OnMeasure(widthConstraint, heightConstraint);
 		}
 
-		Size ILayoutManager.ArrangeChildren(Rectangle bounds)
+		Size ILayoutManager.ArrangeChildren(Rect bounds)
 		{
 			LayoutChildren(bounds.X, bounds.Y, bounds.Width, bounds.Height);
 			return bounds.Size;
@@ -66,16 +65,13 @@ namespace Microsoft.Maui.Controls.Compatibility
 	public abstract class Layout : View, ILayout, ILayoutController, IPaddingElement, IView, IVisualTreeElement
 	{
 		public static readonly BindableProperty IsClippedToBoundsProperty =
-			BindableProperty.Create(nameof(IsClippedToBounds), typeof(bool), typeof(Layout), false);
+			BindableProperty.Create(nameof(IsClippedToBounds), typeof(bool), typeof(Layout), false,
+				propertyChanged: IsClippedToBoundsPropertyChanged);
 
 		public static readonly BindableProperty CascadeInputTransparentProperty =
 			BindableProperty.Create(nameof(CascadeInputTransparent), typeof(bool), typeof(Layout), true);
 
 		public static readonly BindableProperty PaddingProperty = PaddingElement.PaddingProperty;
-
-		static IList<KeyValuePair<Layout, int>> s_resolutionList = new List<KeyValuePair<Layout, int>>();
-		static bool s_relayoutInProgress;
-		bool _allocatedFlag;
 
 		bool _hasDoneLayout;
 		Size _lastLayoutSize = new Size(-1, -1);
@@ -113,6 +109,14 @@ namespace Microsoft.Maui.Controls.Compatibility
 
 		void IPaddingElement.OnPaddingPropertyChanged(Thickness oldValue, Thickness newValue) => InvalidateLayout();
 
+		static void IsClippedToBoundsPropertyChanged(BindableObject bindableObject, object oldValue, object newValue)
+		{
+			if (bindableObject is IView view)
+			{
+				view.Handler?.UpdateValue(nameof(Maui.ILayout.ClipsToBounds));
+			}
+		}
+
 		internal ObservableCollection<Element> InternalChildren { get; } = new ObservableCollection<Element>();
 
 		internal override IReadOnlyList<Element> LogicalChildrenInternal => _logicalChildren ?? (_logicalChildren = new ReadOnlyCollection<Element>(InternalChildren));
@@ -133,7 +137,7 @@ namespace Microsoft.Maui.Controls.Compatibility
 				new Size(size.Minimum.Width + Padding.HorizontalThickness, size.Minimum.Height + Padding.VerticalThickness));
 		}
 
-		public static void LayoutChildIntoBoundingRegion(VisualElement child, Rectangle region)
+		public static void LayoutChildIntoBoundingRegion(VisualElement child, Rect region)
 		{
 			bool isRightToLeft = false;
 			if (child.Parent is IFlowDirectionController parent &&
@@ -141,7 +145,7 @@ namespace Microsoft.Maui.Controls.Compatibility
 				parent.EffectiveFlowDirection.IsRightToLeft()) &&
 				(parent.Width - region.Right) != region.X)
 			{
-				region = new Rectangle(parent.Width - region.Right, region.Y, region.Width, region.Height);
+				region = new Rect(parent.Width - region.Right, region.Y, region.Width, region.Height);
 			}
 
 			if (child is IView fe && fe.Handler != null)
@@ -240,7 +244,6 @@ namespace Microsoft.Maui.Controls.Compatibility
 
 		protected override void OnSizeAllocated(double width, double height)
 		{
-			_allocatedFlag = true;
 			base.OnSizeAllocated(width, height);
 			UpdateChildrenLayout();
 		}
@@ -256,7 +259,7 @@ namespace Microsoft.Maui.Controls.Compatibility
 			if (!ShouldLayoutChildren())
 				return;
 
-			var oldBounds = new Rectangle[LogicalChildrenInternal.Count];
+			var oldBounds = new Rect[LogicalChildrenInternal.Count];
 			for (var index = 0; index < oldBounds.Length; index++)
 			{
 				var c = (VisualElement)LogicalChildrenInternal[index];
@@ -282,8 +285,8 @@ namespace Microsoft.Maui.Controls.Compatibility
 
 			for (var i = 0; i < oldBounds.Length; i++)
 			{
-				Rectangle oldBound = oldBounds[i];
-				Rectangle newBound = ((VisualElement)LogicalChildrenInternal[i]).Bounds;
+				Rect oldBound = oldBounds[i];
+				Rect newBound = ((VisualElement)LogicalChildrenInternal[i]).Bounds;
 				if (oldBound != newBound)
 				{
 					LayoutChanged?.Invoke(this, EventArgs.Empty);
@@ -292,11 +295,11 @@ namespace Microsoft.Maui.Controls.Compatibility
 			}
 		}
 
-		internal static void LayoutChildIntoBoundingRegion(View child, Rectangle region, SizeRequest childSizeRequest)
+		internal static void LayoutChildIntoBoundingRegion(View child, Rect region, SizeRequest childSizeRequest)
 		{
 			bool isRightToLeft = false;
 			if (child.Parent is IFlowDirectionController parent && (isRightToLeft = parent.ApplyEffectiveFlowDirectionToChildContainer && parent.EffectiveFlowDirection.IsRightToLeft()))
-				region = new Rectangle(parent.Width - region.Right, region.Y, region.Width, region.Height);
+				region = new Rect(parent.Width - region.Right, region.Y, region.Width, region.Height);
 
 			if (child is IView fe && fe.Handler != null)
 			{
@@ -346,7 +349,7 @@ namespace Microsoft.Maui.Controls.Compatibility
 			int count = children.Count;
 			for (var index = 0; index < count; index++)
 			{
-				if (LogicalChildrenInternal[index] is VisualElement v && v.IsVisible && (!v.IsPlatformEnabled || !v.IsNativeStateConsistent))
+				if (LogicalChildrenInternal[index] is VisualElement v && v.IsVisible && (!v.IsPlatformEnabled || !v.IsPlatformStateConsistent))
 					return;
 			}
 
@@ -364,7 +367,6 @@ namespace Microsoft.Maui.Controls.Compatibility
 				}
 			}
 
-			_allocatedFlag = false;
 			if (trigger == InvalidationTrigger.RendererReady)
 			{
 				InvalidateMeasureInternal(InvalidationTrigger.RendererReady);
@@ -372,56 +374,6 @@ namespace Microsoft.Maui.Controls.Compatibility
 			else
 			{
 				InvalidateMeasureInternal(InvalidationTrigger.MeasureChanged);
-			}
-
-			s_resolutionList.Add(new KeyValuePair<Layout, int>(this, GetElementDepth(this)));
-
-			if (Device.PlatformInvalidator == null && !s_relayoutInProgress)
-			{
-				// Rather than recomputing the layout for each change as it happens, we accumulate them in
-				// s_resolutionList and schedule a single layout update operation to handle them all at once.
-				// This avoids a lot of unnecessary layout operations if something is triggering many property
-				// changes at once (e.g., a BindingContext change)
-
-				s_relayoutInProgress = true;
-
-				if (Dispatcher != null)
-				{
-					Dispatcher.BeginInvokeOnMainThread(ResolveLayoutChanges);
-				}
-				else
-				{
-					Device.BeginInvokeOnMainThread(ResolveLayoutChanges);
-				}
-			}
-			else
-			{
-				// If the platform supports PlatformServices2, queueing is unnecessary; the layout changes
-				// will be handled during the Layout's next Measure/Arrange pass
-				Device.Invalidate(this);
-			}
-		}
-
-		public void ResolveLayoutChanges()
-		{
-			s_relayoutInProgress = false;
-
-			if (s_resolutionList.Count == 0)
-			{
-				return;
-			}
-
-			IList<KeyValuePair<Layout, int>> copy = s_resolutionList;
-			s_resolutionList = new List<KeyValuePair<Layout, int>>();
-
-			foreach (KeyValuePair<Layout, int> kvp in copy)
-			{
-				Layout layout = kvp.Key;
-				double width = layout.Width, height = layout.Height;
-				if (!layout._allocatedFlag && width >= 0 && height >= 0)
-				{
-					layout.SizeAllocated(width, height);
-				}
 			}
 		}
 
@@ -508,7 +460,7 @@ namespace Microsoft.Maui.Controls.Compatibility
 
 		bool ShouldLayoutChildren()
 		{
-			if (Width <= 0 || Height <= 0 || !LogicalChildrenInternal.Any() || !IsVisible || !IsNativeStateConsistent || DisableLayout)
+			if (Width <= 0 || Height <= 0 || !LogicalChildrenInternal.Any() || !IsVisible || !IsPlatformStateConsistent || DisableLayout)
 				return false;
 
 			foreach (Element element in VisibleDescendants())
@@ -517,7 +469,7 @@ namespace Microsoft.Maui.Controls.Compatibility
 				if (visual == null || !visual.IsVisible)
 					continue;
 
-				if (!visual.IsPlatformEnabled || !visual.IsNativeStateConsistent)
+				if (!visual.IsPlatformEnabled || !visual.IsPlatformStateConsistent)
 				{
 					return false;
 				}
@@ -538,7 +490,7 @@ namespace Microsoft.Maui.Controls.Compatibility
 			}
 		}
 
-		protected override Size ArrangeOverride(Rectangle bounds)
+		protected override Size ArrangeOverride(Rect bounds)
 		{
 			base.ArrangeOverride(bounds);
 
@@ -547,6 +499,18 @@ namespace Microsoft.Maui.Controls.Compatibility
 			if (!ShouldLayoutChildren())
 				return bounds.Size;
 
+			UpdateChildrenLayout();
+
+			return Frame.Size;
+		}
+
+		public Size CrossPlatformMeasure(double widthConstraint, double heightConstraint)
+		{
+			return OnMeasure(widthConstraint, heightConstraint).Request;
+		}
+
+		public Size CrossPlatformArrange(Rect bounds)
+		{
 			UpdateChildrenLayout();
 
 			return Frame.Size;

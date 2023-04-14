@@ -1,10 +1,10 @@
 using Microsoft.UI.Xaml;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public static class AlignmentExtensions
 	{
-		public static HorizontalAlignment ToNativeHorizontalAlignment(this TextAlignment alignment)
+		public static HorizontalAlignment ToPlatformHorizontalAlignment(this TextAlignment alignment)
 		{
 			switch (alignment)
 			{
@@ -17,7 +17,7 @@ namespace Microsoft.Maui
 			}
 		}
 
-		public static VerticalAlignment ToNativeVerticalAlignment(this TextAlignment alignment)
+		public static VerticalAlignment ToPlatformVerticalAlignment(this TextAlignment alignment)
 		{
 			switch (alignment)
 			{
@@ -30,7 +30,7 @@ namespace Microsoft.Maui
 			}
 		}
 
-		public static UI.Xaml.TextAlignment ToNative(this TextAlignment alignment, bool isLtr = true)
+		public static UI.Xaml.TextAlignment ToPlatform(this TextAlignment alignment, bool isLtr = true)
 		{
 			switch (alignment)
 			{

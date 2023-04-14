@@ -1,10 +1,15 @@
 ﻿using System;
+using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.Handlers.Benchmarks
 {
 	public class WindowStub : StubBase, IWindow
 	{
 		public IView Content { get; set; }
+
+		public IVisualDiagnosticsOverlay VisualDiagnosticsOverlay { get; }
+
+		public System.Collections.Generic.IReadOnlyCollection<IWindowOverlay> Overlays { get; }
 
 		public string Title { get; set; }
 
@@ -14,6 +19,8 @@ namespace Microsoft.Maui.Handlers.Benchmarks
 		public bool IsDestroyed { get; set; }
 		public bool IsResumed { get; set; }
 		public bool IsStopped { get; set; }
+		public double X { get; set; }
+		public double Y { get; set; }
 
 		public void Activated()
 		{
@@ -49,5 +56,22 @@ namespace Microsoft.Maui.Handlers.Benchmarks
 			IsStopped = true;
 			IsResumed = false;
 		}
+
+		public void Backgrounding(IPersistedState state)
+		{
+		}
+
+		public bool AddOverlay(IWindowOverlay overlay) => false;
+
+		public bool RemoveOverlay(IWindowOverlay overlay) => false;
+
+		public bool BackButtonClicked() => true;
+
+		public float RequestDisplayDensity() => 1.0f;
+
+		public virtual void DisplayDensityChanged(float displayDensity) { }
+
+		public virtual void FrameChanged(Rect frame) =>
+			Frame = frame;
 	}
 }

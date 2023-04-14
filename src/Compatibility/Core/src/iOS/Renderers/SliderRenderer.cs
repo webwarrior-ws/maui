@@ -2,12 +2,14 @@
 using System.ComponentModel;
 using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;
+using ObjCRuntime;
 using UIKit;
 using SizeF = CoreGraphics.CGSize;
 using Specifics = Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific.Slider;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class SliderRenderer : ViewRenderer<Slider, UISlider>
 	{
 		SizeF _fitSize;
@@ -113,7 +115,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				if (Element.MinimumTrackColor == null)
 					Control.MinimumTrackTintColor = defaultmintrackcolor;
 				else
-					Control.MinimumTrackTintColor = Element.MinimumTrackColor.ToUIColor();
+					Control.MinimumTrackTintColor = Element.MinimumTrackColor.ToPlatform();
 			}
 		}
 
@@ -125,7 +127,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				if (Element.MaximumTrackColor == null)
 					Control.MaximumTrackTintColor = defaultmaxtrackcolor;
 				else
-					Control.MaximumTrackTintColor = Element.MaximumTrackColor.ToUIColor();
+					Control.MaximumTrackTintColor = Element.MaximumTrackColor.ToPlatform();
 			}
 		}
 
@@ -137,7 +139,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				if (Element.ThumbColor == null)
 					Control.ThumbTintColor = defaultthumbcolor;
 				else
-					Control.ThumbTintColor = Element.ThumbColor.ToUIColor();
+					Control.ThumbTintColor = Element.ThumbColor.ToPlatform();
 			}
 		}
 
@@ -147,7 +149,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			{
 				Control?.SetThumbImage(uiimage, UIControlState.Normal);
 
-				((IVisualElementController)Element).NativeSizeChanged();
+				((IVisualElementController)Element).PlatformSizeChanged();
 			});
 		}
 

@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace Microsoft.Maui.Resizetizer
@@ -14,8 +14,10 @@ namespace Microsoft.Maui.Resizetizer
 			AppIconName = appIconName;
 		}
 
-		public ResizeImageInfo Info { get; private set; }
-		public string IntermediateOutputPath { get; private set; }
+		public ResizeImageInfo Info { get; }
+
+		public string IntermediateOutputPath { get; }
+
 		public ILogger Logger { get; private set; }
 
 		public string AppIconName { get; }
@@ -23,81 +25,117 @@ namespace Microsoft.Maui.Resizetizer
 		const string AdaptiveIconDrawableXml =
 @"<?xml version=""1.0"" encoding=""utf-8""?>
 <adaptive-icon xmlns:android=""http://schemas.android.com/apk/res/android"">
-	<background android:drawable=""@drawable/{name}_background""/>
-	<foreground android:drawable=""@drawable/{name}_foreground""/>
+	<background android:drawable=""@mipmap/{name}_background""/>
+	<foreground android:drawable=""@mipmap/{name}_foreground""/>
 </adaptive-icon>";
-
-		const string EmptyVectorDrawable =
-@"<vector xmlns:android=""http://schemas.android.com/apk/res/android"" xmlns:aapt=""http://schemas.android.com/aapt""
-	android:viewportWidth=""1024""
-	android:viewportHeight=""1024""
-	android:width=""1024dp""
-	android:height=""1024dp"" />
-";
 
 		public IEnumerable<ResizedImageInfo> Generate()
 		{
+			var sw = new Stopwatch();
+			sw.Start();
+
 			var results = new List<ResizedImageInfo>();
 
 			var fullIntermediateOutputPath = new DirectoryInfo(IntermediateOutputPath);
 
+			ProcessBackground(results, fullIntermediateOutputPath);
+			ProcessForeground(results, fullIntermediateOutputPath);
+			ProcessAdaptiveIcon(results, fullIntermediateOutputPath);
+
+			sw.Stop();
+			Logger?.Log($"Generating app icon took {sw.ElapsedMilliseconds}ms");
+
+			return results;
+		}
+
+		void ProcessBackground(List<ResizedImageInfo> results, DirectoryInfo fullIntermediateOutputPath)
+		{
 			var backgroundFile = Info.Filename;
-			var backgroundIsVector = Info.IsVector;
+			var backgroundExists = File.Exists(backgroundFile);
+			var backgroundDestFilename = AppIconName + "_background.png";
 
-			var foregroundFile = Info.ForegroundFilename;
-			var foregroundIsVector = Info.ForegroundIsVector;
-			var foregroundExists = File.Exists(foregroundFile);
+			if (backgroundExists)
+				Logger.Log("Converting Background SVG to PNG: " + backgroundFile);
+			else
+				Logger.Log("Background was not found (will manufacture): " + backgroundFile);
 
-			Logger.Log("Looking for Foreground File: " + foregroundFile);
-
-			// If we have vectors we can emit an adaptive icon
-			if (backgroundIsVector && (foregroundIsVector || !foregroundExists))
+			foreach (var dpi in DpiPath.Android.AppIconParts)
 			{
-				var backgroundDestination = Path.Combine(fullIntermediateOutputPath.FullName, "drawable-v24", AppIconName + "_background.xml");
-				var fileInfo = new FileInfo(backgroundDestination);
-				if (!fileInfo.Directory.Exists)
-					fileInfo.Directory.Create();
+				var dir = Path.Combine(fullIntermediateOutputPath.FullName, dpi.Path);
+				var destination = Path.Combine(dir, backgroundDestFilename);
+				Directory.CreateDirectory(dir);
 
-				Logger.Log("Converting Background SVG to Android Drawable Vector: " + backgroundFile);
-				Svg2VectorDrawable.Svg2Vector.Convert(backgroundFile, backgroundDestination);
+				Logger.Log($"App Icon Background Part: " + destination);
 
-				var foregroundDestination = Path.Combine(fullIntermediateOutputPath.FullName, "drawable", AppIconName + "_foreground.xml");
-				fileInfo = new FileInfo(foregroundDestination);
-				if (!fileInfo.Directory.Exists)
-					fileInfo.Directory.Create();
-
-				// Convert to android vector drawable, or use a blank one if it doesn't exist
-				if (foregroundExists)
+				if (backgroundExists)
 				{
-					Logger.Log("Converting Foreground SVG to Android Drawable Vector: " + foregroundFile);
-					Svg2VectorDrawable.Svg2Vector.Convert(foregroundFile, foregroundDestination);
+					// resize the background
+					var tools = SkiaSharpTools.Create(Info.IsVector, Info.Filename, dpi.Size, Info.Color, null, Logger);
+					tools.Resize(dpi, destination, dpiSizeIsAbsolute: true);
 				}
 				else
 				{
-					Logger.Log("Foreground was not found: " + foregroundFile);
-					File.WriteAllText(foregroundDestination, EmptyVectorDrawable);
+					// manufacture
+					var tools = SkiaSharpTools.CreateImaginary(Info.Color, Logger);
+					tools.Resize(dpi, destination);
 				}
 
-				var adaptiveIconXmlStr = AdaptiveIconDrawableXml.Replace("{name}", AppIconName);
-
-				var adaptiveIconDestination = Path.Combine(fullIntermediateOutputPath.FullName, "mipmap-anydpi-v26", AppIconName + ".xml");
-				var adaptiveIconRoundDestination = Path.Combine(fullIntermediateOutputPath.FullName, "mipmap-anydpi-v26", AppIconName + "_round.xml");
-
-				fileInfo = new FileInfo(adaptiveIconDestination);
-				if (!fileInfo.Directory.Exists)
-					fileInfo.Directory.Create();
-
-				// Write out the adaptive icon xml drawables
-				File.WriteAllText(adaptiveIconDestination, adaptiveIconXmlStr);
-				File.WriteAllText(adaptiveIconRoundDestination, adaptiveIconXmlStr);
-
-				results.Add(new ResizedImageInfo { Dpi = new DpiPath("drawable-v24", 1, "_background"), Filename = backgroundDestination });
-				results.Add(new ResizedImageInfo { Dpi = new DpiPath("drawable", 1, "_foreground"), Filename = foregroundDestination });
-				results.Add(new ResizedImageInfo { Dpi = new DpiPath("mipmap-anydpi-v26", 1), Filename = adaptiveIconDestination });
-				results.Add(new ResizedImageInfo { Dpi = new DpiPath("mipmap-anydpi-v26", 1, "_round"), Filename = adaptiveIconRoundDestination });
+				results.Add(new ResizedImageInfo { Dpi = dpi, Filename = destination });
 			}
+		}
 
-			return results;
+		void ProcessForeground(List<ResizedImageInfo> results, DirectoryInfo fullIntermediateOutputPath)
+		{
+			var foregroundFile = Info.ForegroundFilename;
+			var foregroundExists = File.Exists(foregroundFile);
+			var foregroundDestFilename = AppIconName + "_foreground.png";
+
+			if (foregroundExists)
+				Logger.Log("Converting Foreground SVG to PNG: " + foregroundFile);
+			else
+				Logger.Log("Foreground was not found (will manufacture): " + foregroundFile);
+
+			foreach (var dpi in DpiPath.Android.AppIconParts)
+			{
+				var dir = Path.Combine(fullIntermediateOutputPath.FullName, dpi.Path);
+				var destination = Path.Combine(dir, foregroundDestFilename);
+				Directory.CreateDirectory(dir);
+
+				Logger.Log($"App Icon Foreground Part: " + destination);
+
+				if (foregroundExists)
+				{
+					// resize the forground
+					var tools = SkiaSharpTools.Create(Info.ForegroundIsVector, Info.ForegroundFilename, dpi.Size, null, Info.TintColor, Logger);
+					tools.Resize(dpi, destination, Info.ForegroundScale, dpiSizeIsAbsolute: true);
+				}
+				else
+				{
+					// manufacture
+					var tools = SkiaSharpTools.CreateImaginary(null, Logger);
+					tools.Resize(dpi, destination);
+				}
+
+				results.Add(new ResizedImageInfo { Dpi = dpi, Filename = destination });
+			}
+		}
+
+		void ProcessAdaptiveIcon(List<ResizedImageInfo> results, DirectoryInfo fullIntermediateOutputPath)
+		{
+			var adaptiveIconXmlStr = AdaptiveIconDrawableXml
+				.Replace("{name}", AppIconName);
+
+			var dir = Path.Combine(fullIntermediateOutputPath.FullName, "mipmap-anydpi-v26");
+			var adaptiveIconDestination = Path.Combine(dir, AppIconName + ".xml");
+			var adaptiveIconRoundDestination = Path.Combine(dir, AppIconName + "_round.xml");
+			Directory.CreateDirectory(dir);
+
+			// Write out the adaptive icon xml drawables
+			File.WriteAllText(adaptiveIconDestination, adaptiveIconXmlStr);
+			File.WriteAllText(adaptiveIconRoundDestination, adaptiveIconXmlStr);
+
+			results.Add(new ResizedImageInfo { Dpi = new DpiPath("mipmap-anydpi-v26", 1), Filename = adaptiveIconDestination });
+			results.Add(new ResizedImageInfo { Dpi = new DpiPath("mipmap-anydpi-v26", 1, "_round"), Filename = adaptiveIconRoundDestination });
 		}
 	}
 }

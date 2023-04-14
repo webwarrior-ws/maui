@@ -1,17 +1,26 @@
 using System;
+using Microsoft.Extensions.Logging;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.Shapes;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="Type[@FullName='Microsoft.Maui.Controls.RadioButton']/Docs" />
 	public partial class RadioButton : TemplatedView, IElementConfiguration<RadioButton>, ITextElement, IFontElement, IBorderElement
 	{
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='CheckedVisualState']/Docs" />
 		public const string CheckedVisualState = "Checked";
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='UncheckedVisualState']/Docs" />
 		public const string UncheckedVisualState = "Unchecked";
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='TemplateRootName']/Docs" />
 		public const string TemplateRootName = "Root";
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='CheckedIndicator']/Docs" />
 		public const string CheckedIndicator = "CheckedIndicator";
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='UncheckedButton']/Docs" />
 		public const string UncheckedButton = "Button";
 
 		internal const string GroupNameChangedMessage = "RadioButtonGroupNameChanged";
@@ -27,44 +36,56 @@ namespace Microsoft.Maui.Controls
 
 		readonly Lazy<PlatformConfigurationRegistry<RadioButton>> _platformConfigurationRegistry;
 
-		static bool? s_rendererAvailable;
-
 		public event EventHandler<CheckedChangedEventArgs> CheckedChanged;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='ContentProperty']/Docs" />
 		public static readonly BindableProperty ContentProperty =
 			BindableProperty.Create(nameof(Content), typeof(object), typeof(RadioButton), null);
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='ValueProperty']/Docs" />
 		public static readonly BindableProperty ValueProperty =
 			BindableProperty.Create(nameof(Value), typeof(object), typeof(RadioButton), null,
 			propertyChanged: (b, o, n) => ((RadioButton)b).OnValuePropertyChanged());
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='IsCheckedProperty']/Docs" />
 		public static readonly BindableProperty IsCheckedProperty = BindableProperty.Create(
 			nameof(IsChecked), typeof(bool), typeof(RadioButton), false,
 			propertyChanged: (b, o, n) => ((RadioButton)b).OnIsCheckedPropertyChanged((bool)n),
 			defaultBindingMode: BindingMode.TwoWay);
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='GroupNameProperty']/Docs" />
 		public static readonly BindableProperty GroupNameProperty = BindableProperty.Create(
 			nameof(GroupName), typeof(string), typeof(RadioButton), null,
 			propertyChanged: (b, o, n) => ((RadioButton)b).OnGroupNamePropertyChanged((string)o, (string)n));
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='TextColorProperty']/Docs" />
 		public static readonly BindableProperty TextColorProperty = TextElement.TextColorProperty;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='CharacterSpacingProperty']/Docs" />
 		public static readonly BindableProperty CharacterSpacingProperty = TextElement.CharacterSpacingProperty;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='TextTransformProperty']/Docs" />
 		public static readonly BindableProperty TextTransformProperty = TextElement.TextTransformProperty;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='FontAttributesProperty']/Docs" />
 		public static readonly BindableProperty FontAttributesProperty = FontElement.FontAttributesProperty;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='FontFamilyProperty']/Docs" />
 		public static readonly BindableProperty FontFamilyProperty = FontElement.FontFamilyProperty;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='FontSizeProperty']/Docs" />
 		public static readonly BindableProperty FontSizeProperty = FontElement.FontSizeProperty;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='FontAutoScalingEnabledProperty']/Docs" />
 		public static readonly BindableProperty FontAutoScalingEnabledProperty = FontElement.FontAutoScalingEnabledProperty;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='BorderColorProperty']/Docs" />
 		public static readonly BindableProperty BorderColorProperty = BorderElement.BorderColorProperty;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='CornerRadiusProperty']/Docs" />
 		public static readonly BindableProperty CornerRadiusProperty = BorderElement.CornerRadiusProperty;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='BorderWidthProperty']/Docs" />
 		public static readonly BindableProperty BorderWidthProperty = BorderElement.BorderWidthProperty;
 
 		// If Content is set to a string, the string will be displayed using the native Text property
@@ -74,60 +95,70 @@ namespace Microsoft.Maui.Controls
 		// is set. If a ControlTemplate is not set and the platform does not natively support arbitrary
 		// Content, the ToString() representation of Content will be displayed.
 		// For all types other than View and string, the ToString() representation of Content will be displayed.
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='Content']/Docs" />
 		public object Content
 		{
 			get => GetValue(ContentProperty);
 			set => SetValue(ContentProperty, value);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='Value']/Docs" />
 		public object Value
 		{
 			get => GetValue(ValueProperty);
 			set => SetValue(ValueProperty, value);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='IsChecked']/Docs" />
 		public bool IsChecked
 		{
 			get { return (bool)GetValue(IsCheckedProperty); }
 			set { SetValue(IsCheckedProperty, value); }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='GroupName']/Docs" />
 		public string GroupName
 		{
 			get { return (string)GetValue(GroupNameProperty); }
 			set { SetValue(GroupNameProperty, value); }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='TextColor']/Docs" />
 		public Color TextColor
 		{
 			get { return (Color)GetValue(TextColorProperty); }
 			set { SetValue(TextColorProperty, value); }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='CharacterSpacing']/Docs" />
 		public double CharacterSpacing
 		{
 			get { return (double)GetValue(CharacterSpacingProperty); }
 			set { SetValue(CharacterSpacingProperty, value); }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='TextTransform']/Docs" />
 		public TextTransform TextTransform
 		{
 			get { return (TextTransform)GetValue(TextTransformProperty); }
 			set { SetValue(TextTransformProperty, value); }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='FontAttributes']/Docs" />
 		public FontAttributes FontAttributes
 		{
 			get { return (FontAttributes)GetValue(FontAttributesProperty); }
 			set { SetValue(FontAttributesProperty, value); }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='FontFamily']/Docs" />
 		public string FontFamily
 		{
 			get { return (string)GetValue(FontFamilyProperty); }
 			set { SetValue(FontFamilyProperty, value); }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='FontSize']/Docs" />
 		[System.ComponentModel.TypeConverter(typeof(FontSizeConverter))]
 		public double FontSize
 		{
@@ -135,41 +166,48 @@ namespace Microsoft.Maui.Controls
 			set { SetValue(FontSizeProperty, value); }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='FontAutoScalingEnabled']/Docs" />
 		public bool FontAutoScalingEnabled
 		{
 			get => (bool)GetValue(FontAutoScalingEnabledProperty);
 			set => SetValue(FontAutoScalingEnabledProperty, value);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='BorderWidth']/Docs" />
 		public double BorderWidth
 		{
 			get { return (double)GetValue(BorderWidthProperty); }
 			set { SetValue(BorderWidthProperty, value); }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='BorderColor']/Docs" />
 		public Color BorderColor
 		{
 			get { return (Color)GetValue(BorderColorProperty); }
 			set { SetValue(BorderColorProperty, value); }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='CornerRadius']/Docs" />
 		public int CornerRadius
 		{
 			get { return (int)GetValue(CornerRadiusProperty); }
 			set { SetValue(CornerRadiusProperty, value); }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='.ctor']/Docs" />
 		public RadioButton()
 		{
 			_platformConfigurationRegistry = new Lazy<PlatformConfigurationRegistry<RadioButton>>(() =>
 				new PlatformConfigurationRegistry<RadioButton>(this));
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='On']/Docs" />
 		public IPlatformElementConfiguration<T, RadioButton> On<T>() where T : IConfigPlatform
 		{
 			return _platformConfigurationRegistry.Value.On<T>();
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='DefaultTemplate']/Docs" />
 		public static ControlTemplate DefaultTemplate
 		{
 			get
@@ -202,20 +240,19 @@ namespace Microsoft.Maui.Controls
 		void IFontElement.OnFontAttributesChanged(FontAttributes oldValue, FontAttributes newValue) =>
 			HandleFontChanged();
 
-		void IFontElement.OnFontChanged(Font oldValue, Font newValue) =>
-			HandleFontChanged();
-
 		void IFontElement.OnFontAutoScalingEnabledChanged(bool oldValue, bool newValue) =>
 			HandleFontChanged();
 
 		void HandleFontChanged()
 		{
+			Handler?.UpdateValue(nameof(ITextStyle.Font));
 			InvalidateMeasureInternal(InvalidationTrigger.MeasureChanged);
 		}
 
 		double IFontElement.FontSizeDefaultValueCreator() =>
-			Device.GetNamedSize(NamedSize.Default, this);
+			this.GetDefaultFontSize();
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='UpdateFormsText']/Docs" />
 		public virtual string UpdateFormsText(string source, TextTransform textTransform)
 			=> TextTransformUtilites.GetTransformedText(source, textTransform);
 
@@ -242,29 +279,20 @@ namespace Microsoft.Maui.Controls
 			base.ChangeVisualState();
 		}
 
+		IPlatformSizeService _platformSizeService;
+
 		protected override SizeRequest OnMeasure(double widthConstraint, double heightConstraint)
 		{
-			if (UsingRenderer)
+			if (ControlTemplate == null)
 			{
-				return Device.PlatformServices.GetNativeSize(this, widthConstraint, heightConstraint);
+				if (Handler != null)
+					return new SizeRequest(Handler.GetDesiredSize(widthConstraint, heightConstraint));
+
+				_platformSizeService ??= DependencyService.Get<IPlatformSizeService>();
+				return _platformSizeService.GetPlatformSize(this, widthConstraint, heightConstraint);
 			}
 
 			return base.OnMeasure(widthConstraint, heightConstraint);
-		}
-
-		public override ControlTemplate ResolveControlTemplate()
-		{
-			var template = base.ResolveControlTemplate();
-
-			if (template == null)
-			{
-				if (!RendererAvailable)
-				{
-					ControlTemplate = DefaultTemplate;
-				}
-			}
-
-			return ControlTemplate;
 		}
 
 		protected override void OnApplyTemplate()
@@ -282,11 +310,9 @@ namespace Microsoft.Maui.Controls
 			base.OnControlTemplateChanged(oldValue, newValue);
 		}
 
-		bool UsingRenderer => ControlTemplate == null;
-
 		void UpdateIsEnabled()
 		{
-			if (UsingRenderer)
+			if (ControlTemplate == null)
 			{
 				return;
 			}
@@ -308,19 +334,6 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
-		static bool RendererAvailable
-		{
-			get
-			{
-				if (!s_rendererAvailable.HasValue)
-				{
-					s_rendererAvailable = Internals.Registrar.Registered.GetHandlerType(typeof(RadioButton)) != null;
-				}
-
-				return s_rendererAvailable.Value;
-			}
-		}
-
 		static Brush ResolveThemeColor(string key)
 		{
 			if (Application.Current.TryGetResource(key, out object color))
@@ -328,7 +341,7 @@ namespace Microsoft.Maui.Controls
 				return (Brush)color;
 			}
 
-			if (Application.Current?.RequestedTheme == OSAppTheme.Dark)
+			if (Application.Current?.RequestedTheme == AppTheme.Dark)
 			{
 				return Brush.White;
 			}
@@ -392,7 +405,7 @@ namespace Microsoft.Maui.Controls
 				{
 					MessagingCenter.Subscribe<RadioButton, RadioButtonGroupSelectionChanged>(this,
 						RadioButtonGroup.GroupSelectionChangedMessage, HandleRadioButtonGroupSelectionChanged);
-					MessagingCenter.Subscribe<Compatibility.Layout<View>, RadioButtonGroupValueChanged>(this,
+					MessagingCenter.Subscribe<Element, RadioButtonGroupValueChanged>(this,
 						RadioButtonGroup.GroupValueChangedMessage, HandleRadioButtonGroupValueChanged);
 				}
 
@@ -404,7 +417,7 @@ namespace Microsoft.Maui.Controls
 				if (!string.IsNullOrEmpty(oldGroupName))
 				{
 					MessagingCenter.Unsubscribe<RadioButton, RadioButtonGroupSelectionChanged>(this, RadioButtonGroup.GroupSelectionChangedMessage);
-					MessagingCenter.Unsubscribe<Compatibility.Layout<View>, RadioButtonGroupValueChanged>(this, RadioButtonGroup.GroupValueChangedMessage);
+					MessagingCenter.Unsubscribe<Element, RadioButtonGroupValueChanged>(this, RadioButtonGroup.GroupValueChangedMessage);
 				}
 			}
 		}
@@ -424,9 +437,9 @@ namespace Microsoft.Maui.Controls
 			IsChecked = false;
 		}
 
-		void HandleRadioButtonGroupValueChanged(Compatibility.Layout<View> layout, RadioButtonGroupValueChanged args)
+		void HandleRadioButtonGroupValueChanged(Element layout, RadioButtonGroupValueChanged args)
 		{
-			if (IsChecked || string.IsNullOrEmpty(GroupName) || GroupName != args.GroupName || Value != args.Value || !MatchesScope(args))
+			if (IsChecked || string.IsNullOrEmpty(GroupName) || GroupName != args.GroupName || !object.Equals(Value, args.Value) || !MatchesScope(args))
 			{
 				return;
 			}
@@ -542,12 +555,13 @@ namespace Microsoft.Maui.Controls
 			return frame;
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/RadioButton.xml" path="//Member[@MemberName='ContentAsString']/Docs" />
 		public string ContentAsString()
 		{
 			var content = Content;
 			if (content is View)
 			{
-				Log.Warning("RadioButton", $"Warning - {Device.RuntimePlatform} does not support {nameof(View)} as the {ContentProperty.PropertyName} property of {nameof(RadioButton)}; the return value of the ToString() method will be displayed instead.");
+				Application.Current?.FindMauiContext()?.CreateLogger<RadioButton>()?.LogWarning("Warning - {RuntimePlatform} does not support View as the {PropertyName} property of RadioButton; the return value of the ToString() method will be displayed instead.", DeviceInfo.Platform, ContentProperty.PropertyName);
 			}
 
 			return content?.ToString();

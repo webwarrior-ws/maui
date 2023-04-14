@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 using Android.Content;
 using Android.Content.PM;
@@ -7,11 +8,12 @@ using Android.Views;
 using Android.Widget;
 using AndroidX.AppCompat.Widget;
 using AndroidX.CardView.Widget;
+using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Graphics;
 using NUnit.Framework;
 using AColor = Android.Graphics.Color;
 using AProgressBar = Android.Widget.ProgressBar;
-using ASearchView = Android.Widget.SearchView;
+using ASearchView = AndroidX.AppCompat.Widget.SearchView;
 using AView = Android.Views.View;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.UnitTests
@@ -95,12 +97,17 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.UnitTests
 
 		}
 
-		protected static void ToggleRTLSupport(Context context, bool enabled)
+		static readonly Lazy<FieldInfo> isSupported = new Lazy<FieldInfo>(() =>
 		{
-			context.ApplicationInfo.Flags = enabled
-				? context.ApplicationInfo.Flags | ApplicationInfoFlags.SupportsRtl
-				: context.ApplicationInfo.Flags & ~ApplicationInfoFlags.SupportsRtl;
-		}
+			var type = Type.GetType("Microsoft.Maui.Platform.Rtl, Microsoft.Maui", throwOnError: true);
+			var field = type.GetField("IsSupported");
+			Assert.IsNotNull(field, "Microsoft.Maui.Platform.Rtl.IsSupported not found!");
+			return field;
+		});
+
+		protected static bool IsRTLSupported => (bool)isSupported.Value.GetValue(null);
+
+		protected static void SetIsRTLSupported(bool value) => isSupported.Value.SetValue(null, value);
 
 		protected IVisualElementRenderer GetRenderer(VisualElement element)
 		{
@@ -112,8 +119,10 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.UnitTests
 			var renderer = element.GetRenderer();
 			if (renderer == null)
 			{
+#pragma warning disable CS0612 // Type or member is obsolete
 				renderer = Platform.CreateRendererWithContext(element, context);
 				Platform.SetRenderer(element, renderer);
+#pragma warning restore CS0612 // Type or member is obsolete
 			}
 
 			return renderer;
@@ -301,7 +310,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.UnitTests
 			var size = element.Measure(double.PositiveInfinity, double.PositiveInfinity, MeasureFlags.IncludeMargins);
 			var width = size.Request.Width;
 			var height = size.Request.Height;
-			element.Layout(new Rectangle(0, 0, width, height));
+			element.Layout(new Rect(0, 0, width, height));
 
 			int widthSpec = AView.MeasureSpec.MakeMeasureSpec((int)width, MeasureSpecMode.Exactly);
 			int heightSpec = AView.MeasureSpec.MakeMeasureSpec((int)height, MeasureSpecMode.Exactly);
@@ -342,7 +351,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.UnitTests
 		async Task<TProperty> GetRendererProperty<TProperty>(VisualElement element,
 			Func<IVisualElementRenderer, TProperty> getProperty)
 		{
-			return await Device.InvokeOnMainThreadAsync(() =>
+			return await element.Dispatcher.DispatchAsync(() =>
 			{
 				using (var renderer = GetRenderer(element))
 				{
@@ -354,7 +363,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.UnitTests
 		async Task<TProperty> GetRendererPropertyWithParent<TProperty>(VisualElement element,
 			Func<IVisualElementRenderer, TProperty> getProperty)
 		{
-			return await Device.InvokeOnMainThreadAsync(() =>
+			return await element.Dispatcher.DispatchAsync(() =>
 			{
 				using (var renderer = GetRenderer(element))
 				{
@@ -369,7 +378,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.UnitTests
 		async Task<TProperty> GetRendererPropertyWithLayout<TProperty>(VisualElement element,
 			Func<IVisualElementRenderer, TProperty> getProperty)
 		{
-			return await Device.InvokeOnMainThreadAsync(() =>
+			return await element.Dispatcher.DispatchAsync(() =>
 			{
 				using (var renderer = GetRenderer(element))
 				{
@@ -383,7 +392,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.UnitTests
 		protected async Task<TProperty> GetControlProperty<TProperty>(ImageButton imageButton,
 			Func<AppCompatImageButton, TProperty> getProperty, bool requiresLayout = false)
 		{
-			return await Device.InvokeOnMainThreadAsync(() =>
+			return await imageButton.Dispatcher.DispatchAsync(() =>
 			{
 				using (var control = GetNativeControl(imageButton))
 				{
@@ -400,7 +409,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.UnitTests
 		protected async Task<TProperty> GetControlProperty<TProperty>(Button button,
 			Func<AppCompatButton, TProperty> getProperty, bool requiresLayout = false)
 		{
-			return await Device.InvokeOnMainThreadAsync(() =>
+			return await button.Dispatcher.DispatchAsync(() =>
 			{
 				using (var control = GetNativeControl(button))
 				{
@@ -432,7 +441,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.UnitTests
 		protected async Task<TProperty> GetControlProperty<TProperty>(Editor editor,
 			Func<EditText, TProperty> getProperty, bool requiresLayout = false)
 		{
-			return await Device.InvokeOnMainThreadAsync(() =>
+			return await editor.Dispatcher.DispatchAsync(() =>
 			{
 				using (var control = GetNativeControl(editor))
 				{
@@ -449,7 +458,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.UnitTests
 		protected async Task<TProperty> GetControlProperty<TProperty>(Entry entry,
 			Func<EditText, TProperty> getProperty, bool requiresLayout = false)
 		{
-			return await Device.InvokeOnMainThreadAsync(() =>
+			return await entry.Dispatcher.DispatchAsync(() =>
 			{
 				using (var control = GetNativeControl(entry))
 				{
@@ -466,7 +475,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.UnitTests
 		protected async Task<TProperty> GetControlProperty<TProperty>(Label label,
 			Func<TextView, TProperty> getProperty, bool requiresLayout = false)
 		{
-			return await Device.InvokeOnMainThreadAsync(() =>
+			return await label.Dispatcher.DispatchAsync(() =>
 			{
 				using (var control = GetNativeControl(label))
 				{

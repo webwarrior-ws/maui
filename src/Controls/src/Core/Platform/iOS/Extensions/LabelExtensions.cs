@@ -1,21 +1,26 @@
 ﻿using Microsoft.Maui;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Internals;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Platform
 {
 	public static class LabelExtensions
 	{
-		public static void UpdateText(this UILabel nativeLabel, Label label)
+		public static void UpdateText(this UILabel platformLabel, Label label)
 		{
 			switch (label.TextType)
 			{
 				case TextType.Html:
-					nativeLabel.UpdateTextHtml(label);
+					platformLabel.UpdateTextHtml(label);
 					break;
 
 				default:
-					nativeLabel.UpdateTextPlainText(label);
+					if (label.FormattedText != null)
+						platformLabel.AttributedText = label.ToNSAttributedString();
+					else
+						platformLabel.Text = TextTransformUtilites.GetTransformedText(label.Text, label.TextTransform);
 					break;
 			}
 		}

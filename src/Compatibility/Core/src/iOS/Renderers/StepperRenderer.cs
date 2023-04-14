@@ -2,10 +2,12 @@ using System;
 using System.ComponentModel;
 using System.Drawing;
 using Microsoft.Maui.Controls.Platform;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class StepperRenderer : ViewRenderer<Stepper, UIStepper>
 	{
 		bool _disposed;

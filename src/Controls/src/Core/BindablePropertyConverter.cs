@@ -4,17 +4,21 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Xml;
+using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.Xaml;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/BindablePropertyConverter.xml" path="Type[@FullName='Microsoft.Maui.Controls.BindablePropertyConverter']/Docs" />
 	[Xaml.ProvideCompiled("Microsoft.Maui.Controls.XamlC.BindablePropertyConverter")]
 	public sealed class BindablePropertyConverter : TypeConverter, IExtendedTypeConverter
 	{
+		/// <include file="../../docs/Microsoft.Maui.Controls/BindablePropertyConverter.xml" path="//Member[@MemberName='CanConvertFrom']/Docs" />
 		public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
 			=> sourceType == typeof(string);
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/BindablePropertyConverter.xml" path="//Member[@MemberName='CanConvertTo']/Docs" />
 		public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
 			=> true;
 
@@ -70,21 +74,22 @@ namespace Microsoft.Maui.Controls
 			throw new XamlParseException($"Can't resolve {value}. Syntax is [[prefix:]Type.]PropertyName.", lineinfo);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/BindablePropertyConverter.xml" path="//Member[@MemberName='ConvertFrom']/Docs" />
 		public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
 		{
 			var strValue = value?.ToString();
 
 			if (string.IsNullOrWhiteSpace(strValue))
 				return null;
-			if (strValue.Contains(":"))
+			if (strValue.IndexOf(":", StringComparison.Ordinal) != -1)
 			{
-				Log.Warning(null, "Can't resolve properties with xml namespace prefix.");
+				Application.Current?.FindMauiContext()?.CreateLogger<BindablePropertyConverter>()?.LogWarning("Can't resolve properties with xml namespace prefix.");
 				return null;
 			}
 			string[] parts = strValue.Split('.');
 			if (parts.Length != 2)
 			{
-				Log.Warning(null, $"Can't resolve {value}. Accepted syntax is Type.PropertyName.");
+				Application.Current?.FindMauiContext()?.CreateLogger<BindablePropertyConverter>()?.LogWarning($"Can't resolve {value}. Accepted syntax is Type.PropertyName.");
 				return null;
 			}
 			Type type = Type.GetType("Microsoft.Maui.Controls." + parts[0]);
@@ -112,38 +117,34 @@ namespace Microsoft.Maui.Controls
 			// Skip 1; we would not be making this check if the immediate parent were not a VisualState
 
 			// VisualStates must be in a VisualStateGroup
-			if (!(parents[2] is VisualStateGroup))
-			{
+			if (parents[2] is not VisualStateGroup)
 				throw new XamlParseException($"Expected {nameof(VisualStateGroup)} but found {parents[2]}.", lineInfo);
-			}
-
-			var vsTarget = parents[3];
 
 			// Are these Visual States directly on a VisualElement?
-			if (vsTarget is VisualElement)
-			{
+			if (parents[3] is VisualElement vsTarget)
 				return vsTarget.GetType();
-			}
 
-			if (!(parents[3] is VisualStateGroupList))
-			{
+			if (parents[3] is not VisualStateGroupList)
 				throw new XamlParseException($"Expected {nameof(VisualStateGroupList)} but found {parents[3]}.", lineInfo);
-			}
 
-			if (!(parents[4] is Setter))
-			{
+			if (parents[4] is VisualElement veTarget)
+				return veTarget.GetType();
+
+			if (parents[4] is not Setter)
 				throw new XamlParseException($"Expected {nameof(Setter)} but found {parents[4]}.", lineInfo);
-			}
+
+			if (parents[5] is TriggerBase trigger)
+				return trigger.TargetType;
 
 			// These must be part of a Style; verify that 
-			if (!(parents[5] is Style style))
-			{
-				throw new XamlParseException($"Expected {nameof(Style)} but found {parents[5]}.", lineInfo);
-			}
+			if (parents[5] is Style style)
+				return style.TargetType;
 
-			return style.TargetType;
+			throw new XamlParseException($"Unable to find a TragetType for the Bindable Property. Try prefixing it with the TargetType.", lineInfo);
+
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/BindablePropertyConverter.xml" path="//Member[@MemberName='ConvertTo']/Docs" />
 		public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
 		{
 			if (value is not BindableProperty bp)

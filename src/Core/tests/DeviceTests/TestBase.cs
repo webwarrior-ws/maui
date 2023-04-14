@@ -1,81 +1,33 @@
 using System;
 using System.Threading.Tasks;
-using Microsoft.Maui.Essentials;
+using Microsoft.Maui.Dispatching;
+using Microsoft.Maui.TestUtils.DeviceTests.Runners;
 
 namespace Microsoft.Maui.DeviceTests
 {
 	public partial class TestBase
 	{
-		public Task<T> InvokeOnMainThreadAsync<T>(Func<T> func)
+		public const int EmCoefficientPrecision = 4;
+
+		protected Task<T> InvokeOnMainThreadAsync<T>(Func<T> func) =>
+			TestDispatcher.Current.DispatchAsync(func);
+
+		protected Task InvokeOnMainThreadAsync(Action action) =>
+			TestDispatcher.Current.DispatchAsync(action);
+
+		protected Task InvokeOnMainThreadAsync(Func<Task> action) =>
+			TestDispatcher.Current.DispatchAsync(action);
+
+		public Task<T> InvokeOnMainThreadAsync<T>(Func<Task<T>> func) =>
+			TestDispatcher.Current.DispatchAsync(func);
+
+		protected async Task WaitForGC()
 		{
-#if WINDOWS
-			var tcs = new TaskCompletionSource<T>();
-
-			var didQueue = MauiWinUIApplication.Current.MainWindow.DispatcherQueue.TryEnqueue(() =>
-			{
-				try
-				{
-					var result = func();
-					tcs.TrySetResult(result);
-				}
-				catch (Exception ex)
-				{
-					tcs.TrySetException(ex);
-				}
-			});
-
-			if (!didQueue)
-				throw new Exception("Unable to perform task.");
-
-			return tcs.Task;
-#else
-			return MainThread.InvokeOnMainThreadAsync(func);
-#endif
-		}
-
-		protected Task InvokeOnMainThreadAsync(Action action)
-		{
-#if WINDOWS
-			return InvokeOnMainThreadAsync(() => { action(); return true; });
-#else
-			return MainThread.InvokeOnMainThreadAsync(action);
-#endif
-		}
-
-		protected Task InvokeOnMainThreadAsync(Func<Task> action)
-		{
-#if WINDOWS
-			return InvokeOnMainThreadAsync(async () => { await action(); return true; });
-#else
-			return MainThread.InvokeOnMainThreadAsync(action);
-#endif
-		}
-
-		public Task<T> InvokeOnMainThreadAsync<T>(Func<Task<T>> func)
-		{
-#if WINDOWS
-			var tcs = new TaskCompletionSource<T>();
-
-			var didQueue = MauiWinUIApplication.Current.MainWindow.DispatcherQueue.TryEnqueue(async () =>
-			{
-				try
-				{
-					var result = await func();
-					tcs.TrySetResult(result);
-				}
-				catch (Exception ex)
-				{
-					tcs.TrySetException(ex);
-				}
-			});
-
-			if (!didQueue)
-				throw new Exception("Unable to perform task.");
-
-			return tcs.Task;
-#else
-			return MainThread.InvokeOnMainThreadAsync(func);
-#endif
+			GC.Collect();
+			GC.WaitForPendingFinalizers();
+			await Task.Delay(10);
+			GC.Collect();
+			GC.WaitForPendingFinalizers();
 		}
 	}
 }

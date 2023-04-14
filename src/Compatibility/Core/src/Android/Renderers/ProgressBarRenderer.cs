@@ -8,6 +8,7 @@ using AProgressBar = Android.Widget.ProgressBar;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class ProgressBarRenderer : ViewRenderer<ProgressBar, AProgressBar>
 	{
 		public ProgressBarRenderer(Context context) : base(context)
@@ -54,6 +55,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 				UpdateProgressColor();
 		}
 
+		[PortHandler]
 		internal virtual protected void UpdateProgressColor()
 		{
 			if (Element == null || Control == null)
@@ -68,19 +70,11 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			}
 			else
 			{
-				if (Forms.SdkInt < BuildVersionCodes.Lollipop)
-				{
-					(Control.Indeterminate ? Control.IndeterminateDrawable :
-						Control.ProgressDrawable).SetColorFilter(color, FilterMode.SrcIn);
-				}
+				var tintList = ColorStateList.ValueOf(color.ToAndroid());
+				if (Control.Indeterminate)
+					Control.IndeterminateTintList = tintList;
 				else
-				{
-					var tintList = ColorStateList.ValueOf(color.ToAndroid());
-					if (Control.Indeterminate)
-						Control.IndeterminateTintList = tintList;
-					else
-						Control.ProgressTintList = tintList;
-				}
+					Control.ProgressTintList = tintList;
 			}
 		}
 

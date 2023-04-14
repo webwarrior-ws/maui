@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,17 +8,24 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Windows.Input;
+using Microsoft.Extensions.Logging;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.Xaml.Diagnostics;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="Type[@FullName='Microsoft.Maui.Controls.Shell']/Docs" />
 	[ContentProperty(nameof(Items))]
-	public class Shell : Page, IShellController, IPropertyPropagationController, IPageContainer<Page>
+	public partial class Shell : Page, IShellController, IPropertyPropagationController, IPageContainer<Page>
 	{
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='CurrentPage']/Docs" />
 		public Page CurrentPage => (CurrentSection as IShellSectionController)?.PresentedPage;
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='BackButtonBehaviorProperty']/Docs" />
 		public static readonly BindableProperty BackButtonBehaviorProperty =
 			BindableProperty.CreateAttached("BackButtonBehavior", typeof(BackButtonBehavior), typeof(Shell), null, BindingMode.OneTime,
 				propertyChanged: OnBackButonBehaviorPropertyChanged);
@@ -31,19 +38,24 @@ namespace Microsoft.Maui.Controls
 				SetInheritedBindingContext(newHandlerBehavior, bindable.BindingContext);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='PresentationModeProperty']/Docs" />
 		public static readonly BindableProperty PresentationModeProperty = BindableProperty.CreateAttached("PresentationMode", typeof(PresentationMode), typeof(Shell), PresentationMode.Animated);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutBehaviorProperty']/Docs" />
 		public static readonly BindableProperty FlyoutBehaviorProperty =
 			BindableProperty.CreateAttached("FlyoutBehavior", typeof(FlyoutBehavior), typeof(Shell), FlyoutBehavior.Flyout,
 				propertyChanged: OnFlyoutBehaviorChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='NavBarIsVisibleProperty']/Docs" />
 		public static readonly BindableProperty NavBarIsVisibleProperty =
 			BindableProperty.CreateAttached("NavBarIsVisible", typeof(bool), typeof(Shell), true);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='NavBarHasShadowProperty']/Docs" />
 		public static readonly BindableProperty NavBarHasShadowProperty =
 			BindableProperty.CreateAttached("NavBarHasShadow", typeof(bool), typeof(Shell), default(bool),
-				defaultValueCreator: (b) => Device.RuntimePlatform == Device.Android);
+				defaultValueCreator: (b) => DeviceInfo.Platform == DevicePlatform.Android);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SearchHandlerProperty']/Docs" />
 		public static readonly BindableProperty SearchHandlerProperty =
 			BindableProperty.CreateAttached("SearchHandler", typeof(SearchHandler), typeof(Shell), null, BindingMode.OneTime,
 				propertyChanged: OnSearchHandlerPropertyChanged);
@@ -56,9 +68,12 @@ namespace Microsoft.Maui.Controls
 				SetInheritedBindingContext(newHandler, bindable.BindingContext);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutItemIsVisibleProperty']/Docs" />
 		public static readonly BindableProperty FlyoutItemIsVisibleProperty =
 			BindableProperty.CreateAttached(nameof(IsVisible), typeof(bool), typeof(Shell), true, propertyChanged: OnFlyoutItemIsVisibleChanged);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetFlyoutItemIsVisible']/Docs" />
 		public static bool GetFlyoutItemIsVisible(BindableObject obj) => (bool)obj.GetValue(FlyoutItemIsVisibleProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetFlyoutItemIsVisible']/Docs" />
 		public static void SetFlyoutItemIsVisible(BindableObject obj, bool isVisible) => obj.SetValue(FlyoutItemIsVisibleProperty, isVisible);
 
 		static void OnFlyoutItemIsVisibleChanged(BindableObject bindable, object oldValue, object newValue)
@@ -69,53 +84,81 @@ namespace Microsoft.Maui.Controls
 					?.SendFlyoutItemsChanged();
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='TabBarIsVisibleProperty']/Docs" />
 		public static readonly BindableProperty TabBarIsVisibleProperty =
 			BindableProperty.CreateAttached("TabBarIsVisible", typeof(bool), typeof(Shell), true);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='TitleViewProperty']/Docs" />
 		public static readonly BindableProperty TitleViewProperty =
 			BindableProperty.CreateAttached("TitleView", typeof(View), typeof(Shell), null, propertyChanged: OnTitleViewChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='MenuItemTemplateProperty']/Docs" />
 		public static readonly BindableProperty MenuItemTemplateProperty =
 			BindableProperty.CreateAttached(nameof(MenuItemTemplate), typeof(DataTemplate), typeof(Shell), null, BindingMode.OneTime);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetMenuItemTemplate']/Docs" />
 		public static DataTemplate GetMenuItemTemplate(BindableObject obj) => (DataTemplate)obj.GetValue(MenuItemTemplateProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetMenuItemTemplate']/Docs" />
 		public static void SetMenuItemTemplate(BindableObject obj, DataTemplate menuItemTemplate) => obj.SetValue(MenuItemTemplateProperty, menuItemTemplate);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='ItemTemplateProperty']/Docs" />
 		public static readonly BindableProperty ItemTemplateProperty =
 			BindableProperty.CreateAttached(nameof(ItemTemplate), typeof(DataTemplate), typeof(Shell), null, BindingMode.OneTime);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetItemTemplate']/Docs" />
 		public static DataTemplate GetItemTemplate(BindableObject obj) => (DataTemplate)obj.GetValue(ItemTemplateProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetItemTemplate']/Docs" />
 		public static void SetItemTemplate(BindableObject obj, DataTemplate itemTemplate) => obj.SetValue(ItemTemplateProperty, itemTemplate);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetBackButtonBehavior']/Docs" />
 		public static BackButtonBehavior GetBackButtonBehavior(BindableObject obj) => (BackButtonBehavior)obj.GetValue(BackButtonBehaviorProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetBackButtonBehavior']/Docs" />
 		public static void SetBackButtonBehavior(BindableObject obj, BackButtonBehavior behavior) => obj.SetValue(BackButtonBehaviorProperty, behavior);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetPresentationMode']/Docs" />
 		public static PresentationMode GetPresentationMode(BindableObject obj) => (PresentationMode)obj.GetValue(PresentationModeProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetPresentationMode']/Docs" />
 		public static void SetPresentationMode(BindableObject obj, PresentationMode presentationMode) => obj.SetValue(PresentationModeProperty, presentationMode);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetFlyoutBehavior']/Docs" />
 		public static FlyoutBehavior GetFlyoutBehavior(BindableObject obj) => (FlyoutBehavior)obj.GetValue(FlyoutBehaviorProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetFlyoutBehavior']/Docs" />
 		public static void SetFlyoutBehavior(BindableObject obj, FlyoutBehavior value) => obj.SetValue(FlyoutBehaviorProperty, value);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetFlyoutWidth']/Docs" />
 		public static double GetFlyoutWidth(BindableObject obj) => (double)obj.GetValue(FlyoutWidthProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetFlyoutWidth']/Docs" />
 		public static void SetFlyoutWidth(BindableObject obj, double value) => obj.SetValue(FlyoutWidthProperty, value);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetFlyoutHeight']/Docs" />
 		public static double GetFlyoutHeight(BindableObject obj) => (double)obj.GetValue(FlyoutHeightProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetFlyoutHeight']/Docs" />
 		public static void SetFlyoutHeight(BindableObject obj, double value) => obj.SetValue(FlyoutHeightProperty, value);
 
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetNavBarIsVisible']/Docs" />
 		public static bool GetNavBarIsVisible(BindableObject obj) => (bool)obj.GetValue(NavBarIsVisibleProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetNavBarIsVisible']/Docs" />
 		public static void SetNavBarIsVisible(BindableObject obj, bool value) => obj.SetValue(NavBarIsVisibleProperty, value);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetNavBarHasShadow']/Docs" />
 		public static bool GetNavBarHasShadow(BindableObject obj) => (bool)obj.GetValue(NavBarHasShadowProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetNavBarHasShadow']/Docs" />
 		public static void SetNavBarHasShadow(BindableObject obj, bool value) => obj.SetValue(NavBarHasShadowProperty, value);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetSearchHandler']/Docs" />
 		public static SearchHandler GetSearchHandler(BindableObject obj) => (SearchHandler)obj.GetValue(SearchHandlerProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetSearchHandler']/Docs" />
 		public static void SetSearchHandler(BindableObject obj, SearchHandler handler) => obj.SetValue(SearchHandlerProperty, handler);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetTabBarIsVisible']/Docs" />
 		public static bool GetTabBarIsVisible(BindableObject obj) => (bool)obj.GetValue(TabBarIsVisibleProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetTabBarIsVisible']/Docs" />
 		public static void SetTabBarIsVisible(BindableObject obj, bool value) => obj.SetValue(TabBarIsVisibleProperty, value);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetTitleView']/Docs" />
 		public static View GetTitleView(BindableObject obj) => (View)obj.GetValue(TitleViewProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetTitleView']/Docs" />
 		public static void SetTitleView(BindableObject obj, View value) => obj.SetValue(TitleViewProperty, value);
 
 		static void OnFlyoutBehaviorChanged(BindableObject bindable, object oldValue, object newValue)
@@ -130,89 +173,124 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='BackgroundColorProperty']/Docs" />
 		public static readonly new BindableProperty BackgroundColorProperty =
 			BindableProperty.CreateAttached("BackgroundColor", typeof(Color), typeof(Shell), null,
 				propertyChanged: OnShellAppearanceValueChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='DisabledColorProperty']/Docs" />
 		public static readonly BindableProperty DisabledColorProperty =
 			BindableProperty.CreateAttached("DisabledColor", typeof(Color), typeof(Shell), null,
 				propertyChanged: OnShellAppearanceValueChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='ForegroundColorProperty']/Docs" />
 		public static readonly BindableProperty ForegroundColorProperty =
 			BindableProperty.CreateAttached("ForegroundColor", typeof(Color), typeof(Shell), null,
 				propertyChanged: OnShellAppearanceValueChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='TabBarBackgroundColorProperty']/Docs" />
 		public static readonly BindableProperty TabBarBackgroundColorProperty =
 			BindableProperty.CreateAttached("TabBarBackgroundColor", typeof(Color), typeof(Shell), null,
 				propertyChanged: OnShellAppearanceValueChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='TabBarDisabledColorProperty']/Docs" />
 		public static readonly BindableProperty TabBarDisabledColorProperty =
 			BindableProperty.CreateAttached("TabBarDisabledColor", typeof(Color), typeof(Shell), null,
 				propertyChanged: OnShellAppearanceValueChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='TabBarForegroundColorProperty']/Docs" />
 		public static readonly BindableProperty TabBarForegroundColorProperty =
 			BindableProperty.CreateAttached("TabBarForegroundColor", typeof(Color), typeof(Shell), null,
 				propertyChanged: OnShellAppearanceValueChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='TabBarTitleColorProperty']/Docs" />
 		public static readonly BindableProperty TabBarTitleColorProperty =
 			BindableProperty.CreateAttached("TabBarTitleColor", typeof(Color), typeof(Shell), null,
 				propertyChanged: OnShellAppearanceValueChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='TabBarUnselectedColorProperty']/Docs" />
 		public static readonly BindableProperty TabBarUnselectedColorProperty =
 			BindableProperty.CreateAttached("TabBarUnselectedColor", typeof(Color), typeof(Shell), null,
 				propertyChanged: OnShellAppearanceValueChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='TitleColorProperty']/Docs" />
 		public static readonly BindableProperty TitleColorProperty =
 			BindableProperty.CreateAttached("TitleColor", typeof(Color), typeof(Shell), null,
 				propertyChanged: OnShellAppearanceValueChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='UnselectedColorProperty']/Docs" />
 		public static readonly BindableProperty UnselectedColorProperty =
 			BindableProperty.CreateAttached("UnselectedColor", typeof(Color), typeof(Shell), null,
 				propertyChanged: OnShellAppearanceValueChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutBackdropProperty']/Docs" />
 		public static readonly BindableProperty FlyoutBackdropProperty =
 			BindableProperty.CreateAttached("FlyoutBackdrop", typeof(Brush), typeof(Shell), Brush.Default,
 				propertyChanged: OnShellAppearanceValueChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutWidthProperty']/Docs" />
 		public static readonly BindableProperty FlyoutWidthProperty =
 			BindableProperty.CreateAttached("FlyoutWidth", typeof(double), typeof(Shell), -1d,
 				propertyChanged: OnShellAppearanceValueChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutHeightProperty']/Docs" />
 		public static readonly BindableProperty FlyoutHeightProperty =
 			BindableProperty.CreateAttached("FlyoutHeight", typeof(double), typeof(Shell), -1d,
 				propertyChanged: OnShellAppearanceValueChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetBackgroundColor']/Docs" />
 		public static Color GetBackgroundColor(BindableObject obj) => (Color)obj.GetValue(BackgroundColorProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetBackgroundColor']/Docs" />
 		public static void SetBackgroundColor(BindableObject obj, Color value) => obj.SetValue(BackgroundColorProperty, value);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetDisabledColor']/Docs" />
 		public static Color GetDisabledColor(BindableObject obj) => (Color)obj.GetValue(DisabledColorProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetDisabledColor']/Docs" />
 		public static void SetDisabledColor(BindableObject obj, Color value) => obj.SetValue(DisabledColorProperty, value);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetForegroundColor']/Docs" />
 		public static Color GetForegroundColor(BindableObject obj) => (Color)obj.GetValue(ForegroundColorProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetForegroundColor']/Docs" />
 		public static void SetForegroundColor(BindableObject obj, Color value) => obj.SetValue(ForegroundColorProperty, value);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetTabBarBackgroundColor']/Docs" />
 		public static Color GetTabBarBackgroundColor(BindableObject obj) => (Color)obj.GetValue(TabBarBackgroundColorProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetTabBarBackgroundColor']/Docs" />
 		public static void SetTabBarBackgroundColor(BindableObject obj, Color value) => obj.SetValue(TabBarBackgroundColorProperty, value);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetTabBarDisabledColor']/Docs" />
 		public static Color GetTabBarDisabledColor(BindableObject obj) => (Color)obj.GetValue(TabBarDisabledColorProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetTabBarDisabledColor']/Docs" />
 		public static void SetTabBarDisabledColor(BindableObject obj, Color value) => obj.SetValue(TabBarDisabledColorProperty, value);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetTabBarForegroundColor']/Docs" />
 		public static Color GetTabBarForegroundColor(BindableObject obj) => (Color)obj.GetValue(TabBarForegroundColorProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetTabBarForegroundColor']/Docs" />
 		public static void SetTabBarForegroundColor(BindableObject obj, Color value) => obj.SetValue(TabBarForegroundColorProperty, value);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetTabBarTitleColor']/Docs" />
 		public static Color GetTabBarTitleColor(BindableObject obj) => (Color)obj.GetValue(TabBarTitleColorProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetTabBarTitleColor']/Docs" />
 		public static void SetTabBarTitleColor(BindableObject obj, Color value) => obj.SetValue(TabBarTitleColorProperty, value);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetTabBarUnselectedColor']/Docs" />
 		public static Color GetTabBarUnselectedColor(BindableObject obj) => (Color)obj.GetValue(TabBarUnselectedColorProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetTabBarUnselectedColor']/Docs" />
 		public static void SetTabBarUnselectedColor(BindableObject obj, Color value) => obj.SetValue(TabBarUnselectedColorProperty, value);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetTitleColor']/Docs" />
 		public static Color GetTitleColor(BindableObject obj) => (Color)obj.GetValue(TitleColorProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetTitleColor']/Docs" />
 		public static void SetTitleColor(BindableObject obj, Color value) => obj.SetValue(TitleColorProperty, value);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetUnselectedColor']/Docs" />
 		public static Color GetUnselectedColor(BindableObject obj) => (Color)obj.GetValue(UnselectedColorProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetUnselectedColor']/Docs" />
 		public static void SetUnselectedColor(BindableObject obj, Color value) => obj.SetValue(UnselectedColorProperty, value);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GetFlyoutBackdrop']/Docs" />
 		public static Brush GetFlyoutBackdrop(BindableObject obj) => (Brush)obj.GetValue(FlyoutBackdropProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='SetFlyoutBackdrop']/Docs" />
 		public static void SetFlyoutBackdrop(BindableObject obj, Brush value) => obj.SetValue(FlyoutBackdropProperty, value);
 
 		static void OnShellAppearanceValueChanged(BindableObject bindable, object oldValue, object newValue)
@@ -310,7 +388,9 @@ namespace Microsoft.Maui.Controls
 		void IShellController.AddAppearanceObserver(IAppearanceObserver observer, Element pivot)
 		{
 			_appearanceObservers.Add((observer, pivot));
-			observer.OnAppearanceChanged(GetAppearanceForPivot(pivot));
+			var appearance = GetAppearanceForPivot(pivot);
+			UpdateToolbarAppearanceFeatures(pivot, appearance);
+			observer.OnAppearanceChanged(appearance);
 		}
 
 		void IShellController.AddFlyoutBehaviorObserver(IFlyoutBehaviorObserver observer)
@@ -323,6 +403,42 @@ namespace Microsoft.Maui.Controls
 				observer.OnFlyoutBehaviorChanged(GetEffectiveFlyoutBehavior());
 		}
 
+		void UpdateToolbarAppearanceFeatures(Element pivot, ShellAppearance appearance)
+		{
+			// Android sets these inside its renderer
+			// once we convert Android to be all handlers we can adjust
+			if (pivot is ShellContent || pivot is ShellSection || pivot is ContentPage)
+			{
+				appearance = appearance ?? GetAppearanceForPivot(pivot);
+				Toolbar.BarTextColor = appearance?.TitleColor ?? DefaultTitleColor;
+				Toolbar.BarBackground = appearance?.BackgroundColor ?? DefaultBackgroundColor;
+				Toolbar.IconColor = appearance?.ForegroundColor ?? DefaultForegroundColor;
+			}
+		}
+
+#if ANDROID
+		static Color DefaultBackgroundColor => ResolveThemeColor(Color.FromArgb("#2c3e50"), Color.FromArgb("#1B3147"));
+		static readonly Color DefaultForegroundColor = Colors.White;
+		static readonly Color DefaultTitleColor = Colors.White;
+
+		static bool IsDarkTheme => (Application.Current?.RequestedTheme == AppTheme.Dark);
+
+		static Color ResolveThemeColor(Color light, Color dark)
+		{
+			if (IsDarkTheme)
+			{
+				return dark;
+			}
+
+			return light;
+		}
+#else
+		static Color DefaultBackgroundColor => null;
+		static readonly Color DefaultForegroundColor = null;
+		static readonly Color DefaultTitleColor = null;
+#endif
+
+
 		void IShellController.AppearanceChanged(Element source, bool appearanceSet)
 		{
 			if (!appearanceSet)
@@ -331,6 +447,8 @@ namespace Microsoft.Maui.Controls
 				// So its also quite useful for checking the FlyoutBehavior conditions
 				NotifyFlyoutBehaviorObservers();
 			}
+
+			UpdateToolbarAppearanceFeatures(source, null);
 
 			// here we wish to notify every element whose "pivot line" contains the source
 			// To do that we first need to find the leaf node in the line, and then walk up
@@ -362,7 +480,9 @@ namespace Microsoft.Maui.Controls
 				{
 					if (leaf == target)
 					{
-						observer.OnAppearanceChanged(GetAppearanceForPivot(pivot));
+						var appearance = GetAppearanceForPivot(pivot);
+						UpdateToolbarAppearanceFeatures(pivot, appearance);
+						observer.OnAppearanceChanged(appearance);
 						break;
 					}
 
@@ -374,12 +494,16 @@ namespace Microsoft.Maui.Controls
 		ShellNavigationState IShellController.GetNavigationState(ShellItem shellItem, ShellSection shellSection, ShellContent shellContent, bool includeStack)
 			=> ShellNavigationManager.GetNavigationState(shellItem, shellSection, shellContent, includeStack ? shellSection.Stack.ToList() : null, includeStack ? shellSection.Navigation.ModalStack.ToList() : null);
 
-		async void IShellController.OnFlyoutItemSelected(Element element)
-		{
-			await (this as IShellController).OnFlyoutItemSelectedAsync(element);
-		}
+		void OnFlyoutItemSelected(Element element, bool platformInitiated) =>
+			OnFlyoutItemSelectedAsync(element, platformInitiated).FireAndForget();
 
-		async Task IShellController.OnFlyoutItemSelectedAsync(Element element)
+		void IShellController.OnFlyoutItemSelected(Element element) =>
+			OnFlyoutItemSelected(element, true);
+
+		Task IShellController.OnFlyoutItemSelectedAsync(Element element) =>
+			OnFlyoutItemSelectedAsync(element, true);
+
+		Task OnFlyoutItemSelectedAsync(Element element, bool platformInitiated)
 		{
 			ShellItem shellItem = null;
 			ShellSection shellSection = null;
@@ -408,14 +532,12 @@ namespace Microsoft.Maui.Controls
 			}
 
 			if (shellItem == null || !shellItem.IsEnabled)
-				return;
+				return Task.CompletedTask;
 
 			shellSection = shellSection ?? shellItem.CurrentItem;
 			shellContent = shellContent ?? shellSection?.CurrentItem;
 
-			var state = ShellNavigationManager.GetNavigationState(shellItem, shellSection, shellContent, null, null);
-
-			if (FlyoutIsPresented && GetEffectiveFlyoutBehavior() != FlyoutBehavior.Locked)
+			if (platformInitiated && FlyoutIsPresented && GetEffectiveFlyoutBehavior() != FlyoutBehavior.Locked)
 				SetValueFromRenderer(FlyoutIsPresentedProperty, false);
 
 			if (shellSection == null)
@@ -423,7 +545,51 @@ namespace Microsoft.Maui.Controls
 			else if (shellContent == null)
 				shellSection.PropertyChanged += OnShellItemPropertyChanged;
 			else
-				await GoToAsync(state).ConfigureAwait(false);
+			{
+				if (this.CurrentItem == null)
+				{
+					var state = ShellNavigationManager.GetNavigationState(shellItem, shellSection, shellContent, shellSection.Navigation.NavigationStack, null);
+					var requestBuilder = new RouteRequestBuilder(new List<string>()
+					{
+						shellItem.Route,
+						shellSection.Route,
+						shellContent.Route
+					});
+
+					var node = new ShellUriHandler.NodeLocation();
+					node.SetNode(shellContent);
+					requestBuilder.AddMatch(node);
+
+					var navRequest =
+						new ShellNavigationRequest(
+							new RequestDefinition(requestBuilder, this),
+							 ShellNavigationRequest.WhatToDoWithTheStack.ReplaceIt,
+							 String.Empty,
+							 String.Empty);
+
+					var navParameters = new ShellNavigationParameters()
+					{
+						TargetState = state,
+						Animated = false,
+						EnableRelativeShellRoutes = false,
+						DeferredArgs = null,
+						Parameters = null
+					};
+
+					return _navigationManager
+						.GoToAsync(navParameters, navRequest);
+
+				}
+				else
+				{
+					var navParameters = ShellNavigationManager.GetNavigationParameters(shellItem, shellSection, shellContent, shellSection.Navigation.NavigationStack, null);
+
+					return _navigationManager
+						.GoToAsync(navParameters);
+				}
+			}
+
+			return Task.CompletedTask;
 		}
 
 		void OnShellItemPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -432,9 +598,9 @@ namespace Microsoft.Maui.Controls
 			{
 				(sender as BindableObject).PropertyChanged -= OnShellItemPropertyChanged;
 				if (sender is ShellItem item)
-					((IShellController)this).OnFlyoutItemSelected(item);
+					OnFlyoutItemSelected(item, false);
 				else if (sender is ShellSection section)
-					((IShellController)this).OnFlyoutItemSelected(section.Parent);
+					OnFlyoutItemSelected(section.Parent, false);
 			}
 		}
 
@@ -453,6 +619,7 @@ namespace Microsoft.Maui.Controls
 					return true;
 				}
 			}
+
 			return false;
 		}
 
@@ -476,8 +643,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
-		ReadOnlyCollection<ShellItem> IShellController.GetItems() =>
-			new ReadOnlyCollection<ShellItem>(((ShellItemCollection)Items).VisibleItemsReadOnly.ToList());
+		ReadOnlyCollection<ShellItem> IShellController.GetItems() => ((ShellItemCollection)Items).VisibleItemsReadOnly;
 
 		event NotifyCollectionChangedEventHandler IShellController.ItemsCollectionChanged
 		{
@@ -485,29 +651,52 @@ namespace Microsoft.Maui.Controls
 			remove { ((ShellItemCollection)Items).VisibleItemsChanged -= value; }
 		}
 
-		public static Shell Current => Application.Current?.MainPage as Shell;
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='Current']/Docs" />
+		public static Shell Current
+		{
+			get
+			{
+				if (Application.Current == null)
+					return null;
+
+				foreach (var window in Application.Current.Windows)
+					if (window is Window && window.IsActivated && window.Page is Shell shell)
+						return shell;
+
+				return Application.Current?.MainPage as Shell;
+			}
+		}
 
 		internal ShellNavigationManager NavigationManager => _navigationManager;
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GoToAsync'][1]/Docs" />
 		public Task GoToAsync(ShellNavigationState state)
 		{
 			return _navigationManager.GoToAsync(state, null, false);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GoToAsync'][2]/Docs" />
 		public Task GoToAsync(ShellNavigationState state, bool animate)
 		{
 			return _navigationManager.GoToAsync(state, animate, false);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GoToAsync'][1]/Docs" />
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 		public Task GoToAsync(ShellNavigationState state, IDictionary<string, object> parameters)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 		{
 			return _navigationManager.GoToAsync(state, null, false, parameters: new ShellRouteParameters(parameters));
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='GoToAsync'][2]/Docs" />
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 		public Task GoToAsync(ShellNavigationState state, bool animate, IDictionary<string, object> parameters)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 		{
 			return _navigationManager.GoToAsync(state, animate, false, parameters: new ShellRouteParameters(parameters));
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='AddLogicalChild']/Docs" />
 		public void AddLogicalChild(Element element)
 		{
 			if (element == null)
@@ -524,6 +713,7 @@ namespace Microsoft.Maui.Controls
 			VisualDiagnostics.OnChildAdded(this, element);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='RemoveLogicalChild']/Docs" />
 		public void RemoveLogicalChild(Element element)
 		{
 			if (element == null)
@@ -542,52 +732,67 @@ namespace Microsoft.Maui.Controls
 			VisualDiagnostics.OnChildRemoved(this, element, oldLogicalIndex);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='CurrentItemProperty']/Docs" />
 		public static readonly BindableProperty CurrentItemProperty =
 			BindableProperty.Create(nameof(CurrentItem), typeof(ShellItem), typeof(Shell), null, BindingMode.TwoWay,
 				propertyChanging: OnCurrentItemChanging,
 				propertyChanged: OnCurrentItemChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='CurrentStateProperty']/Docs" />
 		public static readonly BindableProperty CurrentStateProperty = CurrentStatePropertyKey.BindableProperty;
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutBackgroundImageProperty']/Docs" />
 		public static readonly BindableProperty FlyoutBackgroundImageProperty =
 			BindableProperty.Create(nameof(FlyoutBackgroundImage), typeof(ImageSource), typeof(Shell), default(ImageSource), BindingMode.OneTime);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutBackgroundImageAspectProperty']/Docs" />
 		public static readonly BindableProperty FlyoutBackgroundImageAspectProperty =
 			BindableProperty.Create(nameof(FlyoutBackgroundImageAspect), typeof(Aspect), typeof(Shell), default(Aspect), BindingMode.OneTime);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutBackgroundColorProperty']/Docs" />
 		public static readonly BindableProperty FlyoutBackgroundColorProperty =
 			BindableProperty.Create(nameof(FlyoutBackgroundColor), typeof(Color), typeof(Shell), null, BindingMode.OneTime);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutBackgroundProperty']/Docs" />
 		public static readonly BindableProperty FlyoutBackgroundProperty =
-			BindableProperty.Create(nameof(FlyoutBackground), typeof(Brush), typeof(Shell), Brush.Default, BindingMode.OneTime);
+			BindableProperty.Create(nameof(FlyoutBackground), typeof(Brush), typeof(Shell), SolidColorBrush.Default, BindingMode.OneTime);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutHeaderBehaviorProperty']/Docs" />
 		public static readonly BindableProperty FlyoutHeaderBehaviorProperty =
 			BindableProperty.Create(nameof(FlyoutHeaderBehavior), typeof(FlyoutHeaderBehavior), typeof(Shell), FlyoutHeaderBehavior.Default, BindingMode.OneTime);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutHeaderProperty']/Docs" />
 		public static readonly BindableProperty FlyoutHeaderProperty =
 			BindableProperty.Create(nameof(FlyoutHeader), typeof(object), typeof(Shell), null, BindingMode.OneTime,
 				propertyChanging: OnFlyoutHeaderChanging);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutFooterProperty']/Docs" />
 		public static readonly BindableProperty FlyoutFooterProperty =
 			BindableProperty.Create(nameof(FlyoutFooter), typeof(object), typeof(Shell), null, BindingMode.OneTime,
 				propertyChanging: OnFlyoutFooterChanging);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutHeaderTemplateProperty']/Docs" />
 		public static readonly BindableProperty FlyoutHeaderTemplateProperty =
 			BindableProperty.Create(nameof(FlyoutHeaderTemplate), typeof(DataTemplate), typeof(Shell), null, BindingMode.OneTime,
 				propertyChanging: OnFlyoutHeaderTemplateChanging);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutFooterTemplateProperty']/Docs" />
 		public static readonly BindableProperty FlyoutFooterTemplateProperty =
 			BindableProperty.Create(nameof(FlyoutFooterTemplate), typeof(DataTemplate), typeof(Shell), null, BindingMode.OneTime,
 				propertyChanging: OnFlyoutFooterTemplateChanging);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutIsPresentedProperty']/Docs" />
 		public static readonly BindableProperty FlyoutIsPresentedProperty =
 			BindableProperty.Create(nameof(FlyoutIsPresented), typeof(bool), typeof(Shell), false, BindingMode.TwoWay);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='ItemsProperty']/Docs" />
 		public static readonly BindableProperty ItemsProperty = ItemsPropertyKey.BindableProperty;
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutIconProperty']/Docs" />
 		public static readonly BindableProperty FlyoutIconProperty =
 			BindableProperty.Create(nameof(FlyoutIcon), typeof(ImageSource), typeof(Shell), null);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutVerticalScrollModeProperty']/Docs" />
 		public static readonly BindableProperty FlyoutVerticalScrollModeProperty =
 			BindableProperty.Create(nameof(FlyoutVerticalScrollMode), typeof(ScrollMode), typeof(Shell), ScrollMode.Auto);
 
@@ -602,8 +807,11 @@ namespace Microsoft.Maui.Controls
 		internal override IReadOnlyList<Element> LogicalChildrenInternal =>
 			new ReadOnlyCollection<Element>(_logicalChildren);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='.ctor']/Docs" />
 		public Shell()
 		{
+			Toolbar = new ShellToolbar(this);
+
 			_navigationManager = new ShellNavigationManager(this);
 			_navigationManager.Navigated += (_, args) => SendNavigated(args);
 			_navigationManager.Navigating += (_, args) => SendNavigating(args);
@@ -616,9 +824,12 @@ namespace Microsoft.Maui.Controls
 
 			if (Application.Current != null)
 			{
-				this.SetAppThemeColor(Shell.FlyoutBackgroundColorProperty, Colors.White, Colors.Black);
-				this.SetOnAppTheme<Brush>(Shell.FlyoutBackgroundProperty, Brush.White, Brush.Black);
+				this.SetBinding(Shell.FlyoutBackgroundColorProperty,
+					new AppThemeBinding { Light = Colors.White, Dark = Colors.Black, Mode = BindingMode.OneWay });
 			}
+
+			ShellController.FlyoutItemsChanged += (_, __) => Handler?.UpdateValue(nameof(FlyoutItems));
+			ShellController.ItemsCollectionChanged += (_, __) => Handler?.UpdateValue(nameof(Items));
 		}
 
 		private protected override void OnHandlerChangingCore(HandlerChangingEventArgs args)
@@ -643,16 +854,18 @@ namespace Microsoft.Maui.Controls
 		void Initialize()
 		{
 			if (CurrentItem != null)
-				SetCurrentItem();
+				SetCurrentItem()
+					.FireAndForget();
 
-			((ShellElementCollection)Items).VisibleItemsChangedInternal += (s, e) =>
+			((ShellElementCollection)Items).VisibleItemsChangedInternal += async (s, e) =>
 			{
-				SetCurrentItem();
+				await SetCurrentItem();
+
 				SendStructureChanged();
 				SendFlyoutItemsChanged();
 			};
 
-			async void SetCurrentItem()
+			async Task SetCurrentItem()
 			{
 				var shellItems = ShellController.GetItems();
 
@@ -696,7 +909,7 @@ namespace Microsoft.Maui.Controls
 					}
 					catch (Exception exc)
 					{
-						Log.Warning(nameof(Shell), $"If you're using hot reload add a route to everything in your shell file:  {exc}");
+						Application.Current?.FindMauiContext()?.CreateLogger<Shell>()?.LogWarning(exc, "If you're using hot reload add a route to everything in your shell file");
 					}
 				}
 
@@ -713,10 +926,11 @@ namespace Microsoft.Maui.Controls
 				}
 
 				if (shellItem != null)
-					ShellController.OnFlyoutItemSelected(shellItem);
+					await OnFlyoutItemSelectedAsync(shellItem, false).ConfigureAwait(false);
 			}
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutVerticalScrollMode']/Docs" />
 		public ScrollMode FlyoutVerticalScrollMode
 		{
 			get => (ScrollMode)GetValue(FlyoutVerticalScrollModeProperty);
@@ -727,12 +941,14 @@ namespace Microsoft.Maui.Controls
 		public event EventHandler<ShellNavigatingEventArgs> Navigating;
 
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutIcon']/Docs" />
 		public ImageSource FlyoutIcon
 		{
 			get => (ImageSource)GetValue(FlyoutIconProperty);
 			set => SetValue(FlyoutIconProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='CurrentItem']/Docs" />
 		public ShellItem CurrentItem
 		{
 			get => (ShellItem)GetValue(CurrentItemProperty);
@@ -742,8 +958,10 @@ namespace Microsoft.Maui.Controls
 		internal ShellContent CurrentContent => CurrentItem?.CurrentItem?.CurrentItem;
 		internal ShellSection CurrentSection => CurrentItem?.CurrentItem;
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='CurrentState']/Docs" />
 		public ShellNavigationState CurrentState => (ShellNavigationState)GetValue(CurrentStateProperty);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutBackgroundImage']/Docs" />
 		[System.ComponentModel.TypeConverter(typeof(ImageSourceConverter))]
 		public ImageSource FlyoutBackgroundImage
 		{
@@ -751,92 +969,108 @@ namespace Microsoft.Maui.Controls
 			set => SetValue(FlyoutBackgroundImageProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutBackgroundImageAspect']/Docs" />
 		public Aspect FlyoutBackgroundImageAspect
 		{
 			get => (Aspect)GetValue(FlyoutBackgroundImageAspectProperty);
 			set => SetValue(FlyoutBackgroundImageAspectProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutBackgroundColor']/Docs" />
 		public Color FlyoutBackgroundColor
 		{
 			get => (Color)GetValue(FlyoutBackgroundColorProperty);
 			set => SetValue(FlyoutBackgroundColorProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutBackground']/Docs" />
 		public Brush FlyoutBackground
 		{
 			get => (Brush)GetValue(FlyoutBackgroundProperty);
 			set => SetValue(FlyoutBackgroundProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutBackdrop']/Docs" />
 		public Brush FlyoutBackdrop
 		{
 			get => (Brush)GetValue(FlyoutBackdropProperty);
 			set => SetValue(FlyoutBackdropProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutWidth']/Docs" />
 		public double FlyoutWidth
 		{
 			get => (double)GetValue(FlyoutWidthProperty);
 			set => SetValue(FlyoutWidthProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutHeight']/Docs" />
 		public double FlyoutHeight
 		{
 			get => (double)GetValue(FlyoutHeightProperty);
 			set => SetValue(FlyoutHeightProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutBehavior']/Docs" />
 		public FlyoutBehavior FlyoutBehavior
 		{
 			get => (FlyoutBehavior)GetValue(FlyoutBehaviorProperty);
 			set => SetValue(FlyoutBehaviorProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutHeader']/Docs" />
 		public object FlyoutHeader
 		{
 			get => GetValue(FlyoutHeaderProperty);
 			set => SetValue(FlyoutHeaderProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutFooter']/Docs" />
 		public object FlyoutFooter
 		{
 			get => GetValue(FlyoutFooterProperty);
 			set => SetValue(FlyoutFooterProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutHeaderBehavior']/Docs" />
 		public FlyoutHeaderBehavior FlyoutHeaderBehavior
 		{
 			get => (FlyoutHeaderBehavior)GetValue(FlyoutHeaderBehaviorProperty);
 			set => SetValue(FlyoutHeaderBehaviorProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutHeaderTemplate']/Docs" />
 		public DataTemplate FlyoutHeaderTemplate
 		{
 			get => (DataTemplate)GetValue(FlyoutHeaderTemplateProperty);
 			set => SetValue(FlyoutHeaderTemplateProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutFooterTemplate']/Docs" />
 		public DataTemplate FlyoutFooterTemplate
 		{
 			get => (DataTemplate)GetValue(FlyoutFooterTemplateProperty);
 			set => SetValue(FlyoutFooterTemplateProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutIsPresented']/Docs" />
 		public bool FlyoutIsPresented
 		{
 			get => (bool)GetValue(FlyoutIsPresentedProperty);
 			set => SetValue(FlyoutIsPresentedProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='Items']/Docs" />
 		public IList<ShellItem> Items => (IList<ShellItem>)GetValue(ItemsProperty);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='ItemTemplate']/Docs" />
 		public DataTemplate ItemTemplate
 		{
 			get => GetItemTemplate(this);
 			set => SetItemTemplate(this, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='MenuItemTemplate']/Docs" />
 		public DataTemplate MenuItemTemplate
 		{
 			get => GetMenuItemTemplate(this);
@@ -880,6 +1114,7 @@ namespace Microsoft.Maui.Controls
 
 		internal void SendFlyoutItemsChanged() => _flyoutManager.CheckIfFlyoutItemsChanged();
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutItems']/Docs" />
 		public IEnumerable FlyoutItems => _flyoutManager.FlyoutItems;
 
 		List<List<Element>> IShellController.GenerateFlyoutGrouping() =>
@@ -893,6 +1128,21 @@ namespace Microsoft.Maui.Controls
 
 		protected override bool OnBackButtonPressed()
 		{
+#if WINDOWS || !PLATFORM
+			var backButtonBehavior = GetBackButtonBehavior(GetVisiblePage());
+			if (backButtonBehavior != null)
+			{
+				var command = backButtonBehavior.GetPropertyIfSet<ICommand>(BackButtonBehavior.CommandProperty, null);
+				var commandParameter = backButtonBehavior.GetPropertyIfSet<object>(BackButtonBehavior.CommandParameterProperty, null);
+
+				if (command != null)
+				{
+					command.Execute(commandParameter);
+					return true;
+				}
+			}
+#endif
+
 			if (GetVisiblePage() is Page page && page.SendBackButtonPressed())
 				return true;
 
@@ -915,7 +1165,7 @@ namespace Microsoft.Maui.Controls
 				}
 				catch (Exception exc)
 				{
-					Internals.Log.Warning(nameof(Shell), $"Failed to Navigate Back: {exc}");
+					Application.Current?.FindMauiContext()?.CreateLogger<Shell>()?.LogWarning(exc, "Failed to Navigate Back");
 				}
 			}
 		}
@@ -927,9 +1177,27 @@ namespace Microsoft.Maui.Controls
 			Navigated?.Invoke(this, args);
 			OnNavigated(args);
 
+			if (_previousPage != null)
+				_previousPage.PropertyChanged -= OnCurrentPagePropertyChanged;
+
 			_previousPage?.SendNavigatedFrom(new NavigatedFromEventArgs(CurrentPage));
 			CurrentPage?.SendNavigatedTo(new NavigatedToEventArgs(_previousPage));
 			_previousPage = null;
+
+			if (CurrentPage != null)
+				CurrentPage.PropertyChanged += OnCurrentPagePropertyChanged;
+
+			CurrentItem?.Handler?.UpdateValue(Shell.TabBarIsVisibleProperty.PropertyName);
+		}
+
+		internal PropertyChangedEventHandler CurrentPagePropertyChanged;
+
+		void OnCurrentPagePropertyChanged(object sender, PropertyChangedEventArgs e)
+		{
+			CurrentPagePropertyChanged?.Invoke(this, e);
+
+			if (e.Is(Shell.TabBarIsVisibleProperty))
+				CurrentItem?.Handler?.UpdateValue(Shell.TabBarIsVisibleProperty.PropertyName);
 		}
 
 		void SendNavigating(ShellNavigatingEventArgs args)
@@ -969,6 +1237,9 @@ namespace Microsoft.Maui.Controls
 
 			shell.ShellController.AppearanceChanged(shell, false);
 			shell.ShellController.UpdateCurrentState(ShellNavigationSource.ShellItemChanged);
+
+			if (shell.CurrentItem?.CurrentItem != null)
+				shell.ShellController.AppearanceChanged(shell.CurrentItem.CurrentItem, false);
 		}
 
 		static void OnCurrentItemChanging(BindableObject bindable, object oldValue, object newValue)
@@ -1081,25 +1352,48 @@ namespace Microsoft.Maui.Controls
 						return FlyoutBehavior.Flyout;
 					else if (rootItem is TabBar)
 						return FlyoutBehavior.Disabled;
+					// This means the user hasn't specified
+					// a ShellItem so we don't want the flyout to show up
+					// if there is only one ShellItem.
+					//
+					// This will happen if the user only specifies a
+					// single ContentPage
+					else if (rootItem != null && Routing.IsImplicit(rootItem))
+					{
+						if (Items.Count <= 1)
+							return FlyoutBehavior.Disabled;
+					}
 
 					return FlyoutBehavior;
 				},
 				(o) => rootItem = rootItem ?? o as ShellItem);
 		}
 
-		internal T GetEffectiveValue<T>(BindableProperty property, T defaultValue)
+		internal T GetEffectiveValue<T>(BindableProperty property, T defaultValue, bool ignoreImplicit = false)
 		{
-			return GetEffectiveValue<T>(property, () => defaultValue, null);
+			return GetEffectiveValue<T>(property, () => defaultValue, null, ignoreImplicit: ignoreImplicit);
 		}
 
-		internal T GetEffectiveValue<T>(BindableProperty property, Func<T> defaultValue, Action<Element> observer, Element element = null)
+		internal T GetEffectiveValue<T>(
+			BindableProperty property,
+			Func<T> defaultValue,
+			Action<Element> observer,
+			Element element = null,
+			bool ignoreImplicit = false)
 		{
-			element = element ?? GetVisiblePage() ?? CurrentContent;
+			element = element ?? GetCurrentShellPage() ?? CurrentContent;
 			while (element != this && element != null)
 			{
 				observer?.Invoke(element);
 
-				if (element.IsSet(property))
+				if (ignoreImplicit && Routing.IsImplicit(element))
+				{
+					// If this is an implicitly created route.
+					// A route that the user doesn't have inside their Shell file.
+					// Then we don't want to consider it as a value to use.
+					// So we let the code just go to the next parent.
+				}
+				else if (element.IsSet(property))
 					return (T)element.GetValue(property);
 
 				element = element.Parent;
@@ -1172,9 +1466,11 @@ namespace Microsoft.Maui.Controls
 			if (CurrentItem == null || GetVisiblePage() == null)
 				return;
 
-			var behavior = GetEffectiveFlyoutBehavior();
+			var behavior = (this as IFlyoutView).FlyoutBehavior;
 			for (int i = 0; i < _flyoutBehaviorObservers.Count; i++)
 				_flyoutBehaviorObservers[i].OnFlyoutBehaviorChanged(behavior);
+
+			Handler?.UpdateValue(nameof(IFlyoutView.FlyoutBehavior));
 		}
 
 		void OnFlyoutHeaderChanged(object oldVal, object newVal)
@@ -1227,6 +1523,22 @@ namespace Microsoft.Maui.Controls
 			return null;
 		}
 
+		// This returns the current shell page that's visible
+		// without including the modal stack
+		internal Element GetCurrentShellPage()
+		{
+			var navStack = CurrentSection?.Navigation?.NavigationStack;
+			Page currentPage = null;
+
+			if (navStack != null)
+			{
+				currentPage = navStack[navStack.Count - 1] ??
+					((IShellContentController)CurrentContent)?.Page;
+			}
+
+			return currentPage;
+		}
+
 		Element WalkToPage(Element element)
 		{
 			switch (element)
@@ -1268,20 +1580,24 @@ namespace Microsoft.Maui.Controls
 		#region Shell Flyout Content
 
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutContentProperty']/Docs" />
 		public static readonly BindableProperty FlyoutContentProperty =
 			BindableProperty.Create(nameof(FlyoutContent), typeof(object), typeof(Shell), null, BindingMode.OneTime, propertyChanging: OnFlyoutContentChanging);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutContentTemplateProperty']/Docs" />
 		public static readonly BindableProperty FlyoutContentTemplateProperty =
 			BindableProperty.Create(nameof(FlyoutContentTemplate), typeof(DataTemplate), typeof(Shell), null, BindingMode.OneTime, propertyChanging: OnFlyoutContentTemplateChanging);
 
 		View _flyoutContentView;
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutContent']/Docs" />
 		public object FlyoutContent
 		{
 			get => GetValue(FlyoutContentProperty);
 			set => SetValue(FlyoutContentProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Shell.xml" path="//Member[@MemberName='FlyoutContentTemplate']/Docs" />
 		public DataTemplate FlyoutContentTemplate
 		{
 			get => (DataTemplate)GetValue(FlyoutContentTemplateProperty);
@@ -1327,15 +1643,6 @@ namespace Microsoft.Maui.Controls
 		}
 		#endregion
 
-
-		[EditorBrowsable(EditorBrowsableState.Never)]
-		public static void VerifyShellUWPFlagEnabled(
-			string constructorHint = null,
-			[CallerMemberName] string memberName = "")
-		{
-			// ExperimentalFlags.VerifyFlagEnabled(nameof(Shell), ExperimentalFlags.ShellUWPExperimental);
-		}
-
 		class NavigationImpl : NavigationProxy
 		{
 			readonly Shell _shell;
@@ -1358,6 +1665,13 @@ namespace Microsoft.Maui.Controls
 
 			protected override async Task<Page> OnPopModal(bool animated)
 			{
+				if (!_shell.NavigationManager.AccumulateNavigatedEvents)
+				{
+					var page = _shell.CurrentPage;
+					await _shell.GoToAsync("..", animated);
+					return page;
+				}
+
 				if (ModalStack.Count > 0)
 					ModalStack[ModalStack.Count - 1].SendDisappearing();
 
@@ -1372,13 +1686,24 @@ namespace Microsoft.Maui.Controls
 				if (ModalStack.Count == 0 && !_shell.CurrentItem.CurrentItem.IsPoppingModalStack)
 					_shell.CurrentItem.SendAppearing();
 
+				modalPopped.Parent = null;
 				return modalPopped;
 			}
 
 			protected override async Task OnPushModal(Page modal, bool animated)
 			{
+				if (!_shell.NavigationManager.AccumulateNavigatedEvents)
+				{
+					// This will route the modal push through the shell section which is setup
+					// to update the shell state after a modal push
+					await _shell.CurrentItem.CurrentItem.Navigation.PushModalAsync(modal, animated);
+					return;
+				}
+
 				if (ModalStack.Count == 0)
 					_shell.CurrentItem.SendDisappearing();
+
+				modal.Parent = (Element)_shell.FindParentOfType<IWindow>();
 
 				if (!_shell.CurrentItem.CurrentItem.IsPushingModalStack)
 					modal.SendAppearing();

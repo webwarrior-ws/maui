@@ -4,10 +4,12 @@ using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using WShape = Microsoft.UI.Xaml.Shapes.Shape;
 using Microsoft.Maui.Controls.Platform;
+using WBorder = Microsoft.UI.Xaml.Controls.Border;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
-	public class BoxViewBorderRenderer : ViewRenderer<BoxView, Border>
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
+	public class BoxViewBorderRenderer : ViewRenderer<BoxView, WBorder>
 	{
 		protected override void OnElementChanged(ElementChangedEventArgs<BoxView> e)
 		{
@@ -17,7 +19,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			{
 				if (Control == null)
 				{
-					var rect = new Border
+					var rect = new WBorder
 					{
 						DataContext = Element
 					};
@@ -40,7 +42,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				SetCornerRadius(Element.CornerRadius);
 			else if (e.PropertyName == BoxView.ColorProperty.PropertyName)
 				UpdateBackgroundColor();
-			
+
 		}
 
 		protected override AutomationPeer OnCreateAutomationPeer()
@@ -67,7 +69,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				backgroundColor = Element.BackgroundColor;
 			}
 
-			Control.Background = backgroundColor.IsDefault() ? null : Maui.ColorExtensions.ToNative(backgroundColor);
+			Control.Background = backgroundColor.IsDefault() ? null : backgroundColor.ToPlatform();
 		}
 
 		protected override void UpdateBackground()
@@ -82,7 +84,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				Color backgroundColor = Element.BackgroundColor;
 
 				if (!backgroundColor.IsDefault())
-					Control.Background = Maui.ColorExtensions.ToNative(backgroundColor);
+					Control.Background = backgroundColor.ToPlatform();
 				else
 				{
 					if (Element.Color.IsDefault())
@@ -98,7 +100,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			if (color.IsDefault())
 				UpdateBackground();
 			else
-				Control.Background = Maui.ColorExtensions.ToNative(color);
+				Control.Background = color.ToPlatform();
 		}
 
 		void SetCornerRadius(CornerRadius cornerRadius)

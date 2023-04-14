@@ -1,5 +1,4 @@
-﻿using Android.Content.Res;
-using Android.Graphics.Drawables;
+﻿using System;
 using Android.Views;
 using Android.Views.InputMethods;
 using AndroidX.AppCompat.Widget;
@@ -7,124 +6,130 @@ using static Android.Views.View;
 
 namespace Microsoft.Maui.Handlers
 {
+	// TODO: NET7 issoto - Change the TPlatformView generic type to MauiAppCompatEditText
+	// This type adds support to the SelectionChanged event
 	public partial class EditorHandler : ViewHandler<IEditor, AppCompatEditText>
 	{
-		static ColorStateList? DefaultTextColors { get; set; }
-		static ColorStateList? DefaultPlaceholderTextColors { get; set; }
-		static Drawable? DefaultBackground;
+		bool _set;
 
-		EditorFocusChangeListener FocusChangeListener { get; } = new EditorFocusChangeListener();
-
-		protected override AppCompatEditText CreateNativeView()
+		// TODO: NET7 issoto - Change the return type to MauiAppCompatEditText
+		protected override AppCompatEditText CreatePlatformView()
 		{
-			var editText = new AppCompatEditText(Context)
+			var editText = new MauiAppCompatEditText(Context)
 			{
-				ImeOptions = ImeAction.Done
+				ImeOptions = ImeAction.Done,
+				Gravity = GravityFlags.Top,
+				TextAlignment = Android.Views.TextAlignment.ViewStart,
 			};
 
 			editText.SetSingleLine(false);
-			editText.Gravity = GravityFlags.Top;
-			editText.TextAlignment = Android.Views.TextAlignment.ViewStart;
 			editText.SetHorizontallyScrolling(false);
 
 			return editText;
 		}
 
-		protected override void ConnectHandler(AppCompatEditText nativeView)
+		public override void SetVirtualView(IView view)
 		{
-			FocusChangeListener.Handler = this;
+			base.SetVirtualView(view);
 
-			nativeView.OnFocusChangeListener = FocusChangeListener;
+			// TODO: NET7 issoto - Remove the casting once we can set the TPlatformView generic type as MauiAppCompatEditText
+			if (!_set && PlatformView is MauiAppCompatEditText editText)
+				editText.SelectionChanged += OnSelectionChanged;
+
+			_set = true;
 		}
 
-		protected override void DisconnectHandler(AppCompatEditText nativeView)
+		// TODO: NET7 issoto - Change the platformView type to MauiAppCompatEditText
+		protected override void ConnectHandler(AppCompatEditText platformView)
 		{
-			nativeView.OnFocusChangeListener = null;
-
-			FocusChangeListener.Handler = null;
+			platformView.ViewAttachedToWindow += OnPlatformViewAttachedToWindow;
+			platformView.TextChanged += OnTextChanged;
 		}
 
-		void SetupDefaults(AppCompatEditText nativeView)
+		// TODO: NET7 issoto - Change the platformView type to MauiAppCompatEditText
+		protected override void DisconnectHandler(AppCompatEditText platformView)
 		{
+			platformView.ViewAttachedToWindow -= OnPlatformViewAttachedToWindow;
+			platformView.TextChanged -= OnTextChanged;
 
+			// TODO: NET7 issoto - Remove the casting once we can set the TPlatformView generic type as MauiAppCompatEditText
+			if (_set && platformView is MauiAppCompatEditText editText)
+				editText.SelectionChanged -= OnSelectionChanged;
 
-			DefaultTextColors = nativeView.TextColors;
-			DefaultPlaceholderTextColors = nativeView.HintTextColors;
-			DefaultBackground = nativeView.Background;
+			_set = false;
 		}
 
-		// This is a Android-specific mapping
-		public static void MapBackground(EditorHandler handler, IEditor editor)
+		public static void MapBackground(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateBackground(editor);
+
+		public static void MapText(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateText(editor);
+
+		public static void MapTextColor(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateTextColor(editor);
+
+		public static void MapPlaceholder(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdatePlaceholder(editor);
+
+		public static void MapPlaceholderColor(IEditorHandler handler, IEditor editor)
 		{
-			handler.NativeView?.UpdateBackground(editor, DefaultBackground);
+			if (handler is EditorHandler platformHandler)
+				handler.PlatformView?.UpdatePlaceholderColor(editor);
 		}
 
-		public static void MapText(EditorHandler handler, IEditor editor)
+		public static void MapCharacterSpacing(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateCharacterSpacing(editor);
+
+		public static void MapMaxLength(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateMaxLength(editor);
+
+		public static void MapIsReadOnly(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateIsReadOnly(editor);
+
+		public static void MapIsTextPredictionEnabled(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateIsTextPredictionEnabled(editor);
+
+		public static void MapFont(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateFont(editor, handler.GetRequiredService<IFontManager>());
+
+		public static void MapHorizontalTextAlignment(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateHorizontalTextAlignment(editor);
+
+		public static void MapVerticalTextAlignment(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateVerticalTextAlignment(editor);
+
+		public static void MapKeyboard(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateKeyboard(editor);
+
+		public static void MapCursorPosition(IEditorHandler handler, ITextInput editor) =>
+			handler.PlatformView?.UpdateCursorPosition(editor);
+
+		public static void MapSelectionLength(IEditorHandler handler, ITextInput editor) =>
+			handler.PlatformView?.UpdateSelectionLength(editor);
+
+		void OnPlatformViewAttachedToWindow(object? sender, ViewAttachedToWindowEventArgs e)
 		{
-			handler.NativeView?.UpdateText(editor);
-		}
-
-		public static void MapTextColor(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdateTextColor(editor, DefaultTextColors);
-		}
-
-		public static void MapPlaceholder(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdatePlaceholder(editor);
-		}
-
-		public static void MapPlaceholderColor(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdatePlaceholderColor(editor, DefaultPlaceholderTextColors);
-		}
-
-		public static void MapCharacterSpacing(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdateCharacterSpacing(editor);
-		}
-
-		public static void MapMaxLength(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdateMaxLength(editor);
-		}
-
-		public static void MapIsReadOnly(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdateIsReadOnly(editor);
-		}
-
-		public static void MapIsTextPredictionEnabled(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdateIsTextPredictionEnabled(editor);
-		}
-
-		public static void MapFont(EditorHandler handler, IEditor editor)
-		{
-			var fontManager = handler.GetRequiredService<IFontManager>();
-
-			handler.NativeView?.UpdateFont(editor, fontManager);
-		}
-
-		public static void MapKeyboard(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdateKeyboard(editor);
-		}
-
-		void OnFocusedChange(bool hasFocus)
-		{
-			if (!hasFocus)
-				VirtualView?.Completed();
-		}
-
-		class EditorFocusChangeListener : Java.Lang.Object, IOnFocusChangeListener
-		{
-			public EditorHandler? Handler { get; set; }
-
-			public void OnFocusChange(View? v, bool hasFocus)
+			if (PlatformView.IsAlive() && PlatformView.Enabled)
 			{
-				Handler?.OnFocusedChange(hasFocus);
+				// https://issuetracker.google.com/issues/37095917
+				PlatformView.Enabled = false;
+				PlatformView.Enabled = true;
 			}
+		}
+
+		void OnTextChanged(object? sender, Android.Text.TextChangedEventArgs e) =>
+			VirtualView?.UpdateText(e);
+
+		private void OnSelectionChanged(object? sender, EventArgs e)
+		{
+			var cursorPostion = PlatformView.GetCursorPosition();
+			var selectedTextLength = PlatformView.GetSelectedTextLength();
+
+			if (VirtualView.CursorPosition != cursorPostion)
+				VirtualView.CursorPosition = cursorPostion;
+
+			if (VirtualView.SelectionLength != selectedTextLength)
+				VirtualView.SelectionLength = selectedTextLength;
 		}
 	}
 }

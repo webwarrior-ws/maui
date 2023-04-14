@@ -1,9 +1,10 @@
 using System;
+using Microsoft.Maui.Devices;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 
-	public static class WindowExtensions
+	public static partial class WindowExtensions
 	{
 
 		public static void UpdateTitle(this Gtk.Window nativeWindow, IWindow window) =>
@@ -13,16 +14,16 @@ namespace Microsoft.Maui
 		{
 			foreach (var window in MauiGtkApplication.Current.Application.Windows)
 			{
-				if (window?.Handler?.NativeView is Gtk.Window win && win == nativeWindow)
+				if (window?.Handler?.PlatformView is Gtk.Window win && win == nativeWindow)
 					return window;
 			}
 
 			throw new InvalidOperationException("Window Not Found");
 		}
 
-		public static void SetWindow(this Gtk.Window nativeWindow, IWindow window, IMauiContext context)
+		public static void SetWindow(this Gtk.Window platformWindow, IWindow window, IMauiContext context)
 		{
-			_ = nativeWindow ?? throw new ArgumentNullException(nameof(nativeWindow));
+			_ = platformWindow ?? throw new ArgumentNullException(nameof(platformWindow));
 			_ = window ?? throw new ArgumentNullException(nameof(window));
 			_ = context ?? throw new ArgumentNullException(nameof(context));
 
@@ -41,6 +42,9 @@ namespace Microsoft.Maui
 			if (handler.VirtualView != window)
 				handler.SetVirtualView(window);
 		}
+
+		internal static DisplayOrientation GetOrientation(this IWindow? window) =>
+			DeviceDisplay.Current.MainDisplayInfo.Orientation;
 
 	}
 

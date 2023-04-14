@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0-android</TargetFramework>
+    <TargetFramework>$(_MauiDotNetTfm)-android</TargetFramework>
     <AssemblyName>Microsoft.Maui.Controls.Compatibility.Android.AppLinks</AssemblyName>
     <RootNamespace>Microsoft.Maui.Controls.Compatibility.Android.AppLinks</RootNamespace>
     <IsPackable>false</IsPackable>
@@ -10,13 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Xamarin.Firebase.AppIndexing" Version="119.1.0" />
+    <PackageReference Include="Xamarin.Firebase.AppIndexing" Version="120.0.0.9" />
     <PackageReference Include="Xamarin.AndroidX.Lifecycle.LiveData" />
     <PackageReference Include="Xamarin.AndroidX.Legacy.Support.V4" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Controls\src\Core\Controls.Core-net6.csproj" />
+    <ProjectReference Include="..\..\..\Controls\src\Core\Controls.Core.csproj" />
   </ItemGroup>
 
 </Project>

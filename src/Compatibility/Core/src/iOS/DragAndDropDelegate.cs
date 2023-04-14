@@ -3,14 +3,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Versioning;
 using System.Text;
-
 using Foundation;
-using UIKit;
+using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Platform;
+using ObjCRuntime;
+using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[SupportedOSPlatform("ios11.0")]
 	internal class DragAndDropDelegate : NSObject, IUIDragInteractionDelegate, IUIDropInteractionDelegate
 	{
 #region UIDragInteractionDelegate
@@ -250,7 +253,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				}
 				catch (Exception e)
 				{
-					Controls.Internals.Log.Warning(nameof(DropGestureRecognizer), $"{e}");
+					Forms.MauiContext?.CreateLogger<DropGestureRecognizer>()?.LogWarning(e, null);
 				}
 			}, (View)element);
 		}

@@ -1,29 +1,50 @@
 ﻿#nullable enable
+
+using Microsoft.UI.Xaml.Controls;
+
 namespace Microsoft.Maui.Handlers
 {
-	public partial class ActivityIndicatorHandler : ViewHandler<IActivityIndicator, MauiActivityIndicator>
+	public partial class ActivityIndicatorHandler : ViewHandler<IActivityIndicator, ProgressRing>
 	{
-		object? _foregroundDefault;
+		public override bool NeedsContainer =>
+			VirtualView?.Background != null ||
+			base.NeedsContainer;
 
-		protected override MauiActivityIndicator CreateNativeView() => new MauiActivityIndicator
+		protected override ProgressRing CreatePlatformView() => new ProgressRing
 		{
-			IsIndeterminate = true,
-			Style = UI.Xaml.Application.Current.Resources["MauiActivityIndicatorStyle"] as UI.Xaml.Style
+			IsIndeterminate = true
 		};
 
-		void SetupDefaults(MauiActivityIndicator nativeView)
+		public static void MapBackground(IActivityIndicatorHandler handler, IActivityIndicator activityIndicator)
 		{
-			_foregroundDefault = nativeView.GetForegroundCache();
+			handler.UpdateValue(nameof(IViewHandler.ContainerView));
+			handler.ToPlatform().UpdateBackground(activityIndicator);
 		}
 
-		public static void MapIsRunning(ActivityIndicatorHandler handler, IActivityIndicator activityIndicator)
+		public static void MapIsRunning(IActivityIndicatorHandler handler, IActivityIndicator activityIndicator)
 		{
-			handler.NativeView?.UpdateIsRunning(activityIndicator);
+			handler.PlatformView?.UpdateIsRunning(activityIndicator);
 		}
 
-		public static void MapColor(ActivityIndicatorHandler handler, IActivityIndicator activityIndicator)
+		public static void MapColor(IActivityIndicatorHandler handler, IActivityIndicator activityIndicator)
 		{
-			handler.NativeView?.UpdateColor(activityIndicator, handler._foregroundDefault);
+			handler.PlatformView?.UpdateColor(activityIndicator);
+		}
+
+		public static void MapWidth(IActivityIndicatorHandler handler, IActivityIndicator activityIndicator)
+		{
+			if (handler.PlatformView is ProgressRing platformView)
+			{
+				platformView.UpdateWidth(activityIndicator);
+			}
+		}
+
+		public static void MapHeight(IActivityIndicatorHandler handler, IActivityIndicator activityIndicator)
+		{
+			if (handler.PlatformView is ProgressRing platformView)
+			{
+				platformView.UpdateHeight(activityIndicator);
+			}
 		}
 	}
 }

@@ -1,27 +1,29 @@
 using System;
 #if __IOS__ || MACCATALYST
-using NativeView = UIKit.UIView;
+using PlatformView = UIKit.UIView;
 #elif MONOANDROID
-using NativeView = Android.Views.View;
+using PlatformView = Android.Views.View;
 #elif WINDOWS
-using NativeView = Microsoft.UI.Xaml.FrameworkElement;
+using PlatformView = Microsoft.UI.Xaml.FrameworkElement;
+#elif TIZEN
+using PlatformView = Tizen.NUI.BaseComponents.View;
+#elif (NETSTANDARD || !PLATFORM)
+using PlatformView = System.Object;
 #elif GTK
-using NativeView = Gtk.Widget;
-#elif NETSTANDARD
-using NativeView = System.Object;
+using PlatformView = Gtk.Widget;
 #endif
 
 namespace Microsoft.Maui.Controls.Platform
 {
-	public abstract class PlatformEffect : PlatformEffect<NativeView, NativeView>
+	public abstract class PlatformEffect : PlatformEffect<PlatformView, PlatformView>
 	{
 		internal override void SendAttached()
 		{
 			_ = Element ?? throw new InvalidOperationException("Element cannot be null here");
-			Control = (NativeView)Element.Handler.NativeView;
+			Control = (PlatformView)Element.Handler.PlatformView;
 
 			if (Element.Handler is IViewHandler vh)
-				Container = (NativeView)(vh.ContainerView ?? vh.NativeView);
+				Container = (PlatformView)(vh.ContainerView ?? vh.PlatformView);
 			else
 				Container = Control;
 

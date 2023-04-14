@@ -1,7 +1,8 @@
 ﻿using Microsoft.Maui.Handlers;
+using ObjCRuntime;
 using UIKit;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public class PageViewController : ContainerViewController
 	{
@@ -13,12 +14,12 @@ namespace Microsoft.Maui
 			LoadFirstView(page);
 		}
 
-		protected override UIView CreateNativeView(IElement view)
+		protected override UIView CreatePlatformView(IElement view)
 		{
-			return new PageView
+			return new ContentView
 			{
-				CrossPlatformArrange = ((IView)view).Arrange,
-				CrossPlatformMeasure = ((IView)view).Measure
+				CrossPlatformArrange = ((IContentView)view).CrossPlatformArrange,
+				CrossPlatformMeasure = ((IContentView)view).CrossPlatformMeasure
 			};
 		}
 

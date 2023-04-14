@@ -1,14 +1,9 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
 using Android.Webkit;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Primitives;
+using Microsoft.Maui;
+using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Handlers;
 using static Android.Views.ViewGroup;
 using AWebView = Android.Webkit.WebView;
@@ -23,35 +18,38 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 		private AndroidWebKitWebViewManager? _webviewManager;
 		internal AndroidWebKitWebViewManager? WebviewManager => _webviewManager;
 
-		protected override AWebView CreateNativeView()
+		protected override AWebView CreatePlatformView()
 		{
-			var aWebView = new AWebView(Context!)
+			var blazorAndroidWebView = new BlazorAndroidWebView(Context!)
 			{
 #pragma warning disable 618 // This can probably be replaced with LinearLayout(LayoutParams.MatchParent, LayoutParams.MatchParent); just need to test that theory
 				LayoutParameters = new Android.Widget.AbsoluteLayout.LayoutParams(LayoutParams.MatchParent, LayoutParams.MatchParent, 0, 0)
 #pragma warning restore 618
 			};
 
-			AWebView.SetWebContentsDebuggingEnabled(enabled: true);
+			BlazorAndroidWebView.SetWebContentsDebuggingEnabled(enabled: DeveloperTools.Enabled);
 
-			if (aWebView.Settings != null)
+			if (blazorAndroidWebView.Settings != null)
 			{
-				aWebView.Settings.JavaScriptEnabled = true;
-				aWebView.Settings.DomStorageEnabled = true;
+				// To allow overriding UrlLoadingStrategy.OpenInWebView and open links in browser with a _blank target
+				blazorAndroidWebView.Settings.SetSupportMultipleWindows(true);
+
+				blazorAndroidWebView.Settings.JavaScriptEnabled = true;
+				blazorAndroidWebView.Settings.DomStorageEnabled = true;
 			}
 
-			_webViewClient = GetWebViewClient();
-			aWebView.SetWebViewClient(_webViewClient);
+			_webViewClient = new WebKitWebViewClient(this);
+			blazorAndroidWebView.SetWebViewClient(_webViewClient);
 
-			_webChromeClient = GetWebChromeClient();
-			aWebView.SetWebChromeClient(_webChromeClient);
+			_webChromeClient = new BlazorWebChromeClient();
+			blazorAndroidWebView.SetWebChromeClient(_webChromeClient);
 
-			return aWebView;
+			return blazorAndroidWebView;
 		}
 
-		protected override void DisconnectHandler(AWebView nativeView)
+		protected override void DisconnectHandler(AWebView platformView)
 		{
-			nativeView.StopLoading();
+			platformView.StopLoading();
 
 			if (_webviewManager != null)
 			{
@@ -60,7 +58,6 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 				_webviewManager?
 					.DisposeAsync()
 					.AsTask()
-					.ConfigureAwait(false)
 					.GetAwaiter()
 					.GetResult();
 
@@ -83,7 +80,7 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 			{
 				return;
 			}
-			if (NativeView == null)
+			if (PlatformView == null)
 			{
 				throw new InvalidOperationException($"Can't start {nameof(BlazorWebView)} without native web view instance.");
 			}
@@ -93,10 +90,25 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 			var contentRootDir = Path.GetDirectoryName(HostPage!) ?? string.Empty;
 			var hostPageRelativePath = Path.GetRelativePath(contentRootDir, HostPage!);
 
-			var mauiAssetFileProvider = new AndroidMauiAssetFileProvider(Context.Assets, contentRootDir);
+			var fileProvider = VirtualView.CreateFileProvider(contentRootDir);
 
-			var jsComponents = new JSComponentConfigurationStore();
-			_webviewManager = new AndroidWebKitWebViewManager(this, NativeView, Services!, MauiDispatcher.Instance, mauiAssetFileProvider, jsComponents, hostPageRelativePath);
+			_webviewManager = new AndroidWebKitWebViewManager(
+				PlatformView,
+				Services!,
+				new MauiDispatcher(Services!.GetRequiredService<IDispatcher>()),
+				fileProvider,
+				VirtualView.JSComponents,
+				contentRootDir,
+				hostPageRelativePath);
+
+			StaticContentHotReloadManager.AttachToWebViewManagerIfEnabled(_webviewManager);
+
+			VirtualView.BlazorWebViewInitializing(new BlazorWebViewInitializingEventArgs());
+			VirtualView.BlazorWebViewInitialized(new BlazorWebViewInitializedEventArgs
+			{
+				WebView = PlatformView,
+			});
+
 			if (RootComponents != null)
 			{
 				foreach (var rootComponent in RootComponents)
@@ -109,10 +121,9 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 			_webviewManager.Navigate("/");
 		}
 
-		protected virtual WebViewClient GetWebViewClient() =>
-			new WebKitWebViewClient(this);
-
-		protected virtual WebChromeClient GetWebChromeClient() =>
-			new WebChromeClient();
+		internal IFileProvider CreateFileProvider(string contentRootDir)
+		{
+			return new AndroidMauiAssetFileProvider(Context.Assets, contentRootDir);
+		}
 	}
 }

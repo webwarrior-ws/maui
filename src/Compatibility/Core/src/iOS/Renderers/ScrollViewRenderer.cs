@@ -5,6 +5,7 @@ using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;
 using Microsoft.Maui.Graphics;
+using ObjCRuntime;
 using UIKit;
 using PointF = CoreGraphics.CGPoint;
 using RectangleF = CoreGraphics.CGRect;
@@ -12,10 +13,13 @@ using RectangleF = CoreGraphics.CGRect;
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
 
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class ScrollViewRenderer : UIScrollView, IVisualElementRenderer, IEffectControlProvider
 	{
 		EventTracker _events;
+#pragma warning disable CS0618 // Type or member is obsolete
 		KeyboardInsetTracker _insetTracker;
+#pragma warning restore CS0618 // Type or member is obsolete
 
 		VisualElementPackager _packager;
 
@@ -78,6 +82,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 					_events.LoadEvents(this);
 
 
+#pragma warning disable CS0618 // Type or member is obsolete
 					_insetTracker = new KeyboardInsetTracker(this, () => Window, insets =>
 					{
 						ContentInset = ScrollIndicatorInsets = insets;
@@ -88,6 +93,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 						offset.Y += point.Y;
 						SetContentOffset(offset, true);
 					}, this);
+#pragma warning restore CS0618 // Type or member is obsolete
 				}
 
 				UpdateDelaysContentTouches();
@@ -112,7 +118,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 		public void SetElementSize(Size size)
 		{
-			Layout.LayoutChildIntoBoundingRegion(Element, new Rectangle(Element.X, Element.Y, size.Width, size.Height));
+			Layout.LayoutChildIntoBoundingRegion(Element, new Rect(Element.X, Element.Y, size.Width, size.Height));
 		}
 
 		public UIViewController ViewController
@@ -122,7 +128,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 		public override void LayoutSubviews()
 		{
-			_insetTracker?.OnLayoutSubviews();
 			base.LayoutSubviews();
 
 			if (Superview != null && ScrollView != null)
@@ -216,6 +221,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				UpdateHorizontalScrollBarVisibility();
 		}
 
+		[PortHandler]
 		void UpdateIsEnabled()
 		{
 			if (Element == null)
@@ -295,6 +301,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				ScrollView.SendScrollFinished();
 		}
 
+		[PortHandler]
 		void UpdateDelaysContentTouches()
 		{
 			DelaysContentTouches = ((ScrollView)Element).OnThisPlatform().ShouldDelayContentTouches();
@@ -302,7 +309,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 		void UpdateBackgroundColor()
 		{
-			BackgroundColor = Element.BackgroundColor.ToUIColor(Colors.Transparent);
+			BackgroundColor = Element.BackgroundColor.ToPlatform(Colors.Transparent);
 		}
 
 		void UpdateBackground()

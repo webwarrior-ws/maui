@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0-android</TargetFramework>
+    <TargetFramework>$(_MauiDotNetTfm)-android</TargetFramework>
     <OutputType>Exe</OutputType>
     <RootNamespace>Microsoft.Maui.Controls.Compatibility.ControlGallery.Android</RootNamespace>
     <AssemblyName>Microsoft.Maui.Controls.Compatibility.ControlGallery.Android</AssemblyName>
@@ -9,7 +9,7 @@
     <Nullable>disable</Nullable>
     <!--<DefineConstants>$(DefineConstants);HAVE_OPENTK</DefineConstants>-->
     <AndroidLinkMode>None</AndroidLinkMode>
-    <NoWarn>IL2036;0618</NoWarn>
+    <NoWarn>IL2036;0618;0612</NoWarn>
   </PropertyGroup>
 
     <!--
@@ -29,10 +29,14 @@
     <AndroidSigningKeyPass>android</AndroidSigningKeyPass>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <EmbedAssembliesIntoApk>True</EmbedAssembliesIntoApk>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="NUnit" Version="3.13.1" />
-    <PackageReference Include="Xam.Plugin.DeviceInfo" Version="3.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="Xam.Plugin.DeviceInfo" Version="4.1.1" />
     <PackageReference Include="Xamarin.Build.Download" />
     <PackageReference Include="Xamarin.AndroidX.Lifecycle.LiveData" />
     <PackageReference Include="Xamarin.AndroidX.Browser" />
@@ -44,14 +48,13 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Compatibility\Maps\src\Android\Compatibility.Maps.Android.csproj" />
     <ProjectReference Include="..\..\..\..\Controls\tests\CustomAttributes\Controls.CustomAttributes.csproj" />
-    <ProjectReference Include="..\..\..\..\Controls\Maps\src\Controls.Maps-net6.csproj" />
-    <ProjectReference Include="..\..\..\..\Controls\src\Core\Controls.Core-net6.csproj" />
-    <ProjectReference Include="..\..\..\..\Core\src\Core-net6.csproj" />
-    <ProjectReference Include="..\..\..\..\Compatibility\Android.FormsViewGroup\src\Compatibility.Android.FormsViewGroup-net6.csproj" />
-    <ProjectReference Include="..\..\..\..\Compatibility\Core\src\Compatibility-net6.csproj" />
+    <ProjectReference Include="..\..\..\..\Controls\Maps\src\Controls.Maps.csproj" />
+    <ProjectReference Include="..\..\..\..\Controls\src\Core\Controls.Core.csproj" />
+    <ProjectReference Include="..\..\..\..\Core\src\Core.csproj" />
+    <ProjectReference Include="..\..\..\..\Compatibility\Core\src\Compatibility.csproj" />
     <ProjectReference Include="..\..\..\..\Compatibility\Android.AppLinks\src\Compatibility.Android.AppLinks.csproj" />
     <ProjectReference Include="..\..\..\..\Compatibility\Core\tests\Android\Compatibility.Android.UnitTests.csproj" />
-    <ProjectReference Include="..\Core\Compatibility.ControlGallery.Core-net6.csproj" />
+    <ProjectReference Include="..\Core\Compatibility.ControlGallery.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -62,5 +65,7 @@
     <AndroidEnvironment Include="Environment.txt" />
     <Compile Include="Properties\MapsKey.cs" Condition="Exists('Properties\MapsKey.cs')" />
   </ItemGroup>
+
+  <Import Project="$(MauiSrcDirectory)Maui.InTree.props" Condition=" '$(UseMaui)' != 'true' " />
 
 </Project>

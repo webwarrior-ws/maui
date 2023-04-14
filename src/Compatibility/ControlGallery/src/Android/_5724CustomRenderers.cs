@@ -1,12 +1,12 @@
-﻿using Android.Content;
-using System;
-using System.Linq;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.ControlGallery.Android;
-using Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat;
+﻿using System;
 using System.ComponentModel;
+using System.Linq;
+using Android.Content;
+using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Compatibility;
 using Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues;
+using Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat;
+using Microsoft.Maui.Controls.ControlGallery.Android;
 using Microsoft.Maui.Controls.Platform;
 
 [assembly: ExportRenderer(typeof(Issue5724.CustomButton), typeof(CustomButtonRenderer5724))]
@@ -54,12 +54,7 @@ namespace Microsoft.Maui.Controls.ControlGallery.Android
 		}
 	}
 
-	public class CustomFrameRenderer5724 :
-#if !LEGACY_RENDERERS
-		Compatibility.Platform.Android.FastRenderers.FrameRenderer
-#else
-		FrameRenderer
-#endif
+	public class CustomFrameRenderer5724 : Handlers.Compatibility.FrameRenderer
 	{
 		public CustomFrameRenderer5724(Context context) : base(context)
 		{

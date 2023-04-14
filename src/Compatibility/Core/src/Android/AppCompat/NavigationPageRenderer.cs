@@ -18,6 +18,7 @@ using AndroidX.AppCompat.Graphics.Drawable;
 using AndroidX.DrawerLayout.Widget;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.Platform;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 using static Android.Views.View;
 using static Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific.AppCompat.NavigationPage;
@@ -33,6 +34,7 @@ using Object = Java.Lang.Object;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class NavigationPageRenderer : VisualElementRenderer<NavigationPage>, IManageFragments, IOnClickListener, ILifeCycleState
 	{
 		readonly List<Fragment> _fragmentStack = new List<Fragment>();
@@ -70,7 +72,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 		{
 			AutoPackage = false;
 			Id = Platform.GenerateViewId();
-			Device.Info.PropertyChanged += DeviceInfoPropertyChanged;
+			DeviceDisplay.MainDisplayInfoChanged += DeviceInfoPropertyChanged;
 		}
 
 		INavigationPageController NavigationPageController => Element as INavigationPageController;
@@ -164,7 +166,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 
 			if (disposing)
 			{
-				Device.Info.PropertyChanged -= DeviceInfoPropertyChanged;
+				DeviceDisplay.MainDisplayInfoChanged -= DeviceInfoPropertyChanged;
 
 				if (NavigationPageController != null)
 				{
@@ -404,7 +406,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 			var barOffset = ToolbarVisible ? barHeight : 0;
 			int containerHeight = b - t - ContainerTopPadding - barOffset - ContainerBottomPadding;
 
-			PageController.ContainerArea = new Rectangle(0, 0, Context.FromPixels(r - l), Context.FromPixels(containerHeight));
+			PageController.ContainerArea = new Graphics.Rect(0, 0, Context.FromPixels(r - l), Context.FromPixels(containerHeight));
 
 			// Potential for optimization here, the exact conditions by which you don't need to do this are complex
 			// and the cost of doing when it's not needed is moderate to low since the layout will short circuit pretty fast
@@ -484,7 +486,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 			}
 
 			if (actionBarHeight <= 0)
-				return Device.Info.CurrentOrientation.IsPortrait() ? (int)Context.ToPixels(56) : (int)Context.ToPixels(48);
+				return DeviceDisplay.MainDisplayInfo.Orientation.IsPortrait() ? (int)Context.ToPixels(56) : (int)Context.ToPixels(48);
 
 			if (Context.GetActivity().Window.Attributes.Flags.HasFlag(WindowManagerFlags.TranslucentStatus) || Context.GetActivity().Window.Attributes.Flags.HasFlag(WindowManagerFlags.TranslucentNavigation))
 			{
@@ -553,12 +555,9 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 				UpdateToolbar();
 		}
 
-#pragma warning disable 1998 // considered for removal
-		async void DeviceInfoPropertyChanged(object sender, PropertyChangedEventArgs e)
-#pragma warning restore 1998
+		void DeviceInfoPropertyChanged(object sender, DisplayInfoChangedEventArgs e)
 		{
-			if (nameof(Device.Info.CurrentOrientation) == e.PropertyName)
-				ResetToolbar();
+			ResetToolbar();
 		}
 
 		void InsertPageBefore(Page page, Page before)
@@ -720,11 +719,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 			// And remove the fragment from our own stack
 			_fragmentStack.Remove(fragment);
 
-			Device.StartTimer(TimeSpan.FromMilliseconds(10), () =>
-			{
-				UpdateToolbar();
-				return false;
-			});
+			PostDelayed(() => UpdateToolbar(), 10);
 		}
 
 		void ResetToolbar()
@@ -908,8 +903,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 			if (_disposed || _currentMenuItems == null)
 				return;
 
-			_currentMenuItems.Clear();
-			_currentMenuItems = new List<IMenuItem>();
 			_toolbar.UpdateMenuItems(_toolbarTracker?.ToolbarItems, Element.FindMauiContext(), null, OnToolbarItemPropertyChanged, _currentMenuItems, _currentToolbarItems, UpdateMenuItemIcon);
 		}
 
@@ -921,7 +914,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 
 		protected virtual void UpdateMenuItemIcon(Context context, IMenuItem menuItem, ToolbarItem toolBarItem)
 		{
-			ToolbarExtensions.UpdateMenuItemIcon(Element.FindMauiContext(), menuItem, toolBarItem, null);
+			Element.FindMauiContext().UpdateMenuItemIcon(menuItem, toolBarItem, null);
 		}
 
 		void UpdateToolbar()
@@ -994,7 +987,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 
 			Color navIconColor = NavigationPage.GetIconColor(Current);
 			if (navIconColor != null && bar.NavigationIcon != null)
-				DrawableExtensions.SetColorFilter(bar.NavigationIcon, navIconColor, FilterMode.SrcAtop);
+				bar.NavigationIcon.SetColorFilter(navIconColor, FilterMode.SrcAtop);
 
 			bar.Title = currentPage?.Title ?? string.Empty;
 
@@ -1096,7 +1089,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 
 		void AddTransitionTimer(TaskCompletionSource<bool> tcs, Fragment fragment, FragmentManager fragmentManager, IReadOnlyCollection<Fragment> fragmentsToRemove, int duration, bool shouldUpdateToolbar)
 		{
-			Device.StartTimer(TimeSpan.FromMilliseconds(duration), () =>
+			PostDelayed(() =>
 			{
 				tcs.TrySetResult(true);
 				Current?.SendAppearing();
@@ -1112,9 +1105,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 
 					fragmentTransaction.CommitAllowingStateLossEx();
 				}
-
-				return false;
-			});
+			}, duration);
 		}
 
 		void PushCurrentPages()
@@ -1193,7 +1184,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 				var width = (int)ctx.FromPixels(MeasureSpecFactory.GetSize(widthMeasureSpec));
 
 				SizeRequest request = _child.Element.Measure(width, double.PositiveInfinity, MeasureFlags.IncludeMargins);
-				Microsoft.Maui.Controls.Compatibility.Layout.LayoutChildIntoBoundingRegion(_child.Element, new Rectangle(0, 0, width, request.Request.Height));
+				Microsoft.Maui.Controls.Compatibility.Layout.LayoutChildIntoBoundingRegion(_child.Element, new Graphics.Rect(0, 0, width, request.Request.Height));
 
 				int widthSpec = MeasureSpecFactory.MakeMeasureSpec((int)ctx.ToPixels(width), MeasureSpecMode.Exactly);
 				int heightSpec = MeasureSpecFactory.MakeMeasureSpec((int)ctx.ToPixels(request.Request.Height), MeasureSpecMode.Exactly);

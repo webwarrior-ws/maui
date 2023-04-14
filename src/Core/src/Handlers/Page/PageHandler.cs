@@ -1,29 +1,26 @@
 ﻿#nullable enable
 namespace Microsoft.Maui.Handlers
 {
-	public partial class PageHandler : IViewHandler
+	public partial class PageHandler : ContentViewHandler, IPageHandler
 	{
-		public static IPropertyMapper<IView, PageHandler> PageMapper = new PropertyMapper<IView, PageHandler>(ViewMapper)
-		{
-			[nameof(ITitledElement.Title)] = MapTitle,
-			[nameof(IContentView.Content)] = MapContent,
-		};
-
-		public static CommandMapper<IPicker, PickerHandler> PageCommandMapper = new(ViewCommandMapper)
-		{
-#if __IOS__
-			[nameof(IView.Frame)] = MapFrame,
+		public static new IPropertyMapper<IContentView, IPageHandler> Mapper =
+			new PropertyMapper<IContentView, IPageHandler>(ContentViewHandler.Mapper)
+			{
+#if TIZEN
+				[nameof(IContentView.Background)] = MapBackground,
 #endif
-		};
+				[nameof(ITitledElement.Title)] = MapTitle,
+			};
 
-		public PageHandler() : base(PageMapper, PageCommandMapper)
+		public static new CommandMapper<IContentView, IPageHandler> CommandMapper =
+			new(ContentViewHandler.CommandMapper);
+
+		public PageHandler() : base(Mapper, CommandMapper)
 		{
-
 		}
 
-		public PageHandler(IPropertyMapper? mapper = null) : base(mapper ?? PageMapper)
+		public PageHandler(IPropertyMapper? mapper = null) : base(mapper ?? Mapper)
 		{
-
 		}
 	}
 }

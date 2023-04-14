@@ -1,6 +1,7 @@
 using System;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Hosting.Internal;
 using Xunit;
 
@@ -50,8 +51,8 @@ namespace Microsoft.Maui.UnitTests
 
 			var ex = Assert.Throws<InvalidOperationException>(() => handlerStub.GetRequiredService<IFooService>());
 
-			Assert.Contains("the context", ex.Message);
-			Assert.Contains("MauiContext", ex.Message);
+			Assert.Contains("the context", ex.Message, StringComparison.Ordinal);
+			Assert.Contains("MauiContext", ex.Message, StringComparison.Ordinal);
 		}
 
 		[Fact]
@@ -66,8 +67,8 @@ namespace Microsoft.Maui.UnitTests
 
 			var ex = Assert.Throws<InvalidOperationException>(() => handlerStub.GetRequiredService<IFooService>());
 
-			Assert.Contains("the service provider", ex.Message);
-			Assert.Contains("MauiContext", ex.Message);
+			Assert.Contains("the service provider", ex.Message, StringComparison.Ordinal);
+			Assert.Contains("MauiContext", ex.Message, StringComparison.Ordinal);
 		}
 
 		[Fact]
@@ -76,10 +77,10 @@ namespace Microsoft.Maui.UnitTests
 			HandlerStub handlerStub = new HandlerStub();
 
 			var collection = new MauiServiceCollection();
-			collection.TryAddSingleton<IMauiHandlersServiceProvider>(new MauiHandlersServiceProvider(null));
+			collection.TryAddSingleton<IMauiHandlersFactory>(new MauiHandlersFactory(null));
 			collection.TryAddSingleton<IFooService, FooService>();
 
-			var provider = new MauiServiceProvider(collection, false);
+			var provider = new MauiFactory(collection);
 
 			handlerStub.SetMauiContext(new HandlersContextStub(provider));
 
@@ -106,7 +107,6 @@ namespace Microsoft.Maui.UnitTests
 		[Fact]
 		public void ChainingToLessTypedParentWorks()
 		{
-
 			bool wasMapper1Called = false;
 			bool wasMapper2Called = false;
 			var mapper1 = new PropertyMapper<IView, HandlerStub>
@@ -126,6 +126,64 @@ namespace Microsoft.Maui.UnitTests
 
 			Assert.True(wasMapper1Called);
 			Assert.False(wasMapper2Called);
+		}
+
+		class CustomNativeButton : object
+		{
+
+		}
+
+		class CustomButton : Maui.Controls.Button
+		{
+
+		}
+
+		[Fact]
+		public void CanUseFactoryForAlternateType()
+		{
+			HandlerStub.PlatformViewFactory = (h) => { return new CustomNativeButton(); };
+
+			HandlerStub handlerStub = new HandlerStub();
+			handlerStub.SetVirtualView(new Maui.Controls.Button());
+
+			Assert.True(handlerStub.PlatformView is CustomNativeButton);
+		}
+
+		[Fact]
+		public void FactoryCanPuntAndUseOriginalType()
+		{
+			HandlerStub.PlatformViewFactory = (h) => { return null; };
+
+			HandlerStub handlerStub = new HandlerStub();
+			handlerStub.SetVirtualView(new Maui.Controls.Button());
+
+			Assert.NotNull(handlerStub.PlatformView);
+			Assert.False(handlerStub.PlatformView is CustomNativeButton);
+			Assert.True(handlerStub.PlatformView is object);
+		}
+
+		[Fact]
+		public void FactoryCanCustomizeBasedOnVirtualView()
+		{
+			HandlerStub.PlatformViewFactory = (h) =>
+			{
+				if (h.VirtualView is CustomButton)
+				{
+					return new CustomNativeButton();
+				}
+
+				return null;
+			};
+
+			HandlerStub handlerStub = new HandlerStub();
+			handlerStub.SetVirtualView(new CustomButton());
+
+			Assert.True(handlerStub.PlatformView is CustomNativeButton);
+
+			HandlerStub handlerStub2 = new HandlerStub();
+			handlerStub2.SetVirtualView(new Maui.Controls.Button());
+
+			Assert.True(handlerStub2.PlatformView is object);
 		}
 	}
 }

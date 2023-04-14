@@ -6,18 +6,20 @@ using Microsoft.Maui.Controls.Internals;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/GestureElement.xml" path="Type[@FullName='Microsoft.Maui.Controls.GestureElement']/Docs" />
 	public class GestureElement : Element, ISpatialElement, IGestureRecognizers
 	{
 		readonly GestureRecognizerCollection _gestureRecognizers = new GestureRecognizerCollection();
 		internal event NotifyCollectionChangedEventHandler GestureRecognizersCollectionChanged;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/GestureElement.xml" path="//Member[@MemberName='.ctor']/Docs" />
 		public GestureElement()
 		{
 			_gestureRecognizers.CollectionChanged += (sender, args) =>
 			{
 				void AddItems()
 				{
-					foreach (IElement item in args.NewItems.OfType<IElement>())
+					foreach (IElementDefinition item in args.NewItems.OfType<IElementDefinition>())
 					{
 						ValidateGesture(item as IGestureRecognizer);
 						item.Parent = this;
@@ -26,7 +28,7 @@ namespace Microsoft.Maui.Controls
 
 				void RemoveItems()
 				{
-					foreach (IElement item in args.OldItems.OfType<IElement>())
+					foreach (IElementDefinition item in args.OldItems.OfType<IElementDefinition>())
 						item.Parent = null;
 				}
 
@@ -43,7 +45,7 @@ namespace Microsoft.Maui.Controls
 						RemoveItems();
 						break;
 					case NotifyCollectionChangedAction.Reset:
-						foreach (IElement item in _gestureRecognizers.OfType<IElement>())
+						foreach (IElementDefinition item in _gestureRecognizers.OfType<IElementDefinition>())
 							item.Parent = this;
 						break;
 				}
@@ -54,6 +56,7 @@ namespace Microsoft.Maui.Controls
 
 		Region ISpatialElement.Region { get; set; }
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/GestureElement.xml" path="//Member[@MemberName='GestureRecognizers']/Docs" />
 		public IList<IGestureRecognizer> GestureRecognizers
 		{
 			get { return _gestureRecognizers; }

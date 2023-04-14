@@ -1,146 +1,182 @@
 ﻿using System;
 using CoreGraphics;
 using Foundation;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Platform.iOS;
 using UIKit;
 
 namespace Microsoft.Maui.Handlers
 {
 	public partial class EditorHandler : ViewHandler<IEditor, MauiTextView>
 	{
-		static readonly int BaseHeight = 30;
+		bool _set;
 
-		static readonly UIColor DefaultPlaceholderColor = ColorExtensions.PlaceholderColor;
-
-		protected override MauiTextView CreateNativeView()
+		protected override MauiTextView CreatePlatformView()
 		{
-			return new MauiTextView(CGRect.Empty);
+			var platformEditor = new MauiTextView();
+
+#if !MACCATALYST
+			var accessoryView = new MauiDoneAccessoryView();
+			accessoryView.SetDoneClicked(OnDoneClicked);
+			platformEditor.InputAccessoryView = accessoryView;
+#endif
+
+			return platformEditor;
 		}
 
-		protected override void ConnectHandler(MauiTextView nativeView)
+#if !MACCATALYST
+		static void OnDoneClicked(object sender)
 		{
-			base.ConnectHandler(nativeView);
+			if (sender is IEditorHandler handler)
+			{
+				handler.PlatformView.ResignFirstResponder();
+				handler.VirtualView.Completed();
+			}
+		}
+#endif
 
-			nativeView.Changed += OnChanged;
-			nativeView.ShouldChangeText += OnShouldChangeText;
-			nativeView.Ended += OnEnded;
+		public override void SetVirtualView(IView view)
+		{
+			base.SetVirtualView(view);
+
+			if (!_set)
+				PlatformView.SelectionChanged += OnSelectionChanged;
+
+			_set = true;
 		}
 
-		protected override void DisconnectHandler(MauiTextView nativeView)
+		protected override void ConnectHandler(MauiTextView platformView)
 		{
-			base.DisconnectHandler(nativeView);
-
-			nativeView.Changed -= OnChanged;
-			nativeView.ShouldChangeText -= OnShouldChangeText;
-			nativeView.Ended -= OnEnded;
+			platformView.ShouldChangeText += OnShouldChangeText;
+			platformView.Started += OnStarted;
+			platformView.Ended += OnEnded;
+			platformView.TextSetOrChanged += OnTextPropertySet;
 		}
 
-		public override Size GetDesiredSize(double widthConstraint, double heightConstraint) =>
-			new SizeRequest(new Size(widthConstraint, BaseHeight));
-
-		public static void MapText(EditorHandler handler, IEditor editor)
+		protected override void DisconnectHandler(MauiTextView platformView)
 		{
-			handler.NativeView?.UpdateText(editor);
+			platformView.ShouldChangeText -= OnShouldChangeText;
+			platformView.Started -= OnStarted;
+			platformView.Ended -= OnEnded;
+			platformView.TextSetOrChanged -= OnTextPropertySet;
+
+			if (_set)
+				platformView.SelectionChanged -= OnSelectionChanged;
+
+			_set = false;
+		}
+
+		public override Size GetDesiredSize(double widthConstraint, double heightConstraint)
+		{
+			if (double.IsInfinity(widthConstraint) || double.IsInfinity(heightConstraint))
+			{
+				// If we drop an infinite value into base.GetDesiredSize for the Editor, we'll
+				// get an exception; it doesn't know what do to with it. So instead we'll size
+				// it to fit its current contents and use those values to replace infinite constraints
+
+				PlatformView.SizeToFit();
+
+				if (double.IsInfinity(widthConstraint))
+				{
+					widthConstraint = PlatformView.Frame.Size.Width;
+				}
+
+				if (double.IsInfinity(heightConstraint))
+				{
+					heightConstraint = PlatformView.Frame.Size.Height;
+				}
+			}
+
+			return base.GetDesiredSize(widthConstraint, heightConstraint);
+		}
+
+		public static void MapText(IEditorHandler handler, IEditor editor)
+		{
+			handler.PlatformView?.UpdateText(editor);
 
 			// Any text update requires that we update any attributed string formatting
 			MapFormatting(handler, editor);
 		}
 
-		public static void MapTextColor(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdateTextColor(editor);
-		}
+		public static void MapTextColor(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateTextColor(editor);
 
-		public static void MapPlaceholder(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdatePlaceholder(editor);
-		}
+		public static void MapPlaceholder(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdatePlaceholder(editor);
 
-		public static void MapPlaceholderColor(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdatePlaceholderColor(editor, DefaultPlaceholderColor);
-		}
+		public static void MapPlaceholderColor(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdatePlaceholderColor(editor);
 
-		public static void MapCharacterSpacing(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdateCharacterSpacing(editor);
-		}
+		public static void MapCharacterSpacing(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateCharacterSpacing(editor);
 
-		public static void MapMaxLength(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdateMaxLength(editor);
-		}
+		public static void MapMaxLength(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateMaxLength(editor);
 
-		public static void MapIsReadOnly(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdateIsReadOnly(editor);
-		}
+		public static void MapIsReadOnly(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateIsReadOnly(editor);
 
-		public static void MapIsTextPredictionEnabled(EditorHandler handler, IEditor editor)
-		{
-			handler.NativeView?.UpdateIsTextPredictionEnabled(editor);
-		}
+		public static void MapIsTextPredictionEnabled(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateIsTextPredictionEnabled(editor);
 
-		public static void MapFormatting(EditorHandler handler, IEditor editor)
+		public static void MapFont(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateFont(editor, handler.GetRequiredService<IFontManager>());
+
+		public static void MapHorizontalTextAlignment(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateHorizontalTextAlignment(editor);
+
+		public static void MapVerticalTextAlignment(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateVerticalTextAlignment(editor);
+
+		public static void MapCursorPosition(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateCursorPosition(editor);
+
+		public static void MapSelectionLength(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateSelectionLength(editor);
+
+		public static void MapKeyboard(IEditorHandler handler, IEditor editor) =>
+			handler.PlatformView?.UpdateKeyboard(editor);
+
+		public static void MapFormatting(IEditorHandler handler, IEditor editor)
 		{
-			handler.NativeView?.UpdateMaxLength(editor);
+			handler.PlatformView?.UpdateMaxLength(editor);
 
 			// Update all of the attributed text formatting properties
-			handler.NativeView?.UpdateCharacterSpacing(editor);
+			handler.PlatformView?.UpdateCharacterSpacing(editor);
 		}
 
-		public static void MapFont(EditorHandler handler, IEditor editor)
+		bool OnShouldChangeText(UITextView textView, NSRange range, string replacementString) =>
+			VirtualView.TextWithinMaxLength(textView.Text, range, replacementString);
+
+		void OnStarted(object? sender, EventArgs eventArgs)
 		{
-			var fontManager = handler.GetRequiredService<IFontManager>();
-
-			handler.NativeView?.UpdateFont(editor, fontManager);
-		}
-
-		void OnChanged(object? sender, EventArgs e) => OnTextChanged();
-
-		void OnTextChanged()
-		{
-			if (NativeView == null)
-				return;
-
-			NativeView.HidePlaceholder(!string.IsNullOrEmpty(NativeView.Text));
-		}
-
-		bool OnShouldChangeText(UITextView textView, NSRange range, string replacementString)
-		{
-			var currLength = textView?.Text?.Length ?? 0;
-
-			// Fix a crash on undo
-			if (range.Length + range.Location > currLength)
-				return false;
-
-			if (VirtualView == null || NativeView == null)
-				return false;
-
-			var addLength = replacementString?.Length ?? 0;
-			var remLength = range.Length;
-
-			var newLength = currLength + addLength - remLength;
-
-			return newLength <= VirtualView.MaxLength;
+			if (VirtualView != null)
+				VirtualView.IsFocused = true;
 		}
 
 		void OnEnded(object? sender, EventArgs eventArgs)
 		{
-			if (VirtualView == null || NativeView == null)
-				return;
+			if (VirtualView != null)
+			{
+				VirtualView.IsFocused = false;
 
-			if (NativeView.Text != VirtualView.Text)
-				VirtualView.Text = NativeView.Text ?? string.Empty;
-
-			// TODO: Update IsFocused property
-			VirtualView.Completed();
+				VirtualView.Completed();
+			}
 		}
 
-		public static void MapKeyboard(EditorHandler handler, IEditor editor)
+		void OnTextPropertySet(object? sender, EventArgs e) =>
+			VirtualView.UpdateText(PlatformView.Text);
+
+		private void OnSelectionChanged(object? sender, EventArgs e)
 		{
-			handler.NativeView?.UpdateKeyboard(editor);
+			var cursorPostion = PlatformView.GetCursorPosition();
+			var selectedTextLength = PlatformView.GetSelectedTextLength();
+
+			if (VirtualView.CursorPosition != cursorPostion)
+				VirtualView.CursorPosition = cursorPostion;
+
+			if (VirtualView.SelectionLength != selectedTextLength)
+				VirtualView.SelectionLength = selectedTextLength;
 		}
 	}
 }

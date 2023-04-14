@@ -1,18 +1,56 @@
+using System;
 using System.Threading.Tasks;
+using Android.Text;
 using AndroidX.AppCompat.Widget;
 using AndroidX.Core.Widget;
-using Google.Android.Material.Button;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.DeviceTests.Stubs;
-using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Handlers;
 using Xunit;
-using AColor = global::Android.Graphics.Color;
+using AColor = Android.Graphics.Color;
 
 namespace Microsoft.Maui.DeviceTests
 {
 	public partial class ButtonHandlerTests
 	{
+		[Fact(DisplayName = "IsVisible updates Correctly")]
+		public async Task IsVisibleUpdatesCorrectly()
+		{
+			var expected = Colors.Red;
+
+			var layout = new LayoutStub();
+
+			var hiddenButton = new ButtonStub
+			{
+				Text = "Text",
+				TextColor = expected,
+				Visibility = Visibility.Collapsed,
+			};
+
+			var button = new ButtonStub
+			{
+				Text = "Change IsVisible"
+			};
+
+			layout.Add(hiddenButton);
+			layout.Add(button);
+
+			var clicked = false;
+
+			button.Clicked += delegate
+			{
+				hiddenButton.Visibility = Visibility.Visible;
+				clicked = true;
+			};
+
+			await PerformClick(button);
+
+			Assert.True(clicked);
+
+			var result = await GetValueAsync(hiddenButton, GetVisibility);
+			Assert.Equal(hiddenButton.Visibility, result);
+
+			await ValidateHasColor(hiddenButton, expected);
+		}
+
 		[Fact(DisplayName = "CharacterSpacing Initializes Correctly")]
 		public async Task CharacterSpacingInitializesCorrectly()
 		{
@@ -31,42 +69,16 @@ namespace Microsoft.Maui.DeviceTests
 				return new
 				{
 					ViewValue = button.CharacterSpacing,
-					NativeViewValue = GetNativeCharacterSpacing(handler)
+					PlatformViewValue = GetNativeCharacterSpacing(handler)
 				};
 			});
 
 			Assert.Equal(xplatCharacterSpacing, values.ViewValue);
-			Assert.Equal(expectedValue, values.NativeViewValue, EmCoefficientPrecision);
-		}
-
-		[Fact(DisplayName = "Button Padding Initializing")]
-		public async Task PaddingInitializesCorrectly()
-		{
-			var button = new ButtonStub()
-			{
-				Text = "Test",
-				Padding = new Thickness(5, 10, 15, 20)
-			};
-
-			var handler = await CreateHandlerAsync(button);
-			var appCompatButton = (AppCompatButton)handler.NativeView;
-			var (left, top, right, bottom) = (appCompatButton.PaddingLeft, appCompatButton.PaddingTop, appCompatButton.PaddingRight, appCompatButton.PaddingBottom);
-
-			var context = handler.NativeView.Context;
-
-			var expectedLeft = context.ToPixels(5);
-			var expectedTop = context.ToPixels(10);
-			var expectedRight = context.ToPixels(15);
-			var expectedBottom = context.ToPixels(20);
-
-			Assert.Equal(expectedLeft, left);
-			Assert.Equal(expectedTop, top);
-			Assert.Equal(expectedRight, right);
-			Assert.Equal(expectedBottom, bottom);
+			Assert.Equal(expectedValue, values.PlatformViewValue, EmCoefficientPrecision);
 		}
 
 		AppCompatButton GetNativeButton(ButtonHandler buttonHandler) =>
-			(AppCompatButton)buttonHandler.NativeView;
+			buttonHandler.PlatformView;
 
 		string GetNativeText(ButtonHandler buttonHandler) =>
 			GetNativeButton(buttonHandler).Text;
@@ -82,16 +94,12 @@ namespace Microsoft.Maui.DeviceTests
 		Thickness GetNativePadding(ButtonHandler buttonHandler)
 		{
 			var appCompatButton = GetNativeButton(buttonHandler);
-			return ToThicknees(appCompatButton);
 
-			static Thickness ToThicknees(AppCompatButton appCompatButton)
-			{
-				var onePx = appCompatButton.Context.ToPixels(1);
-
-
-				return new Thickness(appCompatButton.PaddingLeft,
-					appCompatButton.PaddingTop, appCompatButton.PaddingRight, appCompatButton.PaddingBottom);
-			}
+			return new Thickness(
+				appCompatButton.PaddingLeft,
+				appCompatButton.PaddingTop,
+				appCompatButton.PaddingRight,
+				appCompatButton.PaddingBottom);
 		}
 
 		Task PerformClick(IButton button)
@@ -116,10 +124,23 @@ namespace Microsoft.Maui.DeviceTests
 
 		bool ImageSourceLoaded(ButtonHandler buttonHandler)
 		{
-			var image = buttonHandler.NativeView.Icon ??
-						TextViewCompat.GetCompoundDrawablesRelative(buttonHandler.NativeView)[3];
+			var image = buttonHandler.PlatformView.Icon ??
+						TextViewCompat.GetCompoundDrawablesRelative(buttonHandler.PlatformView)[3];
 
 			return image != null;
+		}
+
+		TextUtils.TruncateAt GetNativeLineBreakMode(ButtonHandler buttonHandler) =>
+			GetNativeButton(buttonHandler).Ellipsize;
+
+		Task ValidateHasColor(IButton button, Color color, Action action = null)
+		{
+			return InvokeOnMainThreadAsync(() =>
+			{
+				var platformButton = GetNativeButton(CreateHandler(button));
+				action?.Invoke();
+				platformButton.AssertContainsColor(color);
+			});
 		}
 	}
 }

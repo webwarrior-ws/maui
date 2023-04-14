@@ -4,10 +4,45 @@ using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.Controls
 {
-	public partial class Page : IView, ITitledElement
+	/// <include file="../../../docs/Microsoft.Maui.Controls/Page.xml" path="Type[@FullName='Microsoft.Maui.Controls.Page']/Docs" />
+	public partial class Page : IView, ITitledElement, IToolbarElement
 	{
+		internal bool HasNavigatedTo { get; private set; }
+
+		Paint IView.Background
+		{
+			get
+			{
+				if (!Brush.IsNullOrEmpty(Background))
+					return Background;
+				if (!ImageSource.IsNullOrEmpty(BackgroundImageSource))
+					return new ImageSourcePaint(BackgroundImageSource);
+				if (BackgroundColor.IsNotDefault())
+					return new SolidColorBrush(BackgroundColor);
+
+				return null;
+			}
+		}
+
+		Toolbar _toolbar;
+		IToolbar IToolbarElement.Toolbar
+		{
+			get => _toolbar;
+		}
+
+		internal Toolbar Toolbar
+		{
+			get => _toolbar;
+			set
+			{
+				_toolbar = value;
+				Handler?.UpdateValue(nameof(IToolbarElement.Toolbar));
+			}
+		}
+
 		internal void SendNavigatedTo(NavigatedToEventArgs args)
 		{
+			HasNavigatedTo = true;
 			NavigatedTo?.Invoke(this, args);
 			OnNavigatedTo(args);
 		}
@@ -20,6 +55,7 @@ namespace Microsoft.Maui.Controls
 
 		internal void SendNavigatedFrom(NavigatedFromEventArgs args)
 		{
+			HasNavigatedTo = false;
 			NavigatedFrom?.Invoke(this, args);
 			OnNavigatedFrom(args);
 		}
@@ -31,6 +67,10 @@ namespace Microsoft.Maui.Controls
 		protected virtual void OnNavigatedTo(NavigatedToEventArgs args) { }
 		protected virtual void OnNavigatingFrom(NavigatingFromEventArgs args) { }
 		protected virtual void OnNavigatedFrom(NavigatedFromEventArgs args) { }
+
+		/// <include file="../../../docs/Microsoft.Maui.Controls/Page.xml" path="//Member[@MemberName='GetParentWindow']/Docs" />
+		public virtual Window GetParentWindow()
+			=> this.FindParentOfType<Window>();
 	}
 
 	public sealed class NavigatingFromEventArgs : EventArgs

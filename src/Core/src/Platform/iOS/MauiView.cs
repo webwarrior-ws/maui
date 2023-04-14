@@ -2,7 +2,7 @@
 using ObjCRuntime;
 using UIKit;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public abstract class MauiView : UIView
 	{
@@ -24,7 +24,9 @@ namespace Microsoft.Maui
 				return bounds;
 			}
 
+#pragma warning disable CA1416 // TODO 'UIView.SafeAreaInsets' is only supported on: 'ios' 11.0 and later, 'maccatalyst' 11.0 and later, 'tvos' 11.0 and later.
 			return SafeAreaInsets.InsetRect(bounds);
+#pragma warning restore CA1416
 		}
 	}
 }

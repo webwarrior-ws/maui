@@ -16,6 +16,7 @@ using AWebView = Android.Webkit.WebView;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class RefreshViewRenderer : SwipeRefreshLayout, IVisualElementRenderer, IEffectControlProvider, SwipeRefreshLayout.IOnRefreshListener
 	{
 		bool _isDisposed;
@@ -146,9 +147,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		bool CanScrollUp(AView view)
 		{
 			if (!(view is ViewGroup viewGroup))
-				return base.CanChildScrollUp();
-
-			if (Forms.SdkInt < BuildVersionCodes.JellyBean && viewGroup.IsScrollContainer)
 				return base.CanChildScrollUp();
 
 			if (!CanScrollUpViewByType(view))

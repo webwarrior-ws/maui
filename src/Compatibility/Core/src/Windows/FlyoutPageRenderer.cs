@@ -11,9 +11,11 @@ using WImageSource = Microsoft.UI.Xaml.Media.ImageSource;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Controls.Platform;
 using WVisibility = Microsoft.UI.Xaml.Visibility;
+using Microsoft.Maui.Devices;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class FlyoutPageRenderer : IVisualElementRenderer, IToolbarProvider, ITitleProvider, ITitleIconProvider, ITitleViewProvider, IToolBarForegroundBinder
 	{
 		Page _master;
@@ -26,6 +28,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		UIElement _defaultAutomationPropertiesLabeledBy;
 
 		VisualElementTracker<Page, FrameworkElement> _tracker;
+		IFlyoutPageController FlyoutPageController => Element;
 
 		public FlyoutPageControl Control { get; private set; }
 
@@ -133,8 +136,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 		public SizeRequest GetDesiredSize(double widthConstraint, double heightConstraint)
 		{
-			Size size = Device.Info.ScaledScreenSize;
-			return new SizeRequest(new Size(size.Width, size.Height));
+			var size = DeviceDisplay.MainDisplayInfo.GetScaledScreenSize();
+			return new SizeRequest(size);
 		}
 
 		UIElement IVisualElementRenderer.GetNativeElement()
@@ -185,7 +188,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 				_defaultAutomationPropertiesName = Control.SetAutomationPropertiesName(Element, _defaultAutomationPropertiesName);
 				_defaultAutomationPropertiesHelpText = Control.SetAutomationPropertiesHelpText(Element, _defaultAutomationPropertiesHelpText);
-				_defaultAutomationPropertiesLabeledBy = Control.SetAutomationPropertiesLabeledBy(Element, Element.Handler?.MauiContext ?? Forms.MauiContext,  _defaultAutomationPropertiesLabeledBy);
+				_defaultAutomationPropertiesLabeledBy = Control.SetAutomationPropertiesLabeledBy(Element, Element.Handler?.MauiContext ?? Forms.MauiContext, _defaultAutomationPropertiesLabeledBy);
 				_defaultAutomationPropertiesAccessibilityView = Control.SetAutomationPropertiesAccessibilityView(Element, _defaultAutomationPropertiesAccessibilityView);
 			}
 		}
@@ -299,11 +302,11 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 		void UpdateBounds()
 		{
-			Windows.Foundation.Size masterSize = Control.FlyoutSize;
-			Windows.Foundation.Size detailSize = Control.DetailSize;
+			global::Windows.Foundation.Size masterSize = Control.FlyoutSize;
+			global::Windows.Foundation.Size detailSize = Control.DetailSize;
 
-			Element.FlyoutBounds = new Rectangle(0, 0, masterSize.Width, masterSize.Height);
-			Element.DetailBounds = new Rectangle(0, 0, detailSize.Width, detailSize.Height);
+			FlyoutPageController.FlyoutBounds = new Rect(0, 0, masterSize.Width, masterSize.Height);
+			FlyoutPageController.DetailBounds = new Rect(0, 0, detailSize.Width, detailSize.Height);
 		}
 
 		void UpdateDetail()
@@ -365,7 +368,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		{
 			// Ignore the IsPresented value being set to false for Split mode on desktop and allow the master
 			// view to be made initially visible
-			if (Device.Idiom == TargetIdiom.Desktop && Control.IsPaneOpen && Element.FlyoutLayoutBehavior != FlyoutLayoutBehavior.Popover)
+			if (DeviceInfo.Idiom == DeviceIdiom.Desktop && Control.IsPaneOpen && Element.FlyoutLayoutBehavior != FlyoutLayoutBehavior.Popover)
 				return;
 
 			Control.IsPaneOpen = Element.IsPresented;
@@ -398,7 +401,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			UpdateDetailTitleView();
 			Control.CollapseStyle = Element.OnThisPlatform().GetCollapseStyle();
 			Control.CollapsedPaneWidth = Element.OnThisPlatform().CollapsedPaneWidth();
-			Control.ShouldShowSplitMode = Element.ShouldShowSplitMode;
+			Control.ShouldShowSplitMode = FlyoutPageController.ShouldShowSplitMode;
 		}
 
 		void UpdateToolbarPlacement()

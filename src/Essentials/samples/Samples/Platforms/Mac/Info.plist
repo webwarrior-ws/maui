@@ -10,8 +10,6 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<key>LSMinimumSystemVersion</key>
-	<string>10.12</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleInfoDictionaryVersion</key>
@@ -30,6 +28,10 @@
 	<string>Assets.xcassets/AppIcon.appiconset</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Access to your location is required for cool things to happen!</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Add Photos</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Pick Photos</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

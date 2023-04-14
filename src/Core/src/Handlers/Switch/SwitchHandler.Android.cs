@@ -1,7 +1,6 @@
-using Android.Content.Res;
 using Android.Graphics.Drawables;
+using Android.Nfc.CardEmulators;
 using Android.Widget;
-using Microsoft.Maui;
 using Microsoft.Maui.Graphics;
 using ASwitch = AndroidX.AppCompat.Widget.SwitchCompat;
 
@@ -10,30 +9,26 @@ namespace Microsoft.Maui.Handlers
 	public partial class SwitchHandler : ViewHandler<ISwitch, ASwitch>
 	{
 		CheckedChangeListener ChangeListener { get; } = new CheckedChangeListener();
-		static ColorStateList? DefaultTrackColorStateList { get; set; }
-		static ColorStateList? DefaultThumbColorStateList { get; set; }
 
-		protected override ASwitch CreateNativeView()
+		protected override ASwitch CreatePlatformView()
 		{
 			return new ASwitch(Context);
 		}
 
-		protected override void ConnectHandler(ASwitch nativeView)
+		protected override void ConnectHandler(ASwitch platformView)
 		{
 			ChangeListener.Handler = this;
-			nativeView.SetOnCheckedChangeListener(ChangeListener);
+			platformView.SetOnCheckedChangeListener(ChangeListener);
+
+			base.ConnectHandler(platformView);
 		}
 
-		protected override void DisconnectHandler(ASwitch nativeView)
+		protected override void DisconnectHandler(ASwitch platformView)
 		{
 			ChangeListener.Handler = null;
-			nativeView.SetOnCheckedChangeListener(null);
-		}
+			platformView.SetOnCheckedChangeListener(null);
 
-		void SetupDefaults(ASwitch nativeView)
-		{
-			DefaultTrackColorStateList = nativeView.GetDefaultSwitchTrackColorStateList();
-			DefaultThumbColorStateList = nativeView.GetDefaultSwitchThumbColorStateList();
+			base.DisconnectHandler(platformView);
 		}
 
 		public override Size GetDesiredSize(double widthConstraint, double heightConstraint)
@@ -53,24 +48,26 @@ namespace Microsoft.Maui.Handlers
 			return size;
 		}
 
-		public static void MapIsOn(SwitchHandler handler, ISwitch view)
+		public static void MapIsOn(ISwitchHandler handler, ISwitch view)
 		{
-			handler.NativeView?.UpdateIsOn(view);
+			handler.PlatformView?.UpdateIsOn(view);
 		}
 
-		public static void MapTrackColor(SwitchHandler handler, ISwitch view)
+		public static void MapTrackColor(ISwitchHandler handler, ISwitch view)
 		{
-			handler.NativeView?.UpdateTrackColor(view, DefaultTrackColorStateList);
+			if (handler is SwitchHandler platformHandler)
+				handler.PlatformView?.UpdateTrackColor(view);
 		}
 
-		public static void MapThumbColor(SwitchHandler handler, ISwitch view)
+		public static void MapThumbColor(ISwitchHandler handler, ISwitch view)
 		{
-			handler.NativeView?.UpdateThumbColor(view, DefaultThumbColorStateList);
+			if (handler is SwitchHandler platformHandler)
+				handler.PlatformView?.UpdateThumbColor(view);
 		}
 
 		void OnCheckedChanged(bool isOn)
 		{
-			if (VirtualView == null)
+			if (VirtualView is null || VirtualView.IsOn == isOn)
 				return;
 
 			VirtualView.IsOn = isOn;

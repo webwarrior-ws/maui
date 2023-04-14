@@ -1,15 +1,20 @@
 ﻿using System;
-using UIKit;
-using Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS.CustomRenderers;
 using Microsoft.Maui.Controls.Compatibility;
-using Microsoft.Maui.Graphics;
-using static Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues.Issue6368;
+using Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS.CustomRenderers;
 using Microsoft.Maui.Controls.Compatibility.Platform.iOS;
 using Microsoft.Maui.Controls.Platform;
+using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Platform;
+using ObjCRuntime;
+using UIKit;
+using static Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues.Issue6368;
 
+#pragma warning disable CS0612 // Type or member is obsolete
 [assembly: ExportRenderer(typeof(RoundedLabel), typeof(RoundedLabelRenderer))]
+#pragma warning restore CS0612 // Type or member is obsolete
 namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS.CustomRenderers
 {
+	[System.Obsolete]
 	public class RoundedLabelRenderer : LabelRenderer
 	{
 		protected override void OnElementChanged(ElementChangedEventArgs<Label> e)
@@ -22,8 +27,8 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS.CustomRendere
 			if (e.NewElement != null)
 			{
 				this.Layer.CornerRadius = 10;
-				this.Layer.BorderColor = Maui.ColorExtensions.ToCGColor(Maui.ColorExtensions.ToColor(UIColor.FromRGB(3, 169, 244)));
-				this.Layer.BackgroundColor = Maui.ColorExtensions.ToCGColor(Colors.GhostWhite);
+				this.Layer.BorderColor = UIColor.FromRGB(3, 169, 244).CGColor;
+				this.Layer.BackgroundColor = Colors.GhostWhite.ToCGColor();
 				this.Layer.BorderWidth = 1;
 			}
 		}

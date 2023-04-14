@@ -4,31 +4,36 @@ using Microsoft.Maui.Layouts;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../../docs/Microsoft.Maui.Controls/ContentPage.xml" path="Type[@FullName='Microsoft.Maui.Controls.ContentPage']/Docs" />
 	public partial class ContentPage : IContentView, HotReload.IHotReloadableView
 	{
-		IView IContentView.Content => Content;
+		object IContentView.Content => Content;
+		IView IContentView.PresentedContent => ((this as IControlTemplated).TemplateRoot as IView) ?? Content;
 
 		protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
 		{
-			if (Content is IView view)
-			{
-				_ = view.Measure(widthConstraint, heightConstraint);
-			}
+			DesiredSize = this.ComputeDesiredSize(widthConstraint, heightConstraint);
+			return DesiredSize;
+		}
 
+		protected override Size ArrangeOverride(Rect bounds)
+		{
+			Frame = this.ComputeFrame(bounds);
+			Handler?.PlatformArrange(Frame);
+			return Frame.Size;
+		}
+
+		Size IContentView.CrossPlatformMeasure(double widthConstraint, double heightConstraint)
+		{
+			_ = this.MeasureContent(widthConstraint, heightConstraint);
 			return new Size(widthConstraint, heightConstraint);
 		}
 
-		protected override Size ArrangeOverride(Rectangle bounds)
+		Size IContentView.CrossPlatformArrange(Rect bounds)
 		{
-			Frame = this.ComputeFrame(bounds);
-
-			if (Content is IView view)
-			{
-				// TODO ezhart 2021-08-07 When we implement Padding for the ContentPage new layout stuff, the padding will adjust this rectangle
-				_ = view.Arrange(new Rectangle(0, 0, Frame.Width, Frame.Height));
-			}
-
-			return Frame.Size;
+			Frame = bounds;
+			this.ArrangeContent(bounds);
+			return bounds.Size;
 		}
 
 		protected override void InvalidateMeasureOverride()
@@ -56,7 +61,7 @@ namespace Microsoft.Maui.Controls
 
 		void HotReload.IHotReloadableView.Reload()
 		{
-			Device.BeginInvokeOnMainThread(() =>
+			Dispatcher.Dispatch(() =>
 			{
 				this.CheckHandlers();
 				var reloadHandler = ((IHotReloadableView)this).ReloadHandler;

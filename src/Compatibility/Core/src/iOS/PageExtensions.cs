@@ -1,9 +1,11 @@
 using System;
 using System.Linq;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility
 {
+	[System.Obsolete]
 	public static class PageExtensions
 	{
 		public static UIViewController CreateViewController(this Page page)
@@ -34,6 +36,7 @@ namespace Microsoft.Maui.Controls.Compatibility
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[System.Obsolete]
 	public static class PageExtensions
 	{
 		public static UIViewController CreateViewController(this ContentPage page)

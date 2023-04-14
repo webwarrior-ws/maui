@@ -1,12 +1,15 @@
 ﻿using System;
+using System.Numerics;
+using System.Threading.Tasks;
 using Gtk;
 using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Graphics.Native.Gtk;
+using Microsoft.Maui.Graphics.Platform.Gtk;
+using Action = System.Action;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 
-	public static class ViewExtensions
+	public static partial class ViewExtensions
 	{
 
 		public static void UpdateAutomationId(this Widget nativeView, IView view)
@@ -68,6 +71,10 @@ namespace Microsoft.Maui
 			if (disposePixbuf)
 				pixbuf?.Dispose();
 		}
+
+		[MissingMapper]
+		public static Task UpdateBackgroundImageSourceAsync(this Widget platformView, IImageSource? imageSource, IImageSourceServiceProvider? provider)
+			=> Task.CompletedTask;
 
 		public static void UpdateForeground(this Widget nativeView, Paint? paint)
 		{
@@ -142,6 +149,93 @@ namespace Microsoft.Maui
 		[MissingMapper]
 		public static void UpdateFlowDirection(this Widget nativeView, IView view)
 		{ }
+
+		internal static Rect GetBoundingBox(this IView view)
+			=> view.ToPlatform().GetBoundingBox();
+
+		internal static Graphics.Rect GetPlatformViewBounds(this IView view)
+		{
+			var w = view.ToPlatform();
+
+			return w.GetPlatformViewBounds();
+
+		}
+
+		internal static Rect GetPlatformViewBounds(this Gtk.Widget? platformView)
+		{
+			if (platformView?.Toplevel is not { } tl)
+				return platformView.GetBoundingBox();
+
+			platformView.TranslateCoordinates(tl, 0, 0, out var x, out var y);
+
+			return new Rect(x, y, platformView.AllocatedWidth, platformView.AllocatedHeight);
+		}
+
+		internal static Rect GetBoundingBox(this Gtk.Widget? platformView)
+			=> platformView is not { } ? new Rect() : platformView.Allocation.ToRect();
+
+		internal static Matrix4x4 GetViewTransform(this IView view)
+		{
+			var platformView = view?.ToPlatform();
+
+			if (platformView == null)
+				return new Matrix4x4();
+
+			return platformView.GetViewTransform();
+		}
+
+		internal static Matrix4x4 GetViewTransform(this Widget view)
+		{
+			if (view == null)
+				return new Matrix4x4();
+
+			var bounds = view.GetPlatformViewBounds();
+			var scale = view.ScaleFactor;
+
+			return new Matrix4x4()
+			{
+				// TODO: add scale
+				Translation = new Vector3((float)bounds.X, (float)bounds.X, 0)
+			};
+		}
+
+		internal static Widget? GetParent(this Widget? view)
+		{
+			return view?.Parent;
+		}
+
+		public static void UpdateShadow(this Widget? platformView, IView view) { }
+
+		public static void UpdateBorder(this Widget? platformView, IView view) { }
+
+		public static void Focus(this Widget? platformView, FocusRequest request) { }
+
+		public static void Unfocus(this Widget? platformView, IView view) { }
+
+		public static void UpdateInputTransparent(this Widget? platformView, IViewHandler handler, IView view) { }
+
+		public static void UpdateToolTip(this Widget? platformView, ToolTip? tooltip)
+		{ }
+
+		[MissingMapper]
+		internal static IDisposable OnLoaded(this Widget? platformView, Action action)
+		{
+			throw new NotImplementedException();
+		}
+
+		[MissingMapper]
+		internal static IDisposable OnUnloaded(this Widget? platformView, Action action)
+		{
+			throw new NotImplementedException();
+		}
+
+		public static bool IsLoaded(this Widget? platformView)
+		{
+			if (platformView is not { })
+				return false;
+
+			return platformView.IsRealized;
+		}
 
 	}
 

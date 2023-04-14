@@ -15,13 +15,17 @@ namespace Microsoft.Maui.UnitTests
 
 		public bool IsEnabled { get; set; }
 
+		public bool IsFocused { get; set; }
+
 		public Visibility Visibility { get; set; }
 
 		public IShape Clip { get; set; }
 
+		public IShadow Shadow { get; set; }
+
 		public double Opacity { get; set; }
 
-		public Rectangle Frame { get; set; }
+		public Rect Frame { get; set; }
 
 		public IViewHandler Handler { get; set; }
 
@@ -79,11 +83,19 @@ namespace Microsoft.Maui.UnitTests
 
 		public double AnchorY { get; set; }
 
-		public Size Arrange(Rectangle bounds) => Size.Zero;
+		public int ZIndex { get; set; }
+
+		public bool InputTransparent { get; set; }
+
+		public Size Arrange(Rect bounds) => Size.Zero;
 
 		public void InvalidateArrange() { }
 
 		public void InvalidateMeasure() { }
+
+		public bool Focus() => false;
+
+		public void Unfocus() { }
 
 		public Size Measure(double widthConstraint, double heightConstraint) =>
 			Size.Zero;

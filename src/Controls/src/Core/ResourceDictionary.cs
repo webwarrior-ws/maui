@@ -14,13 +14,16 @@ using Microsoft.Maui.Controls.Xaml;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="Type[@FullName='Microsoft.Maui.Controls.ResourceDictionary']/Docs" />
 	public class ResourceDictionary : IResourceDictionary, IDictionary<string, object>
 	{
+		const string GetResourcePathUriScheme = "maui://";
 		static ConditionalWeakTable<Type, ResourceDictionary> s_instances = new ConditionalWeakTable<Type, ResourceDictionary>();
 		readonly Dictionary<string, object> _innerDictionary = new Dictionary<string, object>();
 		ResourceDictionary _mergedInstance;
 		Uri _source;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="//Member[@MemberName='Source']/Docs" />
 		[System.ComponentModel.TypeConverter(typeof(RDSourceTypeConverter))]
 		public Uri Source
 		{
@@ -34,6 +37,7 @@ namespace Microsoft.Maui.Controls
 		}
 
 		//Used by the XamlC compiled converter
+		/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="//Member[@MemberName='SetAndLoadSource']/Docs" />
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public void SetAndLoadSource(Uri value, string resourcePath, Assembly assembly, global::System.Xml.IXmlLineInfo lineInfo)
 		{
@@ -49,6 +53,7 @@ namespace Microsoft.Maui.Controls
 		}
 
 		ObservableCollection<ResourceDictionary> _mergedDictionaries;
+		/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="//Member[@MemberName='MergedDictionaries']/Docs" />
 		public ICollection<ResourceDictionary> MergedDictionaries
 		{
 			get
@@ -128,6 +133,7 @@ namespace Microsoft.Maui.Controls
 			OnValuesChanged(item);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="//Member[@MemberName='Clear']/Docs" />
 		public void Clear()
 		{
 			_innerDictionary.Clear();
@@ -144,6 +150,7 @@ namespace Microsoft.Maui.Controls
 			((ICollection<KeyValuePair<string, object>>)_innerDictionary).CopyTo(array, arrayIndex);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="//Member[@MemberName='Count']/Docs" />
 		public int Count
 		{
 			get { return _innerDictionary.Count + (_mergedInstance?.Count ?? 0); }
@@ -159,6 +166,7 @@ namespace Microsoft.Maui.Controls
 			return ((ICollection<KeyValuePair<string, object>>)_innerDictionary).Remove(item);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="//Member[@MemberName='Add'][4]/Docs" />
 		public void Add(string key, object value)
 		{
 			if (ContainsKey(key))
@@ -167,6 +175,7 @@ namespace Microsoft.Maui.Controls
 			OnValueChanged(key, value);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="//Member[@MemberName='ContainsKey']/Docs" />
 		public bool ContainsKey(string key)
 		{
 			return _innerDictionary.ContainsKey(key);
@@ -194,19 +203,36 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="//Member[@MemberName='Keys']/Docs" />
 		public ICollection<string> Keys
 		{
-			get { return _innerDictionary.Keys; }
+			get
+			{
+				if (_mergedInstance is null)
+					return _innerDictionary.Keys;
+				if (_innerDictionary.Count == 0)
+					return _mergedInstance.Keys;
+				return new ReadOnlyCollection<string>(_innerDictionary.Keys.Concat(_mergedInstance.Keys).ToList());
+			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="//Member[@MemberName='Remove']/Docs" />
 		public bool Remove(string key)
 		{
 			return _innerDictionary.Remove(key) || (_mergedInstance?.Remove(key) ?? false);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="//Member[@MemberName='Values']/Docs" />
 		public ICollection<object> Values
 		{
-			get { return _innerDictionary.Values; }
+			get
+			{
+				if (_mergedInstance is null)
+					return _innerDictionary.Values;
+				if (_innerDictionary.Count == 0)
+					return _mergedInstance.Values;
+				return new ReadOnlyCollection<object>(_innerDictionary.Values.Concat(_mergedInstance.Values).ToList());
+			}
 		}
 
 		IEnumerator IEnumerable.GetEnumerator()
@@ -214,6 +240,7 @@ namespace Microsoft.Maui.Controls
 			return GetEnumerator();
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="//Member[@MemberName='GetEnumerator']/Docs" />
 		public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
 		{
 			return _innerDictionary.GetEnumerator();
@@ -241,6 +268,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="//Member[@MemberName='TryGetValue']/Docs" />
 		public bool TryGetValue(string key, out object value)
 			=> TryGetValueAndSource(key, out value, out _);
 
@@ -272,6 +300,7 @@ namespace Microsoft.Maui.Controls
 			remove { ValuesChanged -= value; }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="//Member[@MemberName='Add'][2]/Docs" />
 		public void Add(Style style)
 		{
 			if (string.IsNullOrEmpty(style.Class))
@@ -287,11 +316,13 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="//Member[@MemberName='Add'][1]/Docs" />
 		public void Add(ResourceDictionary mergedResourceDictionary)
 		{
 			MergedDictionaries.Add(mergedResourceDictionary);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ResourceDictionary.xml" path="//Member[@MemberName='Add'][3]/Docs" />
 		public void Add(StyleSheets.StyleSheet styleSheet)
 		{
 			StyleSheets = StyleSheets ?? new List<StyleSheets.StyleSheet>(2);
@@ -345,9 +376,9 @@ namespace Microsoft.Maui.Controls
 
 				var lineInfo = (serviceProvider.GetService(typeof(Xaml.IXmlLineInfoProvider)) as Xaml.IXmlLineInfoProvider)?.XmlLineInfo;
 				var rootTargetPath = XamlResourceIdAttribute.GetPathForType(rootObjectType);
-				var assembly = rootObjectType.GetTypeInfo().Assembly;
+				var assembly = rootObjectType.Assembly;
 
-				if (value.Contains(";assembly="))
+				if (value.IndexOf(";assembly=", StringComparison.Ordinal) != -1)
 				{
 					var parts = value.Split(new[] { ";assembly=" }, StringSplitOptions.RemoveEmptyEntries);
 					value = parts[0];
@@ -367,10 +398,11 @@ namespace Microsoft.Maui.Controls
 
 			internal static string GetResourcePath(Uri uri, string rootTargetPath)
 			{
-				//need a fake scheme so it's not seen as file:// uri, and the forward slashes are valid on all plats
+				// GetResourcePathUriScheme is a fake scheme so it's not seen as file:// uri,
+				// and the forward slashes are valid on all plats
 				var resourceUri = uri.OriginalString.StartsWith("/", StringComparison.Ordinal)
-									 ? new Uri($"pack://{uri.OriginalString}", UriKind.Absolute)
-									 : new Uri($"pack:///{rootTargetPath}/../{uri.OriginalString}", UriKind.Absolute);
+									 ? new Uri($"{GetResourcePathUriScheme}{uri.OriginalString}", UriKind.Absolute)
+									 : new Uri($"{GetResourcePathUriScheme}/{rootTargetPath}/../{uri.OriginalString}", UriKind.Absolute);
 
 				//drop the leading '/'
 				return resourceUri.AbsolutePath.Substring(1);

@@ -1,24 +1,29 @@
 ﻿using System;
 using System.IO;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebView.WebView2;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Handlers;
 using WebView2Control = Microsoft.UI.Xaml.Controls.WebView2;
 
 namespace Microsoft.AspNetCore.Components.WebView.Maui
 {
+	/// <summary>
+	/// A <see cref="ViewHandler"/> for <see cref="BlazorWebView"/>.
+	/// </summary>
 	public partial class BlazorWebViewHandler : ViewHandler<IBlazorWebView, WebView2Control>
 	{
 		private WebView2WebViewManager? _webviewManager;
 
-		protected override WebView2Control CreateNativeView()
+		/// <inheritdoc />
+		protected override WebView2Control CreatePlatformView()
 		{
 			return new WebView2Control();
 		}
 
-		protected override void DisconnectHandler(WebView2Control nativeView)
+		/// <inheritdoc />
+		protected override void DisconnectHandler(WebView2Control platformView)
 		{
 			if (_webviewManager != null)
 			{
@@ -27,7 +32,6 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 				_webviewManager?
 					.DisposeAsync()
 					.AsTask()
-					.ConfigureAwait(false)
 					.GetAwaiter()
 					.GetResult();
 
@@ -47,7 +51,7 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 			{
 				return;
 			}
-			if (NativeView == null)
+			if (PlatformView == null)
 			{
 				throw new InvalidOperationException($"Can't start {nameof(BlazorWebView)} without native web view instance.");
 			}
@@ -57,13 +61,20 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 			var contentRootDir = Path.GetDirectoryName(HostPage!) ?? string.Empty;
 			var hostPageRelativePath = Path.GetRelativePath(contentRootDir, HostPage!);
 
-			// On Windows we don't use IFileProvider because it is sync-only, whereas in WinUI all the
-			// file storage APIs are async-only. So instead we override HandleWebResourceRequest in
-			// WinUIWebViewManager so that loading static assets is done entirely there.
-			var mauiAssetFileProvider = new NullFileProvider();
+			var fileProvider = VirtualView.CreateFileProvider(contentRootDir);
 
-			var jsComponents = new JSComponentConfigurationStore();
-			_webviewManager = new WinUIWebViewManager(NativeView, new WinUIWebView2Wrapper(NativeView), Services!, MauiDispatcher.Instance, mauiAssetFileProvider, jsComponents, hostPageRelativePath, contentRootDir);
+			_webviewManager = new WinUIWebViewManager(
+				PlatformView,
+				Services!,
+				new MauiDispatcher(Services!.GetRequiredService<IDispatcher>()),
+				fileProvider,
+				VirtualView.JSComponents,
+				contentRootDir,
+				hostPageRelativePath,
+				this);
+
+			StaticContentHotReloadManager.AttachToWebViewManagerIfEnabled(_webviewManager);
+
 			if (RootComponents != null)
 			{
 				foreach (var rootComponent in RootComponents)
@@ -73,6 +84,14 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 				}
 			}
 			_webviewManager.Navigate("/");
+		}
+
+		internal IFileProvider CreateFileProvider(string contentRootDir)
+		{
+			// On WinUI we override HandleWebResourceRequest in WinUIWebViewManager so that loading static assets is done entirely there in an async manner.
+			// This allows the code to be async because in WinUI all the file storage APIs are async-only, but IFileProvider is sync-only and we need to control
+			// the precedence of which files are loaded from where.
+			return new NullFileProvider();
 		}
 	}
 }

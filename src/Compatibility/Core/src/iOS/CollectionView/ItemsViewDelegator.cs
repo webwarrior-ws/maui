@@ -2,10 +2,12 @@ using System;
 using System.Linq;
 using CoreGraphics;
 using Foundation;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[System.Obsolete]
 	public class ItemsViewDelegator<TItemsView, TViewController> : UICollectionViewDelegateFlowLayout
 		where TItemsView : ItemsView
 		where TViewController : ItemsViewController<TItemsView>

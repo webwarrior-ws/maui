@@ -1,12 +1,19 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using Android.Content;
+using Android.Content.Res;
 using Android.Graphics;
+using Android.Graphics.Drawables;
 using Android.Text;
 using Android.Text.Style;
 using Android.Views;
+using AndroidX.AppCompat.Graphics.Drawable;
+using AndroidX.AppCompat.Widget;
 using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Primitives;
+using AGraphics = Android.Graphics;
 using ATextView = global::Android.Widget.TextView;
 using AToolbar = AndroidX.AppCompat.Widget.Toolbar;
 using AView = global::Android.Views.View;
@@ -16,8 +23,185 @@ namespace Microsoft.Maui.Controls.Platform
 {
 	internal static class ToolbarExtensions
 	{
+		static ColorStateList? _defaultTitleTextColor;
+		static int? _defaultNavigationIconColor;
+
+		public static void UpdateIsVisible(this AToolbar nativeToolbar, Toolbar toolbar)
+		{
+			_ = nativeToolbar.Context ?? throw new ArgumentNullException(nameof(nativeToolbar.Context));
+
+			bool showNavBar = toolbar.IsVisible;
+			var lp = nativeToolbar.LayoutParameters;
+			if (lp == null)
+				return;
+
+			if (!showNavBar)
+			{
+				lp.Height = 0;
+			}
+			else
+			{
+				if (toolbar.BarHeight != null)
+					lp.Height = (int)nativeToolbar.Context.ToPixels(toolbar.BarHeight.Value);
+				else
+					lp.Height = nativeToolbar.Context?.GetActionBarHeight() ?? 0;
+			}
+
+			nativeToolbar.LayoutParameters = lp;
+		}
+
+		public static void UpdateTitleIcon(this AToolbar nativeToolbar, Toolbar toolbar)
+		{
+			_ = nativeToolbar.Context ?? throw new ArgumentNullException(nameof(nativeToolbar.Context));
+			_ = toolbar?.Handler?.MauiContext ?? throw new ArgumentNullException(nameof(toolbar.Handler.MauiContext));
+
+			ImageSource source = toolbar.TitleIcon;
+
+			if (source == null || source.IsEmpty)
+			{
+				if (nativeToolbar.GetChildAt(0) is ToolbarTitleIconImageView existingImageView)
+					nativeToolbar.RemoveView(existingImageView);
+
+				return;
+			}
+
+			var iconView = new ToolbarTitleIconImageView(nativeToolbar.Context);
+			nativeToolbar.AddView(iconView, 0);
+			iconView.SetImageResource(global::Android.Resource.Color.Transparent);
+
+			source.LoadImage(toolbar.Handler.MauiContext, (result) =>
+			{
+				iconView.SetImageDrawable(result?.Value);
+				AutomationPropertiesProvider.AccessibilitySettingsChanged(iconView, source);
+			});
+		}
+
+		public static void UpdateBackButton(this AToolbar nativeToolbar, Toolbar toolbar)
+		{
+			if (toolbar.BackButtonVisible)
+			{
+				var context =
+					nativeToolbar.Context?.GetThemedContext() ??
+					nativeToolbar.Context ??
+					toolbar.Handler?.MauiContext?.Context;
+
+				nativeToolbar.NavigationIcon ??= new DrawerArrowDrawable(context!)
+				{
+					Progress = 1
+				};
+
+				var backButtonTitle = toolbar.BackButtonTitle;
+				ImageSource image = toolbar.TitleIcon;
+
+				if (!string.IsNullOrEmpty(backButtonTitle))
+				{
+					nativeToolbar.NavigationContentDescription = backButtonTitle;
+				}
+				else if (image == null ||
+					nativeToolbar.SetNavigationContentDescription(image) == null)
+				{
+					nativeToolbar.SetNavigationContentDescription(Resource.String.nav_app_bar_navigate_up_description);
+				}
+			}
+			else
+			{
+				if (!toolbar.DrawerToggleVisible)
+				{
+					nativeToolbar.NavigationIcon = null;
+				}
+				else
+				{
+					nativeToolbar.SetNavigationContentDescription(Resource.String.nav_app_bar_open_drawer_description);
+				}
+			}
+
+			nativeToolbar.UpdateIconColor(toolbar);
+			nativeToolbar.UpdateBarTextColor(toolbar);
+		}
+
+		public static void UpdateBarBackground(this AToolbar nativeToolbar, Toolbar toolbar)
+		{
+			Brush barBackground = toolbar.BarBackground;
+
+			if (barBackground is SolidColorBrush solidColor)
+			{
+				var tintColor = solidColor.Color;
+				if (tintColor == null)
+				{
+					nativeToolbar.BackgroundTintMode = null;
+				}
+				else
+				{
+					nativeToolbar.BackgroundTintMode = PorterDuff.Mode.Src;
+					nativeToolbar.BackgroundTintList = ColorStateList.ValueOf(tintColor.ToPlatform());
+				}
+			}
+			else
+			{
+				nativeToolbar.UpdateBackground(barBackground);
+
+				if (Brush.IsNullOrEmpty(barBackground))
+					nativeToolbar.BackgroundTintMode = null;
+			}
+		}
+
+		public static void UpdateIconColor(this AToolbar nativeToolbar, Toolbar toolbar)
+		{
+			var navIconColor = toolbar.IconColor;
+			if (navIconColor != null && nativeToolbar.NavigationIcon != null)
+			{
+				if (nativeToolbar.NavigationIcon is DrawerArrowDrawable dad)
+					dad.Color = AGraphics.Color.White;
+
+				nativeToolbar.NavigationIcon.SetColorFilter(navIconColor, FilterMode.SrcAtop);
+			}
+		}
+
+		public static void UpdateBarTextColor(this AToolbar nativeToolbar, Toolbar toolbar)
+		{
+			var textColor = toolbar.BarTextColor;
+
+			// Because we use the same toolbar across multiple navigation pages (think tabbed page with nested NavigationPage)
+			// We need to reset the toolbar text color to the default color when it's unset
+			if (_defaultTitleTextColor == null)
+			{
+				var context = nativeToolbar.Context?.GetThemedContext();
+				_defaultTitleTextColor = PlatformInterop.GetColorStateListForToolbarStyleableAttribute(context,
+					Resource.Attribute.toolbarStyle, Resource.Styleable.Toolbar_titleTextColor);
+			}
+
+			if (textColor != null)
+			{
+				nativeToolbar.SetTitleTextColor(textColor.ToPlatform().ToArgb());
+			}
+			else if (_defaultTitleTextColor != null)
+			{
+				nativeToolbar.SetTitleTextColor(_defaultTitleTextColor);
+			}
+
+			if (nativeToolbar.NavigationIcon is DrawerArrowDrawable icon)
+			{
+				if (textColor != null)
+				{
+					_defaultNavigationIconColor = icon.Color;
+					icon.Color = textColor.ToPlatform().ToArgb();
+				}
+				else if (_defaultNavigationIconColor != null)
+				{
+					icon.Color = _defaultNavigationIconColor.Value;
+				}
+			}
+		}
+
+		class ToolbarTitleIconImageView : AppCompatImageView
+		{
+			public ToolbarTitleIconImageView(Context context) : base(context)
+			{
+			}
+		}
+
 		const int DefaultDisabledToolbarAlpha = 127;
-		public static void DisposeMenuItems(this AToolbar toolbar, IEnumerable<ToolbarItem> toolbarItems, PropertyChangedEventHandler toolbarItemChanged)
+		public static void DisposeMenuItems(this AToolbar? toolbar, IEnumerable<ToolbarItem> toolbarItems, PropertyChangedEventHandler toolbarItemChanged)
 		{
 			if (toolbarItems == null)
 				return;
@@ -29,60 +213,74 @@ namespace Microsoft.Maui.Controls.Platform
 		public static void UpdateMenuItems(this AToolbar toolbar,
 			IEnumerable<ToolbarItem> sortedToolbarItems,
 			IMauiContext mauiContext,
-			Color tintColor,
+			Color? tintColor,
 			PropertyChangedEventHandler toolbarItemChanged,
-			List<IMenuItem> menuItemsCreated,
-			List<ToolbarItem> toolbarItemsCreated,
-			Action<Context, IMenuItem, ToolbarItem> updateMenuItemIcon = null)
+			List<IMenuItem> previousMenuItems,
+			List<ToolbarItem> previousToolBarItems,
+			Action<Context, IMenuItem, ToolbarItem>? updateMenuItemIcon = null)
 		{
-			if (sortedToolbarItems == null || menuItemsCreated == null)
+			if (sortedToolbarItems == null || previousMenuItems == null)
 				return;
 
 			var context = mauiContext.Context;
 			var menu = toolbar.Menu;
-			menu.Clear();
 
-			foreach (var menuItem in menuItemsCreated)
-				menuItem.Dispose();
-
-			foreach (var toolbarItem in toolbarItemsCreated)
+			foreach (var toolbarItem in previousToolBarItems)
 				toolbarItem.PropertyChanged -= toolbarItemChanged;
 
-			menuItemsCreated.Clear();
-			toolbarItemsCreated.Clear();
-
+			int i = 0;
 			foreach (var item in sortedToolbarItems)
 			{
-				UpdateMenuItem(toolbar, item, null, mauiContext, tintColor, toolbarItemChanged, menuItemsCreated, toolbarItemsCreated, updateMenuItemIcon);
+				UpdateMenuItem(toolbar, item, i, mauiContext, tintColor, toolbarItemChanged, previousMenuItems, previousToolBarItems, updateMenuItemIcon);
+				i++;
 			}
+
+			int toolBarItemCount = i;
+			while (toolBarItemCount < previousMenuItems.Count)
+			{
+				if (menu != null)
+				{
+					menu.RemoveItem(previousMenuItems[toolBarItemCount].ItemId);
+				}
+				previousMenuItems[toolBarItemCount].Dispose();
+				previousMenuItems.RemoveAt(toolBarItemCount);
+			}
+
+			previousToolBarItems.Clear();
+			previousToolBarItems.AddRange(sortedToolbarItems);
 		}
 
-		internal static void UpdateMenuItem(AToolbar toolbar,
+		static void UpdateMenuItem(AToolbar toolbar,
 			ToolbarItem item,
 			int? menuItemIndex,
 			IMauiContext mauiContext,
-			Color tintColor,
+			Color? tintColor,
 			PropertyChangedEventHandler toolbarItemChanged,
-			List<IMenuItem> menuItemsCreated,
-			List<ToolbarItem> toolbarItemsCreated,
-			Action<Context, IMenuItem, ToolbarItem> updateMenuItemIcon = null)
+			List<IMenuItem> previousMenuItems,
+			List<ToolbarItem> previousToolBarItems,
+			Action<Context, IMenuItem, ToolbarItem>? updateMenuItemIcon = null)
 		{
-			var context = mauiContext.Context;
-			IMenu menu = toolbar.Menu;
+			var context = mauiContext?.Context ??
+					throw new ArgumentNullException($"{nameof(mauiContext.Context)}");
+
+			IMenu? menu = toolbar.Menu;
+
 			item.PropertyChanged -= toolbarItemChanged;
 			item.PropertyChanged += toolbarItemChanged;
 
 			IMenuItem menuitem;
 
-			Java.Lang.ICharSequence newTitle = null;
+			Java.Lang.ICharSequence? newTitle = null;
 
 			if (!String.IsNullOrWhiteSpace(item.Text))
 			{
 				if (item.Order != ToolbarItemOrder.Secondary && tintColor != null && tintColor != null)
 				{
-					var color = item.IsEnabled ? tintColor.ToNative() : tintColor.MultiplyAlpha(0.302f).ToNative();
+					var color = item.IsEnabled ? tintColor.ToPlatform() : tintColor.MultiplyAlpha(0.302f).ToPlatform();
 					SpannableString titleTinted = new SpannableString(item.Text);
+#pragma warning disable CA1416 // https://github.com/xamarin/xamarin-android/issues/6962
 					titleTinted.SetSpan(new ForegroundColorSpan(color), 0, titleTinted.Length(), 0);
+#pragma warning restore CA1416
 					newTitle = titleTinted;
 				}
 				else
@@ -95,18 +293,18 @@ namespace Microsoft.Maui.Controls.Platform
 				newTitle = new Java.Lang.String();
 			}
 
-			if (menuItemIndex == null)
+			if (menuItemIndex == null || menuItemIndex >= previousMenuItems?.Count)
 			{
-				menuitem = menu.Add(0, AView.GenerateViewId(), 0, newTitle);
-				menuItemsCreated?.Add(menuitem);
-				toolbarItemsCreated?.Add(item);
+				menuitem = menu?.Add(0, AView.GenerateViewId(), 0, newTitle) ??
+					throw new InvalidOperationException($"Failed to create menuitem: {newTitle}");
+				previousMenuItems?.Add(menuitem);
 			}
 			else
 			{
-				if (menuItemsCreated == null || menuItemsCreated.Count < menuItemIndex.Value)
+				if (previousMenuItems == null || previousMenuItems.Count < menuItemIndex.Value)
 					return;
 
-				menuitem = menuItemsCreated[menuItemIndex.Value];
+				menuitem = previousMenuItems[menuItemIndex.Value];
 
 				if (!menuitem.IsAlive())
 					return;
@@ -127,24 +325,24 @@ namespace Microsoft.Maui.Controls.Platform
 
 			menuitem.SetOnMenuItemClickListener(new GenericMenuClickListener(((IMenuItemController)item).Activate));
 
-			if (item.Order != ToolbarItemOrder.Secondary && !NativeVersion.IsAtLeast(26) && (tintColor != null && tintColor != null))
+			if (item.Order != ToolbarItemOrder.Secondary && !OperatingSystem.IsAndroidVersionAtLeast(26) && (tintColor != null && tintColor != null))
 			{
 				var view = toolbar.FindViewById(menuitem.ItemId);
 				if (view is ATextView textView)
 				{
 					if (item.IsEnabled)
-						textView.SetTextColor(tintColor.ToNative());
+						textView.SetTextColor(tintColor.ToPlatform());
 					else
-						textView.SetTextColor(tintColor.MultiplyAlpha(0.302f).ToNative());
+						textView.SetTextColor(tintColor.MultiplyAlpha(0.302f).ToPlatform());
 				}
 			}
 		}
 
-		internal static void UpdateMenuItemIcon(IMauiContext mauiContext, IMenuItem menuItem, ToolbarItem toolBarItem, Color tintColor)
+		internal static void UpdateMenuItemIcon(this IMauiContext mauiContext, IMenuItem menuItem, ToolbarItem toolBarItem, Color? tintColor)
 		{
-			ImageSourceLoader.LoadImage(toolBarItem, mauiContext, result =>
+			toolBarItem.IconImageSource.LoadImage(mauiContext, result =>
 			{
-				var baseDrawable = result.Value;
+				var baseDrawable = result?.Value;
 				if (menuItem == null || !menuItem.IsAlive())
 				{
 					return;
@@ -153,11 +351,11 @@ namespace Microsoft.Maui.Controls.Platform
 				if (baseDrawable != null)
 				{
 					using (var constant = baseDrawable.GetConstantState())
-					using (var newDrawable = constant.NewDrawable())
+					using (var newDrawable = constant!.NewDrawable())
 					using (var iconDrawable = newDrawable.Mutate())
 					{
 						if (tintColor != null)
-							iconDrawable.SetColorFilter(tintColor.ToNative(Colors.White), FilterMode.SrcAtop);
+							iconDrawable.SetColorFilter(tintColor.ToPlatform(Colors.White), FilterMode.SrcAtop);
 
 						if (!menuItem.IsEnabled)
 						{
@@ -176,11 +374,11 @@ namespace Microsoft.Maui.Controls.Platform
 			ToolbarItem toolbarItem,
 			ICollection<ToolbarItem> toolbarItems,
 			IMauiContext mauiContext,
-			Color tintColor,
+			Color? tintColor,
 			PropertyChangedEventHandler toolbarItemChanged,
 			List<IMenuItem> currentMenuItems,
 			List<ToolbarItem> currentToolbarItems,
-			Action<Context, IMenuItem, ToolbarItem> updateMenuItemIcon = null)
+			Action<Context, IMenuItem, ToolbarItem>? updateMenuItemIcon = null)
 		{
 			if (toolbarItems == null)
 				return;

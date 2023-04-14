@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using Android.Content.Res;
 using Android.Text;
 using Android.Widget;
 using SearchView = AndroidX.AppCompat.Widget.SearchView;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public static class SearchViewExtensions
 	{
@@ -17,6 +17,28 @@ namespace Microsoft.Maui
 			searchView.QueryHint = searchBar.Placeholder;
 		}
 
+		public static void UpdatePlaceholderColor(this SearchView searchView, ISearchBar searchBar, ColorStateList? defaultPlaceholderColor, EditText? editText = null)
+		{
+			editText ??= searchView.GetFirstChildOfType<EditText>();
+
+			if (editText == null)
+				return;
+
+			var placeholderTextColor = searchBar.PlaceholderColor;
+
+			if (placeholderTextColor == null)
+			{
+				editText.SetHintTextColor(defaultPlaceholderColor);
+			}
+			else
+			{
+				if (PlatformInterop.CreateEditTextColorStateList(editText.HintTextColors, placeholderTextColor.ToPlatform()) is ColorStateList c)
+				{
+					editText.SetHintTextColor(c);
+				}
+			}
+		}
+
 		public static void UpdateFont(this SearchView searchView, ISearchBar searchBar, IFontManager fontManager, EditText? editText = null)
 		{
 			editText ??= searchView.GetFirstChildOfType<EditText>();
@@ -25,6 +47,21 @@ namespace Microsoft.Maui
 				return;
 
 			editText.UpdateFont(searchBar, fontManager);
+		}
+
+		public static void UpdateVerticalTextAlignment(this SearchView searchView, ISearchBar searchBar)
+		{
+			searchView.UpdateVerticalTextAlignment(searchBar, null);
+		}
+
+		public static void UpdateVerticalTextAlignment(this SearchView searchView, ISearchBar searchBar, EditText? editText)
+		{
+			editText ??= searchView.GetFirstChildOfType<EditText>();
+
+			if (editText == null)
+				return;
+
+			editText.UpdateVerticalAlignment(searchBar.VerticalTextAlignment, TextAlignment.Center.ToVerticalGravityFlags());
 		}
 
 		public static void UpdateMaxLength(this SearchView searchView, ISearchBar searchBar)
@@ -51,6 +88,15 @@ namespace Microsoft.Maui
 			}
 		}
 
+		public static void UpdateIsReadOnly(this EditText editText, ISearchBar searchBar)
+		{
+			bool isReadOnly = !searchBar.IsReadOnly;
+
+			editText.FocusableInTouchMode = isReadOnly;
+			editText.Focusable = isReadOnly;
+			editText.SetCursorVisible(isReadOnly);
+		}
+
 		public static void UpdateCancelButtonColor(this SearchView searchView, ISearchBar searchBar)
 		{
 			if (searchView.Resources == null)
@@ -69,6 +115,32 @@ namespace Microsoft.Maui
 					else
 						image.Drawable.ClearColorFilter();
 				}
+			}
+		}
+
+		public static void UpdateIsTextPredictionEnabled(this SearchView searchView, ISearchBar searchBar, EditText? editText = null)
+		{
+			editText ??= searchView.GetFirstChildOfType<EditText>();
+
+			if (editText == null)
+				return;
+
+			if (searchBar.IsTextPredictionEnabled)
+				editText.InputType &= ~InputTypes.TextFlagNoSuggestions;
+			else
+				editText.InputType |= InputTypes.TextFlagNoSuggestions;
+		}
+
+		public static void UpdateIsEnabled(this SearchView searchView, ISearchBar searchBar, EditText? editText = null)
+		{
+			editText ??= searchView.GetFirstChildOfType<EditText>();
+
+			if (editText == null)
+				return;
+
+			if (editText != null)
+			{
+				editText.Enabled = searchBar.IsEnabled;
 			}
 		}
 	}

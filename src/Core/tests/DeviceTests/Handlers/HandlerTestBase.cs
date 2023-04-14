@@ -1,22 +1,26 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.DeviceTests.Stubs;
+using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 using Microsoft.Maui.Hosting;
+using Microsoft.Maui.TestUtils.DeviceTests.Runners;
 using Xunit;
 
 namespace Microsoft.Maui.DeviceTests
 {
-	public partial class HandlerTestBase<THandler, TStub> : TestBase, IDisposable
-		where THandler : IViewHandler
-		where TStub : StubBase, IView, new()
+	public class HandlerTestBase : TestBase, IDisposable
 	{
 		IApplication _app;
 		MauiApp _mauiApp;
 		IServiceProvider _servicesProvider;
 		IMauiContext _context;
-		static readonly Random rnd = new Random();
+
+		public IApplication App => _app;
+
+		public IMauiContext MauiContext => _context;
 
 		public HandlerTestBase()
 		{
@@ -24,8 +28,10 @@ namespace Microsoft.Maui.DeviceTests
 				.CreateBuilder()
 				.ConfigureMauiHandlers(handlers =>
 				{
+					handlers.AddHandler(typeof(ButtonWithContainerStub), typeof(ButtonWithContainerStubHandler));
 					handlers.AddHandler(typeof(SliderStub), typeof(SliderHandler));
 					handlers.AddHandler(typeof(ButtonStub), typeof(ButtonHandler));
+					handlers.AddHandler(typeof(ElementStub), typeof(ElementHandlerStub));
 				})
 				.ConfigureImageSources(services =>
 				{
@@ -40,6 +46,9 @@ namespace Microsoft.Maui.DeviceTests
 					fonts.AddFont("LobsterTwo-BoldItalic.ttf", "Lobster Two BoldItalic");
 				});
 
+			appBuilder.Services.AddSingleton<IDispatcherProvider>(svc => TestDispatcher.Provider);
+			appBuilder.Services.AddScoped<IDispatcher>(svc => TestDispatcher.Current);
+
 			_mauiApp = appBuilder.Build();
 			_servicesProvider = _mauiApp.Services;
 
@@ -48,17 +57,53 @@ namespace Microsoft.Maui.DeviceTests
 			_context = new ContextStub(_servicesProvider);
 		}
 
-		public static async Task<bool> Wait(Func<bool> exitCondition, int timeout = 1000)
+		protected Task SetValueAsync<TValue, THandler>(IView view, TValue value, Action<THandler, TValue> func)
+			where THandler : IElementHandler, new()
 		{
-			while ((timeout -= 100) > 0)
+			return InvokeOnMainThreadAsync(() =>
 			{
-				if (!exitCondition.Invoke())
-					await Task.Delay(rnd.Next(100, 200));
-				else
-					break;
-			}
+				var handler = CreateHandler<THandler>(view);
+				func(handler, value);
+			});
+		}
 
-			return exitCondition.Invoke();
+		protected THandler CreateHandler<THandler>(IElement view, IMauiContext mauiContext = null)
+			where THandler : IElementHandler, new()
+			=> CreateHandler<THandler, THandler>(view, mauiContext);
+
+
+		protected void InitializeViewHandler(IElement element, IElementHandler handler, IMauiContext mauiContext = null)
+		{
+			handler.SetMauiContext(mauiContext ?? MauiContext);
+
+			handler.SetVirtualView(element);
+			element.Handler = handler;
+
+			if (element is IView view)
+			{
+				view.Arrange(new Rect(0, 0, view.Width, view.Height));
+
+				if (handler is IViewHandler ivh)
+					ivh.PlatformArrange(view.Frame);
+			}
+		}
+
+		protected TCustomHandler CreateHandler<THandler, TCustomHandler>(IElement view, IMauiContext mauiContext)
+			where THandler : IElementHandler, new()
+			where TCustomHandler : THandler, new()
+		{
+			var handler = new TCustomHandler();
+			InitializeViewHandler(view, handler, mauiContext);
+			return handler;
+		}
+
+
+		protected IPlatformViewHandler CreateHandler(IElement view, Type handlerType)
+		{
+			var handler = (IPlatformViewHandler)Activator.CreateInstance(handlerType);
+			InitializeViewHandler(view, handler, MauiContext);
+			return handler;
+
 		}
 
 		public void Dispose()
@@ -68,151 +113,6 @@ namespace Microsoft.Maui.DeviceTests
 			_servicesProvider = null;
 			_app = null;
 			_context = null;
-		}
-
-		public IApplication App => _app;
-
-		public IMauiContext MauiContext => _context;
-
-		protected THandler CreateHandler(IView view) =>
-			CreateHandler<THandler>(view);
-
-		protected TCustomHandler CreateHandler<TCustomHandler>(IView view)
-			where TCustomHandler : THandler
-		{
-			var handler = Activator.CreateInstance<TCustomHandler>();
-			handler.SetMauiContext(MauiContext);
-
-			handler.SetVirtualView(view);
-			view.Handler = handler;
-
-			view.Arrange(new Rectangle(0, 0, view.Width, view.Height));
-			handler.NativeArrange(view.Frame);
-
-			return handler;
-		}
-
-		protected async Task<THandler> CreateHandlerAsync(IView view)
-		{
-			return await InvokeOnMainThreadAsync(() =>
-			{
-				return CreateHandler(view);
-			});
-		}
-
-		protected Task<TValue> GetValueAsync<TValue>(IView view, Func<THandler, TValue> func)
-		{
-			return InvokeOnMainThreadAsync(() =>
-			{
-				var handler = CreateHandler(view);
-				return func(handler);
-			});
-		}
-
-		protected Task SetValueAsync<TValue>(IView view, TValue value, Action<THandler, TValue> func)
-		{
-			return InvokeOnMainThreadAsync(() =>
-			{
-				var handler = CreateHandler(view);
-				func(handler, value);
-			});
-		}
-
-		async protected Task ValidatePropertyInitValue<TValue>(
-			IView view,
-			Func<TValue> GetValue,
-			Func<THandler, TValue> GetNativeValue,
-			TValue expectedValue)
-		{
-			var values = await GetValueAsync(view, (handler) =>
-			{
-				return new
-				{
-					ViewValue = GetValue(),
-					NativeViewValue = GetNativeValue(handler)
-				};
-			});
-
-			Assert.Equal(expectedValue, values.ViewValue);
-			Assert.Equal(expectedValue, values.NativeViewValue);
-		}
-
-		async protected Task ValidatePropertyUpdatesValue<TValue>(
-			IView view,
-			string property,
-			Func<THandler, TValue> GetNativeValue,
-			TValue expectedSetValue,
-			TValue expectedUnsetValue)
-		{
-			var propInfo = view.GetType().GetProperty(property);
-
-			// set initial values
-
-			propInfo.SetValue(view, expectedSetValue);
-
-			var (handler, viewVal, nativeVal) = await InvokeOnMainThreadAsync(() =>
-			{
-				var handler = CreateHandler(view);
-				return (handler, (TValue)propInfo.GetValue(view), GetNativeValue(handler));
-			});
-
-			Assert.Equal(expectedSetValue, viewVal);
-			Assert.Equal(expectedSetValue, nativeVal);
-
-			// confirm can update
-
-			(viewVal, nativeVal) = await InvokeOnMainThreadAsync(() =>
-			{
-				propInfo.SetValue(view, expectedUnsetValue);
-				handler.UpdateValue(property);
-
-				return ((TValue)propInfo.GetValue(view), GetNativeValue(handler));
-			});
-
-			Assert.Equal(expectedUnsetValue, viewVal);
-			Assert.Equal(expectedUnsetValue, nativeVal);
-
-			// confirm can revert
-
-			(viewVal, nativeVal) = await InvokeOnMainThreadAsync(() =>
-			{
-				propInfo.SetValue(view, expectedSetValue);
-				handler.UpdateValue(property);
-
-				return ((TValue)propInfo.GetValue(view), GetNativeValue(handler));
-			});
-
-			Assert.Equal(expectedSetValue, viewVal);
-			Assert.Equal(expectedSetValue, nativeVal);
-		}
-
-		async protected Task ValidateUnrelatedPropertyUnaffected<TValue>(
-			IView view,
-			Func<THandler, TValue> GetNativeValue,
-			string property,
-			Action SetUnrelatedProperty)
-		{
-			// get initial values
-
-			var (handler, initialNativeVal) = await InvokeOnMainThreadAsync(() =>
-			{
-				var handler = CreateHandler(view);
-				return (handler, GetNativeValue(handler));
-			});
-
-			// run update
-
-			var newNativeVal = await InvokeOnMainThreadAsync(() =>
-			{
-				SetUnrelatedProperty();
-				handler.UpdateValue(property);
-
-				return GetNativeValue(handler);
-			});
-
-			// ensure unchanged
-
-			Assert.Equal(initialNativeVal, newNativeVal);
 		}
 	}
 }

@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-#if __IOS__
+#if !(MACCATALYST || MACOS)
 using CoreTelephony;
 #endif
 using CoreFoundation;
 using SystemConfiguration;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.Networking
 {
 	enum NetworkStatus
 	{
@@ -154,8 +154,10 @@ namespace Microsoft.Maui.Essentials
 			remoteHostReachability.SetNotification(OnChange);
 			remoteHostReachability.Schedule(CFRunLoop.Main, CFRunLoop.ModeDefault);
 
-#if __IOS__
-			Connectivity.CellularData.RestrictionDidUpdateNotifier = new Action<CTCellularDataRestrictedState>(OnRestrictedStateChanged);
+#if !(MACCATALYST || MACOS)
+#pragma warning disable BI1234, CA1416 // Analyzer bug https://github.com/dotnet/roslyn-analyzers/issues/5938
+			ConnectivityImplementation.CellularData.RestrictionDidUpdateNotifier = new Action<CTCellularDataRestrictedState>(OnRestrictedStateChanged);
+#pragma warning restore BI1234, CA1416
 #endif
 		}
 
@@ -170,16 +172,20 @@ namespace Microsoft.Maui.Essentials
 			remoteHostReachability?.Dispose();
 			remoteHostReachability = null;
 
-#if __IOS__
-			Connectivity.CellularData.RestrictionDidUpdateNotifier = null;
+#if !(MACCATALYST || MACOS)
+#pragma warning disable CA1416 // Analyzer bug https://github.com/dotnet/roslyn-analyzers/issues/5938
+			ConnectivityImplementation.CellularData.RestrictionDidUpdateNotifier = null;
+#pragma warning restore CA1416
 #endif
 		}
 
-#if __IOS__
+#if !(MACCATALYST || MACOS)
+#pragma warning disable BI1234
 		void OnRestrictedStateChanged(CTCellularDataRestrictedState state)
 		{
 			ReachabilityChanged?.Invoke();
 		}
+#pragma warning restore BI1234
 #endif
 
 		async void OnChange(NetworkReachabilityFlags flags)

@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Maui.Controls.Platform;
 using Microsoft.UI.Xaml.Controls;
 using UWPListViewSelectionMode = Microsoft.UI.Xaml.Controls.ListViewSelectionMode;
 using UWPSelectionChangedEventArgs = Microsoft.UI.Xaml.Controls.SelectionChangedEventArgs;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
-
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class SelectableItemsViewRenderer<TItemsView> : StructuredItemsViewRenderer<TItemsView>
 		where TItemsView : SelectableItemsView
 	{
@@ -138,7 +139,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		{
 			UpdateFormsSelection();
 		}
-			
+
 		void UpdateFormsSelection()
 		{
 			if (_ignoreNativeSelectionChange || ItemsView == null)

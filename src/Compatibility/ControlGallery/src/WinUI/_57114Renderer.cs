@@ -11,7 +11,7 @@ using Microsoft.UI.Xaml.Media;
 
 namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.WinUI
 {
-	public class _57114Renderer : VisualElementRenderer<Bugzilla57114._57114View, _57114NativeView>
+	public class _57114Renderer : Handlers.Compatibility.VisualElementRenderer<Bugzilla57114._57114View, _57114NativeView>
 	{
 		protected override void OnElementChanged(ElementChangedEventArgs<Bugzilla57114._57114View> e)
 		{
@@ -32,7 +32,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.WinUI
 
 		Microsoft.UI.Xaml.Media.Brush ColorToBrush(Color color)
 		{
-			return new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb((byte)(color.Alpha * 255), (byte)(color.Red * 255), (byte)(color.Green * 255), (byte)(color.Blue * 255)));
+			return new Microsoft.UI.Xaml.Media.SolidColorBrush(global::Windows.UI.Color.FromArgb((byte)(color.Alpha * 255), (byte)(color.Red * 255), (byte)(color.Green * 255), (byte)(color.Blue * 255)));
 		}
 	}
 

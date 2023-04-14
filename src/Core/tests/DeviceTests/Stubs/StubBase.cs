@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Primitives;
 
 namespace Microsoft.Maui.DeviceTests.Stubs
 {
-	public class StubBase : IView
+	public class StubBase : ElementStub, IView, IVisualTreeElement, IToolTipElement
 	{
 		IElementHandler IElement.Handler
 		{
@@ -14,9 +15,11 @@ namespace Microsoft.Maui.DeviceTests.Stubs
 			set => Handler = (IViewHandler)value;
 		}
 
-		IElement IElement.Parent => Parent;
-
 		public bool IsEnabled { get; set; } = true;
+
+		public bool IsFocused { get; set; }
+
+		public List<StubBase> Children { get; set; }
 
 		public Visibility Visibility { get; set; } = Visibility.Visible;
 
@@ -24,13 +27,17 @@ namespace Microsoft.Maui.DeviceTests.Stubs
 
 		public Paint Background { get; set; }
 
-		public Rectangle Frame { get; set; }
+		public Rect Frame { get; set; }
 
-		public IViewHandler Handler { get; set; }
+		public new IViewHandler Handler
+		{
+			get => (IViewHandler)base.Handler;
+			set => base.Handler = value;
+		}
 
 		public IShape Clip { get; set; }
 
-		public IView Parent { get; set; }
+		public IShadow Shadow { get; set; }
 
 		public Size DesiredSize { get; set; } = new Size(50, 50);
 
@@ -78,7 +85,13 @@ namespace Microsoft.Maui.DeviceTests.Stubs
 
 		public Semantics Semantics { get; set; } = new Semantics();
 
-		public Size Arrange(Rectangle bounds)
+		public int ZIndex { get; set; }
+
+		public bool InputTransparent { get; set; }
+
+		public ToolTip ToolTip { get; set; }
+
+		public Size Arrange(Rect bounds)
 		{
 			Frame = bounds;
 			DesiredSize = bounds.Size;
@@ -107,9 +120,24 @@ namespace Microsoft.Maui.DeviceTests.Stubs
 		{
 		}
 
+		public bool Focus() => false;
+
+		public void Unfocus()
+		{
+		}
+
 		public Size Measure(double widthConstraint, double heightConstraint)
 		{
+			if (Handler != null)
+			{
+				return Handler.GetDesiredSize(widthConstraint, heightConstraint);
+			}
+
 			return new Size(widthConstraint, heightConstraint);
 		}
+
+		IReadOnlyList<Maui.IVisualTreeElement> IVisualTreeElement.GetVisualChildren() => this.Children.Cast<IVisualTreeElement>().ToList().AsReadOnly();
+
+		IVisualTreeElement IVisualTreeElement.GetVisualParent() => this.Parent as IVisualTreeElement;
 	}
 }

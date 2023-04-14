@@ -1,17 +1,48 @@
 ﻿using Microsoft.Maui.Graphics.Win2D;
+using Microsoft.UI.Xaml;
 
 namespace Microsoft.Maui.Handlers
 {
-	public partial class GraphicsViewHandler : ViewHandler<IGraphicsView, W2DGraphicsView>
+	public partial class GraphicsViewHandler : ViewHandler<IGraphicsView, PlatformTouchGraphicsView>
 	{
-		protected override W2DGraphicsView CreateNativeView()
+		protected override PlatformTouchGraphicsView CreatePlatformView()
 		{
-			return new W2DGraphicsView();
+			return new PlatformTouchGraphicsView();
 		}
 
-		public static void MapDrawable(GraphicsViewHandler handler, IGraphicsView graphicsView)
+		private protected override void OnConnectHandler(FrameworkElement platformView)
 		{
-			handler.NativeView?.UpdateDrawable(graphicsView);
+			base.OnConnectHandler(platformView);
+
+			platformView.Loaded += OnLoaded;
+		}
+
+		private protected override void OnDisconnectHandler(FrameworkElement platformView)
+		{
+			base.OnDisconnectHandler(platformView);
+
+			platformView.Loaded -= OnLoaded;
+		}
+
+		public static void MapDrawable(IGraphicsViewHandler handler, IGraphicsView graphicsView)
+		{
+			handler.PlatformView?.UpdateDrawable(graphicsView);
+		}
+
+		public static void MapFlowDirection(IGraphicsViewHandler handler, IGraphicsView graphicsView)
+		{
+			handler.PlatformView?.UpdateFlowDirection(graphicsView);
+			handler.PlatformView?.Invalidate();
+		}
+
+		public static void MapInvalidate(IGraphicsViewHandler handler, IGraphicsView graphicsView, object? arg)
+		{
+			handler.PlatformView?.Invalidate();
+		}
+
+		void OnLoaded(object sender, RoutedEventArgs e)
+		{
+			VirtualView?.InvalidateMeasure();
 		}
 	}
 }

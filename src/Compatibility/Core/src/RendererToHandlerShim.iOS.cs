@@ -3,17 +3,22 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.Maui.Controls.Compatibility.Platform.iOS;
+using ObjCRuntime;
 using UIKit;
+#pragma warning disable CS0612 // Type or member is obsolete
+#pragma warning disable CS0618 // Type or member is obsolete
 using static Microsoft.Maui.Controls.Compatibility.Platform.iOS.Platform;
-using NativeView = UIKit.UIView;
+#pragma warning disable CS0618 // Type or member is obsolete
+#pragma warning restore CS0612 // Type or member is obsolete
+using PlatformView = UIKit.UIView;
 
 namespace Microsoft.Maui.Controls.Compatibility
 {
-	public partial class RendererToHandlerShim : INativeViewHandler
+	public partial class RendererToHandlerShim : IPlatformViewHandler
 	{
-		UIViewController? INativeViewHandler.ViewController => VisualElementRenderer?.ViewController;
+		UIViewController? IPlatformViewHandler.ViewController => VisualElementRenderer?.ViewController;
 
-		protected override NativeView CreateNativeView()
+		protected override PlatformView CreatePlatformView()
 		{
 			_ = VisualElementRenderer ?? throw new InvalidOperationException("VisualElementRenderer cannot be null here");
 
@@ -32,7 +37,7 @@ namespace Microsoft.Maui.Controls.Compatibility
 			base.UpdateValue(property);
 			if (property == "Frame" && VisualElementRenderer != null)
 			{
-				NativeArrange(VisualElementRenderer.Element.Bounds);
+				PlatformArrange(VisualElementRenderer.Element.Bounds);
 			}
 		}
 	}

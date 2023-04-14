@@ -37,7 +37,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		public ActivationFlags Flags;
 	}
 
-	public class FormsAppCompatActivity : AppCompatActivity, IDeviceInfoProvider
+	[System.Obsolete]
+	class FormsAppCompatActivity : AppCompatActivity, IDeviceInfoProvider
 	{
 		public delegate bool BackButtonPressedEventHandler(object sender, EventArgs e);
 
@@ -80,7 +81,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			base.OnConfigurationChanged(newConfig);
 			ConfigurationChanged?.Invoke(this, new EventArgs());
 
-			Microsoft.Maui.Controls.Application.Current?.TriggerThemeChanged(new AppThemeChangedEventArgs(Microsoft.Maui.Controls.Application.Current.RequestedTheme));
+			((IApplication)Microsoft.Maui.Controls.Application.Current)?.ThemeChanged();
 		}
 
 		public override bool OnOptionsItemSelected(IMenuItem item)
@@ -93,10 +94,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 
 		public void SetStatusBarColor(AColor color)
 		{
-			if (Forms.IsLollipopOrNewer)
-			{
-				Window.SetStatusBarColor(color);
-			}
+			Window.SetStatusBarColor(color);
 		}
 
 		static void RegisterHandler(Type target, Type handler, Type filter)
@@ -247,15 +245,11 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 
 			OnStateChanged();
 
-			Profile.FramePartition("Forms.IsLollipopOrNewer");
-			if (Forms.IsLollipopOrNewer)
+			// Allow for the status bar color to be changed
+			if ((flags & ActivationFlags.DisableSetStatusBarColor) == 0)
 			{
-				// Allow for the status bar color to be changed
-				if ((flags & ActivationFlags.DisableSetStatusBarColor) == 0)
-				{
-					Profile.FramePartition("Set DrawsSysBarBkgrnds");
-					Window.AddFlags(WindowManagerFlags.DrawsSystemBarBackgrounds);
-				}
+				Profile.FramePartition("Set DrawsSysBarBkgrnds");
+				Window.AddFlags(WindowManagerFlags.DrawsSystemBarBackgrounds);
 			}
 
 			Profile.FrameEnd();
@@ -473,6 +467,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			Platform.SettingNewPage();
 		}
 
+		[PortHandler]
 		void SetSoftInputMode()
 		{
 			var adjust = SoftInput.AdjustPan;

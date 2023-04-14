@@ -1,29 +1,21 @@
-using Microsoft.Maui.Controls.Platform;
+using System.Runtime.CompilerServices;
 using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Handlers;
 
 namespace Microsoft.Maui.Controls
 {
-	public partial class Button : IButton
+	/// <include file="../../../../docs/Microsoft.Maui.Controls/Button.xml" path="Type[@FullName='Microsoft.Maui.Controls.Button']/Docs" />
+	public partial class Button : IButton, ITextButton, IImageButton
 	{
-		public new static void RemapForControls()
+		bool _wasImageLoading;
+
+		protected override void OnPropertyChanged([CallerMemberName] string propertyName = null)
 		{
-			// IButton does not include the ContentType property, so we map it here to handle Image Positioning
+			base.OnPropertyChanged(propertyName);
 
-			IPropertyMapper<IButton, ButtonHandler> ControlsButtonMapper = new PropertyMapper<Button, ButtonHandler>(ButtonHandler.ButtonMapper)
-			{
-				[nameof(ContentLayout)] = MapContentLayout,
-#if __IOS__
-				[nameof(Padding)] = MapPadding,
-#endif
-			};
-
-			ButtonHandler.ButtonMapper = ControlsButtonMapper;
-		}
-
-		public static void MapContentLayout(ButtonHandler handler, Button button)
-		{
-			handler.NativeView.UpdateContentLayout(button);
+			if (propertyName == BorderColorProperty.PropertyName)
+				Handler?.UpdateValue(nameof(IButtonStroke.StrokeColor));
+			else if (propertyName == BorderWidthProperty.PropertyName)
+				Handler?.UpdateValue(nameof(IButtonStroke.StrokeThickness));
 		}
 
 		void IButton.Clicked()
@@ -41,13 +33,28 @@ namespace Microsoft.Maui.Controls
 			(this as IButtonController).SendReleased();
 		}
 
-		void IButton.ImageSourceLoaded()
+		void IImageSourcePart.UpdateIsLoading(bool isLoading)
 		{
-			Handler?.UpdateValue(nameof(ContentLayout));
+			if (!isLoading && _wasImageLoading)
+				Handler?.UpdateValue(nameof(ContentLayout));
+
+			_wasImageLoading = isLoading;
 		}
 
-		IImageSource IButton.ImageSource => ImageSource;
+		Font ITextStyle.Font => this.ToFont();
 
-		Font ITextStyle.Font => (Font)GetValue(FontElement.FontProperty);
+		Aspect IImage.Aspect => Aspect.Fill;
+
+		bool IImage.IsOpaque => true;
+
+		IImageSource IImageSourcePart.Source => ImageSource;
+
+		bool IImageSourcePart.IsAnimationPlaying => false;
+
+		double IButtonStroke.StrokeThickness => (double)GetValue(BorderWidthProperty);
+
+		Color IButtonStroke.StrokeColor => (Color)GetValue(BorderColorProperty);
+
+		int IButtonStroke.CornerRadius => (int)GetValue(CornerRadiusProperty);
 	}
 }

@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using CoreGraphics;
 using Microsoft.Maui.Controls.Platform;
+using ObjCRuntime;
 using FormsRectangle = Microsoft.Maui.Controls.Shapes.Rectangle;
 
 #if __MOBILE__
@@ -10,6 +11,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 #endif
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class RectangleRenderer : ShapeRenderer<FormsRectangle, RectangleView>
 	{
 		// Each corner of the rounded rectangle is one-quarter of an ellipse with axes equal to the RadiusX and Radius parameters.

@@ -1,6 +1,6 @@
 ﻿using System;
 using Gtk;
-using Microsoft.Maui.Graphics.Native.Gtk;
+using Microsoft.Maui.Graphics.Platform.Gtk;
 
 namespace Microsoft.Maui.Handlers
 {
@@ -10,7 +10,7 @@ namespace Microsoft.Maui.Handlers
 	public partial class ButtonHandler : ViewHandler<IButton, Button>
 	{
 
-		protected override Button CreateNativeView()
+		protected override Button CreatePlatformView()
 		{
 			return Button.NewWithLabel(string.Empty);
 		}
@@ -29,36 +29,43 @@ namespace Microsoft.Maui.Handlers
 			nativeView.ButtonReleaseEvent -= OnButtonReleaseEvent;
 		}
 
-		public static void MapText(ButtonHandler handler, IButton button)
+		public static void MapText(IButtonHandler handler, ITextButton button)
 		{
-			handler.NativeView?.UpdateText(button);
+			handler.PlatformView?.UpdateText(button);
 		}
 
-		public static void MapTextColor(ButtonHandler handler, IButton button)
+		public static void MapTextColor(IButtonHandler handler, ITextStyle button)
 		{
-			handler.NativeView?.UpdateTextColor(button.TextColor);
+			handler.PlatformView?.UpdateTextColor(button.TextColor);
 		}
 
-		public static void MapCharacterSpacing(ButtonHandler handler, IButton button)
+		public static void MapCharacterSpacing(IButtonHandler handler, ITextStyle button)
 		{
-			if (handler.NativeView.Child is Label nativeView)
+			if (handler.PlatformView.Child is Label nativeView)
 			{
 				nativeView.Attributes = nativeView.Attributes.AttrListFor(button.CharacterSpacing);
 			}
 		}
 
 		[MissingMapper]
-		public static void MapImageSource(ButtonHandler handler, IButton image) { }
+		public static void MapImageSource(IButtonHandler handler, IImage image) { }
 
-		public static void MapFont(ButtonHandler handler, IButton button)
+		[MissingMapper]
+		public static void MapFont(IButtonHandler handler, IButton button) { }
+
+		public static void MapPadding(IButtonHandler handler, IButton button)
 		{
-			handler.MapFont(button);
+			handler.PlatformView.WithPadding(button.Padding);
 		}
 
-		public static void MapPadding(ButtonHandler handler, IButton button)
-		{
-			handler.NativeView.WithPadding(button.Padding);
-		}
+		[MissingMapper]
+		public static void MapStrokeColor(IButtonHandler handler, IButtonStroke buttonStroke) { }
+
+		[MissingMapper]
+		public static void MapStrokeThickness(IButtonHandler handler, IButtonStroke buttonStroke) { }
+
+		[MissingMapper]
+		public static void MapCornerRadius(IButtonHandler handler, IButtonStroke buttonStroke) { }
 
 		void OnButtonPressEvent(object? o, ButtonPressEventArgs args)
 		{
@@ -75,6 +82,7 @@ namespace Microsoft.Maui.Handlers
 			InvokeEvent(() => VirtualView?.Clicked());
 		}
 
+		void OnSetImageSource(object? obj) { }
 	}
 
 }

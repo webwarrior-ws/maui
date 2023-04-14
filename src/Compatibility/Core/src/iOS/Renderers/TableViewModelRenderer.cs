@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using Foundation;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[Obsolete("Use Microsoft.Maui.Controls.Handlers.Compatibility.TableViewModelRenderer instead")]
 	public class TableViewModelRenderer : UITableViewSource
 	{
 		readonly Dictionary<nint, Cell> _headerCells = new Dictionary<nint, Cell>();
@@ -30,7 +32,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 		public override UITableViewCell GetCell(UITableView tableView, NSIndexPath indexPath)
 		{
 			var cell = View.Model.GetCell(indexPath.Section, indexPath.Row);
-
 			var nativeCell = CellTableViewCell.GetNativeCell(tableView, cell);
 
 			return nativeCell;
@@ -71,7 +72,9 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 				if (sectionHeaderTextColor != null)
 				{
-					header.TextLabel.TextColor = sectionHeaderTextColor.ToUIColor();
+#pragma warning disable CA1416 // TODO:  UITableViewHeaderFooterView.TextLabel' is unsupported on: 'ios' 14.0 and later
+					header.TextLabel.TextColor = sectionHeaderTextColor.ToPlatform();
+#pragma warning restore CA1416
 				}
 			}
 		}
@@ -138,6 +141,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 		}
 	}
 
+	[Obsolete("Use Microsoft.Maui.Controls.Handlers.Compatibility.UnEvenTableViewModelRenderer instead")]
 	public class UnEvenTableViewModelRenderer : TableViewModelRenderer
 	{
 		public UnEvenTableViewModelRenderer(TableView model) : base(model)

@@ -14,6 +14,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		void MeasureExactly();
 	}
 
+	[Obsolete("Use Microsoft.Maui.Controls.Handlers.Compatibility.ViewRenderer instead")]
 	public abstract class ViewRenderer : ViewRenderer<View, AView>
 	{
 		protected ViewRenderer(Context context) : base(context)
@@ -21,6 +22,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		}
 	}
 
+	[Obsolete("Use Microsoft.Maui.Controls.Handlers.Compatibility.ViewRenderer instead")]
 	public abstract class ViewRenderer<TView, TNativeView> : VisualElementRenderer<TView>, IViewRenderer, ITabStop, AView.IOnFocusChangeListener where TView : View where TNativeView : AView
 	{
 		protected ViewRenderer(Context context) : base(context)
@@ -35,7 +37,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		ViewGroup _container;
 		bool _defaultAutomationSet;
 		string _defaultContentDescription;
-		ImportantForAccessibility? _defaultImportantForAccessibility;
 		string _defaultHint;
 
 		bool _disposed;
@@ -78,6 +79,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			control.Measure(widthMeasureSpec, heightMeasureSpec);
 		}
 
+		[PortHandler("Partially ported")]
 		void AView.IOnFocusChangeListener.OnFocusChange(AView v, bool hasFocus)
 		{
 			if (Element is Entry || Element is SearchBar || Element is Editor)
@@ -259,7 +261,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 				return;
 			}
 
-			Controls.Platform.AutomationPropertiesProvider.SetImportantForAccessibility(ControlUsedForAutomation, Element, ref _defaultImportantForAccessibility);
+			Controls.Platform.AutomationPropertiesProvider.SetImportantForAccessibility(ControlUsedForAutomation, Element);
 		}
 
 		protected void SetNativeControl(TNativeView control)
@@ -267,6 +269,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			SetNativeControl(control, this);
 		}
 
+		[PortHandler]
 		protected virtual void OnFocusChangeRequested(object sender, VisualElement.FocusRequestArgs e)
 		{
 			if (Control == null)
@@ -280,7 +283,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 				// So in case we're setting the focus in response to another control's un-focusing,
 				// we need to post the handling of it to the main looper so that it happens _after_ all the other focus
 				// work is done; otherwise, a call to ClearFocus on another control will kill the focus we set here
-				Device.BeginInvokeOnMainThread(() =>
+				Post(() =>
 				{
 					if (Control == null || Control.IsDisposed())
 						return;

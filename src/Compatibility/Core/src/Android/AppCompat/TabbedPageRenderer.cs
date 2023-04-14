@@ -26,14 +26,13 @@ using Color = Microsoft.Maui.Graphics.Color;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class TabbedPageRenderer : VisualElementRenderer<TabbedPage>,
 #pragma warning disable CS0618 // Type or member is obsolete
 		TabLayout.IOnTabSelectedListener,
 #pragma warning restore CS0618 // Type or member is obsolete
 		ViewPager.IOnPageChangeListener, IManageFragments, NavigationBarView.IOnItemSelectedListener
 	{
-		Drawable _backgroundDrawable;
-		Drawable _wrappedBackgroundDrawable;
 		ColorStateList _originalTabTextColors;
 		ColorStateList _orignalTabIconColors;
 
@@ -395,7 +394,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 
 				if (width > 0 && height > 0)
 				{
-					PageController.ContainerArea = new Rectangle(0, 0, context.FromPixels(width), context.FromPixels(height - _bottomNavigationView.MeasuredHeight));
+					PageController.ContainerArea = new Graphics.Rect(0, 0, context.FromPixels(width), context.FromPixels(height - _bottomNavigationView.MeasuredHeight));
 
 					SetNavigationRendererPadding(0, _bottomNavigationView.MeasuredHeight);
 
@@ -416,18 +415,14 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 
 				if (tabs.Visibility != ViewStates.Gone)
 				{
-					//MinimumHeight is only available on API 16+
-					if ((int)Forms.SdkInt >= 16)
-						tabsHeight = Math.Min(height, Math.Max(tabs.MeasuredHeight, tabs.MinimumHeight));
-					else
-						tabsHeight = Math.Min(height, tabs.MeasuredHeight);
+					tabsHeight = Math.Min(height, Math.Max(tabs.MeasuredHeight, tabs.MinimumHeight));
 				}
 
 				pager.Measure(MeasureSpecFactory.MakeMeasureSpec(width, MeasureSpecMode.AtMost), MeasureSpecFactory.MakeMeasureSpec(height, MeasureSpecMode.AtMost));
 
 				if (width > 0 && height > 0)
 				{
-					PageController.ContainerArea = new Rectangle(0, context.FromPixels(tabsHeight), context.FromPixels(width), context.FromPixels(height - tabsHeight));
+					PageController.ContainerArea = new Graphics.Rect(0, context.FromPixels(tabsHeight), context.FromPixels(width), context.FromPixels(height - tabsHeight));
 
 					SetNavigationRendererPadding(tabsHeight, 0);
 
@@ -728,36 +723,14 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 			{
 				Color tintColor = Element.BarBackgroundColor;
 
-				if (Forms.IsLollipopOrNewer)
+				if (tintColor == null)
 				{
-					if (tintColor == null)
-						_tabLayout.BackgroundTintMode = null;
-					else
-					{
-						_tabLayout.BackgroundTintMode = PorterDuff.Mode.Src;
-						_tabLayout.BackgroundTintList = ColorStateList.ValueOf(tintColor.ToAndroid());
-					}
+					_tabLayout.BackgroundTintMode = null;
 				}
 				else
 				{
-					if (tintColor == null && _backgroundDrawable != null)
-						_tabLayout.SetBackground(_backgroundDrawable);
-					else if (tintColor != null)
-					{
-						// if you don't create a new drawable then SetBackgroundColor
-						// just sets the color on the background drawable that's saved
-						// it doesn't create a new one
-						if (_backgroundDrawable == null && _tabLayout.Background != null)
-						{
-							_backgroundDrawable = _tabLayout.Background;
-							_wrappedBackgroundDrawable = ADrawableCompat.Wrap(_tabLayout.Background).Mutate();
-						}
-
-						if (_wrappedBackgroundDrawable != null)
-							_tabLayout.Background = _wrappedBackgroundDrawable;
-
-						_tabLayout.SetBackgroundColor(tintColor.ToAndroid());
-					}
+					_tabLayout.BackgroundTintMode = PorterDuff.Mode.Src;
+					_tabLayout.BackgroundTintList = ColorStateList.ValueOf(tintColor.ToAndroid());
 				}
 			}
 		}
@@ -1038,7 +1011,10 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android.AppCompat
 			states[1] = GetEmptyStateSet();
 			colors[1] = defaultColor;
 
+#pragma warning disable RS0030
+			//TODO: port this usage to Java, if this becomes a performance concern
 			return new ColorStateList(states, colors);
+#pragma warning restore RS0030
 		}
 	}
 }

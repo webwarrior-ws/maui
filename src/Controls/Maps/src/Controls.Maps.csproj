@@ -1,15 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<TargetFrameworks>netstandard2.1;netstandard2.0;</TargetFrameworks>
-		<AssemblyName>Microsoft.Maui.Controls.Maps</AssemblyName>
-	</PropertyGroup>
-	<PropertyGroup>
-		<PackageId>Microsoft.Maui.Controls.Maps</PackageId>
-	</PropertyGroup>
-	<PropertyGroup>
-		<Description>Provides Maps support for Microsoft MAUI Controls</Description>
-	</PropertyGroup>
-	<ItemGroup>
-		<ProjectReference Include="..\..\src\Core\Controls.Core.csproj" />
-	</ItemGroup>
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;netstandard2.0;$(_MauiDotNetTfm);$(MauiPlatforms)</TargetFrameworks>
+    <AssemblyName>Microsoft.Maui.Controls.Maps</AssemblyName>
+    <RootNamespace>Microsoft.Maui.Controls.Maps</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <Nullable>enable</Nullable>
+    <_MauiDesignDllBuild Condition=" '$(OS)' != 'Unix' ">True</_MauiDesignDllBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;RS0041;RS0026;RS0027;RS0022</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Controls\src\Core\Controls.Core.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\..\Core\src\Core.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\..\..\Core\maps\src\Maps.csproj" />
+  </ItemGroup>
+  
+<!--  <Import Project="$(MauiSrcDirectory)PublicAPI.targets" />-->
+  
 </Project>

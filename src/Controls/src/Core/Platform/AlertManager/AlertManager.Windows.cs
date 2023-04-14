@@ -1,4 +1,4 @@
-﻿#nullable disable
+﻿#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,23 +15,19 @@ namespace Microsoft.Maui.Controls.Platform
 
 		internal void Subscribe(Window window)
 		{
-			IMauiContext mauiContext = window?.MauiContext;
-			UI.Xaml.Window nativeWindow = mauiContext?.Window;
+			var platformWindow = window.MauiContext.GetPlatformWindow();
 
-			if (Subscriptions.Any(s => s.Window == nativeWindow))
-			{
+			if (Subscriptions.Any(s => s.Window == platformWindow))
 				return;
-			}
 
-			Subscriptions.Add(new AlertRequestHelper(nativeWindow, mauiContext));
+			Subscriptions.Add(new AlertRequestHelper(platformWindow, window.MauiContext));
 		}
 
 		internal void Unsubscribe(Window window)
 		{
-			IMauiContext mauiContext = window?.MauiContext;
-			UI.Xaml.Window nativeWindow = mauiContext?.Window;
+			var platformWindow = window.MauiContext.GetPlatformWindow();
 
-			var toRemove = Subscriptions.Where(s => s.Window == nativeWindow).ToList();
+			var toRemove = Subscriptions.Where(s => s.Window == platformWindow).ToList();
 
 			foreach (AlertRequestHelper alertRequestHelper in toRemove)
 			{
@@ -42,8 +38,8 @@ namespace Microsoft.Maui.Controls.Platform
 
 		internal sealed class AlertRequestHelper : IDisposable
 		{
-			static Task<bool> CurrentAlert;
-			static Task<string> CurrentPrompt;
+			static Task<bool>? CurrentAlert;
+			static Task<string?>? CurrentPrompt;
 
 			internal AlertRequestHelper(UI.Xaml.Window window, IMauiContext mauiContext)
 			{
@@ -92,8 +88,16 @@ namespace Microsoft.Maui.Controls.Platform
 				{
 					alertDialog.FlowDirection = UI.Xaml.FlowDirection.LeftToRight;
 				}
-
-				// TODO: Check EffectiveFlowDirection
+				else
+				{
+					if (sender is IVisualElementController visualElementController)
+					{
+						if (visualElementController.EffectiveFlowDirection.IsRightToLeft())
+							alertDialog.FlowDirection = UI.Xaml.FlowDirection.RightToLeft;
+						else if (visualElementController.EffectiveFlowDirection.IsLeftToRight())
+							alertDialog.FlowDirection = UI.Xaml.FlowDirection.LeftToRight;
+					}
+				}
 
 				if (arguments.Cancel != null)
 					alertDialog.SecondaryButtonText = arguments.Cancel;
@@ -126,7 +130,7 @@ namespace Microsoft.Maui.Controls.Platform
 					Input = arguments.InitialValue ?? string.Empty,
 					Placeholder = arguments.Placeholder ?? string.Empty,
 					MaxLength = arguments.MaxLength >= 0 ? arguments.MaxLength : 0,
-					// TODO: Implement InputScope property after port the keyboardExtensions
+					InputScope = arguments.Keyboard.ToInputScope()
 				};
 
 				if (arguments.Cancel != null)
@@ -157,13 +161,20 @@ namespace Microsoft.Maui.Controls.Platform
 
 				if (arguments.FlowDirection == FlowDirection.MatchParent)
 				{
-					// TODO: Check EffectiveFlowDirection
+					if (sender is IVisualElementController visualElementController)
+					{
+						if (visualElementController.EffectiveFlowDirection.IsRightToLeft())
+							arguments.FlowDirection = FlowDirection.RightToLeft;
+						else if (visualElementController.EffectiveFlowDirection.IsLeftToRight())
+							arguments.FlowDirection = FlowDirection.LeftToRight;
+					}
 				}
 
 				var actionSheetContent = new ActionSheetContent(arguments);
 
 				var actionSheet = new Flyout
 				{
+					FlyoutPresenterStyle = (UI.Xaml.Style)UI.Xaml.Application.Current.Resources["MauiFlyoutPresenterStyle"],
 					Placement = UI.Xaml.Controls.Primitives.FlyoutPlacementMode.Full,
 					Content = actionSheetContent
 				};
@@ -182,15 +193,25 @@ namespace Microsoft.Maui.Controls.Platform
 
 				try
 				{
-					var pageParent = sender.ToNative(MauiContext).Parent as FrameworkElement;
+					var current = sender.ToPlatform(MauiContext);
+					var pageParent = current?.Parent as FrameworkElement;
 
 					if (pageParent != null)
 						actionSheet.ShowAt(pageParent);
+					else
+					{
+						if (current != null && current is FrameworkElement mainPage)
+							actionSheet.ShowAt(current);
+						else
+							arguments.SetResult(null);
+					}
 				}
 				catch (ArgumentException) // If the page is not in the visual tree
 				{
-					if (UI.Xaml.Window.Current.Content is FrameworkElement mainPage)
+					if (UI.Xaml.Window.Current != null && UI.Xaml.Window.Current.Content is FrameworkElement mainPage)
 						actionSheet.ShowAt(mainPage);
+					else
+						arguments.SetResult(null);
 				}
 			}
 
@@ -201,7 +222,7 @@ namespace Microsoft.Maui.Controls.Platform
 				return result == ContentDialogResult.Primary;
 			}
 
-			static async Task<string> ShowPrompt(PromptDialog prompt)
+			static async Task<string?> ShowPrompt(PromptDialog prompt)
 			{
 				ContentDialogResult result = await prompt.ShowAsync();
 

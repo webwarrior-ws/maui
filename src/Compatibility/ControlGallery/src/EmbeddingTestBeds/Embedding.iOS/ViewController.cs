@@ -1,14 +1,15 @@
 using Foundation;
 using System;
+using ObjCRuntime;
 using UIKit;
 
 namespace Embedding.iOS
 {
-    public partial class ViewController : UIViewController
-    {
-        public ViewController (IntPtr handle) : base (handle)
-        {
-        }
+	public partial class ViewController : UIViewController
+	{
+		public ViewController(IntPtr handle) : base(handle)
+		{
+		}
 
 		public override void ViewDidLoad()
 		{
@@ -16,5 +17,5 @@ namespace Embedding.iOS
 			ShowWebView.TouchUpInside += (sender, e) => AppDelegate.Shared.ShowWebView();
 			ShowAlertsAndActionSheets.TouchUpInside += (sender, e) => AppDelegate.Shared.ShowAlertsAndActionSheets();
 		}
-    }
+	}
 }

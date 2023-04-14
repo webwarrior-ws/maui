@@ -2,58 +2,37 @@
 using Android.App;
 using Android.Content.Res;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public static class DatePickerExtensions
 	{
-		static readonly int[][] ColorStates =
+		public static void UpdateFormat(this MauiDatePicker platformDatePicker, IDatePicker datePicker)
 		{
-			new[] { Android.Resource.Attribute.StateEnabled },
-			new[] { -Android.Resource.Attribute.StateEnabled }
-		};
-
-		public static void UpdateFormat(this MauiDatePicker nativeDatePicker, IDatePicker datePicker)
-		{
-			nativeDatePicker.SetText(datePicker);
+			platformDatePicker.SetText(datePicker);
 		}
 
-		public static void UpdateDate(this MauiDatePicker nativeDatePicker, IDatePicker datePicker)
+		public static void UpdateDate(this MauiDatePicker platformDatePicker, IDatePicker datePicker)
 		{
-			nativeDatePicker.SetText(datePicker);
+			platformDatePicker.SetText(datePicker);
 		}
 
-		public static void UpdateTextColor(this MauiDatePicker nativeDatePicker, IDatePicker datePicker)
-		{
-			nativeDatePicker.UpdateTextColor(datePicker, null);
-		}
-
-		public static void UpdateTextColor(this MauiDatePicker nativeDatePicker, IDatePicker datePicker, ColorStateList? defaultTextColor)
+		public static void UpdateTextColor(this MauiDatePicker platformDatePicker, IDatePicker datePicker)
 		{
 			var textColor = datePicker.TextColor;
 
-			if (textColor == null)
+			if (textColor != null)
 			{
-				if (defaultTextColor != null)
-					nativeDatePicker.SetTextColor(defaultTextColor);
-			}
-			else
-			{
-				var androidColor = textColor.ToNative();
-
-				if (!nativeDatePicker.TextColors.IsOneColor(ColorStates, androidColor))
-				{
-					var acolor = androidColor.ToArgb();
-					nativeDatePicker.SetTextColor(new ColorStateList(ColorStates, new[] { acolor, acolor }));
-				}
+				if (PlatformInterop.CreateEditTextColorStateList(platformDatePicker.TextColors, textColor.ToPlatform()) is ColorStateList c)
+					platformDatePicker.SetTextColor(c);
 			}
 		}
 
-		public static void UpdateMinimumDate(this MauiDatePicker nativeDatePicker, IDatePicker datePicker)
+		public static void UpdateMinimumDate(this MauiDatePicker platformDatePicker, IDatePicker datePicker)
 		{
-			nativeDatePicker.UpdateMinimumDate(datePicker, null);
+			platformDatePicker.UpdateMinimumDate(datePicker, null);
 		}
 
-		public static void UpdateMinimumDate(this MauiDatePicker nativeDatePicker, IDatePicker datePicker, DatePickerDialog? datePickerDialog)
+		public static void UpdateMinimumDate(this MauiDatePicker platformDatePicker, IDatePicker datePicker, DatePickerDialog? datePickerDialog)
 		{
 			if (datePickerDialog != null)
 			{
@@ -61,12 +40,12 @@ namespace Microsoft.Maui
 			}
 		}
 
-		public static void UpdateMaximumDate(this MauiDatePicker nativeDatePicker, IDatePicker datePicker)
+		public static void UpdateMaximumDate(this MauiDatePicker platformDatePicker, IDatePicker datePicker)
 		{
-			nativeDatePicker.UpdateMinimumDate(datePicker, null);
+			platformDatePicker.UpdateMinimumDate(datePicker, null);
 		}
 
-		public static void UpdateMaximumDate(this MauiDatePicker nativeDatePicker, IDatePicker datePicker, DatePickerDialog? datePickerDialog)
+		public static void UpdateMaximumDate(this MauiDatePicker platformDatePicker, IDatePicker datePicker, DatePickerDialog? datePickerDialog)
 		{
 			if (datePickerDialog != null)
 			{
@@ -74,9 +53,9 @@ namespace Microsoft.Maui
 			}
 		}
 
-		internal static void SetText(this MauiDatePicker nativeDatePicker, IDatePicker datePicker)
+		internal static void SetText(this MauiDatePicker platformDatePicker, IDatePicker datePicker)
 		{
-			nativeDatePicker.Text = datePicker.Date.ToString(datePicker.Format);
+			platformDatePicker.Text = datePicker.Date.ToString(datePicker.Format);
 		}
 	}
 }

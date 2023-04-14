@@ -192,7 +192,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 		void MaybeInvalidate()
 		{
-			if (Element.IsInNativeLayout)
+			if (Element.IsInPlatformLayout)
 				return;
 
 			var parent = (FrameworkElement)Container.Parent;
@@ -317,7 +317,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		{
 			double anchorX = view.AnchorX;
 			double anchorY = view.AnchorY;
-			frameworkElement.RenderTransformOrigin = new Windows.Foundation.Point(anchorX, anchorY);
+			frameworkElement.RenderTransformOrigin = new global::Windows.Foundation.Point(anchorX, anchorY);
 			frameworkElement.RenderTransform = new WScaleTransform { ScaleX = view.Scale * view.ScaleX, ScaleY = view.Scale * view.ScaleY };
 
 			UpdateRotation(view, frameworkElement);

@@ -9,6 +9,7 @@ using Microsoft.Maui.Controls.Platform;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class RadioButtonRenderer : ViewRenderer<RadioButton, FormsRadioButton>
 	{
 		bool _fontApplied;
@@ -146,33 +147,37 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		void UpdateBackgroundBrush()
 		{
 			if (Brush.IsNullOrEmpty(Element.Background))
-				Control.BackgroundColor = Element.BackgroundColor.IsNotDefault() ? Maui.ColorExtensions.ToNative(Element.BackgroundColor) : (WBrush)Microsoft.UI.Xaml.Application.Current.Resources["ButtonBackgroundThemeBrush"];
+				Control.BackgroundColor = Element.BackgroundColor.IsNotDefault() ? Element.BackgroundColor.ToPlatform() : (WBrush)Microsoft.UI.Xaml.Application.Current.Resources["ButtonBackgroundThemeBrush"];
 			else
 				Control.BackgroundColor = Element.Background.ToBrush();
 		}
 
+		[PortHandler]
 		void UpdateBorderColor()
 		{
-			Control.BorderBrush = Element.BorderColor.IsNotDefault() ? Maui.ColorExtensions.ToNative(Element.BorderColor) : (WBrush)Microsoft.UI.Xaml.Application.Current.Resources["ButtonBorderThemeBrush"];
+			Control.BorderBrush = Element.BorderColor.IsNotDefault() ? Element.BorderColor.ToPlatform() : (WBrush)Microsoft.UI.Xaml.Application.Current.Resources["ButtonBorderThemeBrush"];
 		}
 
+		[PortHandler]
 		void UpdateBorderRadius()
 		{
 			Control.BorderRadius = Element.CornerRadius;
 		}
 
+		[PortHandler]
 		void UpdateBorderWidth()
 		{
 			Control.BorderThickness = Element.BorderWidth == (double)RadioButton.BorderWidthProperty.DefaultValue ? WinUIHelpers.CreateThickness(3) : WinUIHelpers.CreateThickness(Element.BorderWidth);
 		}
 
+		[PortHandler]
 		void UpdateContent()
 		{
 			var content = Element?.Content;
 
 			if (content is View view)
 			{
-				Control.Content = new WrapperControl(view);
+				Control.Content = new ViewToHandlerConverter.WrapperControl(view);
 				return;
 			}
 
@@ -189,15 +194,19 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			if (font == Font.Default && !_fontApplied)
 				return;
 
-			Font fontToApply = font == Font.Default ? Font.SystemFontOfSize(Device.GetNamedSize(NamedSize.Medium, Element.GetType(), false)) : font;
+			Font fontToApply = font == Font.Default
+#pragma warning disable CS0612 // Type or member is obsolete
+				? Font.SystemFontOfSize(Device.GetNamedSize(NamedSize.Medium, Element.GetType(), false))
+#pragma warning restore CS0612 // Type or member is obsolete
+				: font;
 
-			Control.ApplyFont(fontToApply);
+			Control.ApplyFont(fontToApply, Element.RequireFontManager());
 			_fontApplied = true;
 		}
 
 		void UpdateTextColor()
 		{
-			Control.Foreground = Element.TextColor.IsNotDefault() ? Maui.ColorExtensions.ToNative(Element.TextColor) : (WBrush)Microsoft.UI.Xaml.Application.Current.Resources["DefaultTextForegroundThemeBrush"];
+			Control.Foreground = Element.TextColor.IsNotDefault() ? Element.TextColor.ToPlatform() : (WBrush)Microsoft.UI.Xaml.Application.Current.Resources["DefaultTextForegroundThemeBrush"];
 		}
 
 		void UpdatePadding()

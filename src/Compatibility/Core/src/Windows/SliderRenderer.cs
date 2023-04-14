@@ -11,6 +11,7 @@ using Microsoft.Maui.Controls.Platform;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class SliderRenderer : ViewRenderer<Slider, FormsSlider>
 	{
 		WBrush defaultforegroundcolor;
@@ -111,7 +112,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				if (Element.MinimumTrackColor.IsDefault())
 					Control.Foreground = defaultforegroundcolor;
 				else
-					Control.Foreground = Maui.ColorExtensions.ToNative(Element.MinimumTrackColor);
+					Control.Foreground = Element.MinimumTrackColor.ToPlatform();
 			}
 		}
 
@@ -123,7 +124,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				if (Element.MaximumTrackColor.IsDefault())
 					Control.Background = defaultbackgroundcolor;
 				else
-					Control.Background = Maui.ColorExtensions.ToNative(Element.MaximumTrackColor);
+					Control.Background = Element.MaximumTrackColor.ToPlatform();
 			}
 		}
 
@@ -165,8 +166,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			{
 				return;
 			}
-			
-			BrushHelpers.UpdateColor(Element.ThumbColor, ref _defaultThumbColor, 
+
+			BrushHelpers.UpdateColor(Element.ThumbColor, ref _defaultThumbColor,
 				() => thumb.Background, brush => thumb.Background = brush);
 		}
 
@@ -195,7 +196,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				Color backgroundColor = Element.BackgroundColor;
 				if (!backgroundColor.IsDefault())
 				{
-					Control.Background = Maui.ColorExtensions.ToNative(backgroundColor);
+					Control.Background = backgroundColor.ToPlatform();
 				}
 				else
 				{

@@ -3,19 +3,25 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <InstallWorkloadPacks Condition=" '$(InstallWorkloadPacks)' == '' ">true</InstallWorkloadPacks>
+    <InternalAzureFeed>https://dotnetbuilds.blob.core.windows.net/internal</InternalAzureFeed>
+    <DotNetFeedUrl>https://dotnetbuilds.blob.core.windows.net/public</DotNetFeedUrl>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('windows'))">
     <DotNetInstallScriptUrl>https://dot.net/v1/dotnet-install.ps1</DotNetInstallScriptUrl>
     <DotNetInstallScriptName>dotnet-install.ps1</DotNetInstallScriptName>
     <DotNetInstallScriptPath>$(DotNetOutputPath)$(DotNetInstallScriptName)</DotNetInstallScriptPath>
     <DotNetInstallCommand>&amp; '$(DotNetInstallScriptPath)' -Version $(MicrosoftDotnetSdkInternalPackageVersion) -InstallDir '$(DotNetDirectory)' -Verbose</DotNetInstallCommand>
-    <DotNetInstallCommand>powershell -Command &quot;$(DotNetInstallCommand)&quot;</DotNetInstallCommand>
+    <DotNetInstallCommand Condition=" '$(PRIVATE_BUILD)' == 'false' ">$(DotNetInstallCommand) -AzureFeed $(DotNetFeedUrl)</DotNetInstallCommand>
+    <DotNetInstallCommand Condition=" '$(PRIVATE_BUILD)' == 'true' ">$(DotNetInstallCommand) -AzureFeed $(InternalAzureFeed) -FeedCredential $env:DOTNET_TOKEN</DotNetInstallCommand> 
+    <DotNetInstallCommand>powershell -ExecutionPolicy ByPass -NoProfile -Command &quot;$(DotNetInstallCommand)&quot;</DotNetInstallCommand>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('osx'))">
     <DotNetInstallScriptUrl>https://dot.net/v1/dotnet-install.sh</DotNetInstallScriptUrl>
     <DotNetInstallScriptName>dotnet-install.sh</DotNetInstallScriptName>
     <DotNetInstallScriptPath>$(DotNetOutputPath)$(DotNetInstallScriptName)</DotNetInstallScriptPath>
-    <DotNetInstallCommand>sh '$(DotNetInstallScriptPath)' --version $(MicrosoftDotnetSdkInternalPackageVersion) --install-dir '$(DotNetDirectory)' --verbose</DotNetInstallCommand>
+    <DotNetInstallCommand>bash '$(DotNetInstallScriptPath)' --version $(MicrosoftDotnetSdkInternalPackageVersion) --install-dir '$(DotNetDirectory)' --verbose</DotNetInstallCommand>
+    <DotNetInstallCommand Condition=" '$(PRIVATE_BUILD)' == 'true' ">$(DotNetInstallCommand) --azure-feed $(InternalAzureFeed) --feed-credential $DOTNET_TOKEN</DotNetInstallCommand>
+    <DotNetInstallCommand Condition=" '$(PRIVATE_BUILD)' != 'true' ">$(DotNetInstallCommand) --azure-feed $(DotNetFeedUrl)</DotNetInstallCommand>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -47,7 +53,7 @@
 
     <!-- Setup Microsoft.NET.Sdk.Maui/WorkloadManifest.* -->
     <ItemGroup>
-      <_PackagesToUnzip Include="$(PackageOutputPath)/Microsoft.NET.Sdk.Maui.Manifest-$(DotNetPreviewVersionBand).*.nupkg" />
+      <_PackagesToUnzip Include="$(PackageOutputPath)/Microsoft.NET.Sdk.Maui.Manifest-$(DotNetMauiManifestVersionBand).*.nupkg" />
     </ItemGroup>
     <Unzip
         SourceFiles="@(_PackagesToUnzip)"
@@ -59,35 +65,17 @@
     <CopyWorkloadFiles
         Name="microsoft.net.sdk.maui"
         Files="@(_WorkloadFiles)"
-        WorkloadDirectory="$(MSBuildExtensionsPath)../../sdk-manifests/$(DotNetPreviewVersionBand)"
-        VersionBand="$(DotNetPreviewVersionBand)"
+        WorkloadDirectory="$(MSBuildExtensionsPath)../../sdk-manifests/$(DotNetVersionBand)"
     />
     <RemoveDir Directories="$(_InstallTempDirectory)" />
 
-    <!-- Run 'dotnet workload install' -->
-    <PropertyGroup>
-      <_ThisDotNet>$(MSBuildExtensionsPath)../../dotnet</_ThisDotNet>
-      <_NuGetConfig>$(DotNetTempDirectory)NuGet.config</_NuGetConfig>
-      <_NuGetContent>
-<![CDATA[
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-  <packageSources>
-    <clear />
-    <add key="local"   value="$(PackageOutputPath)" />
-    <add key="dotnet6" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6/nuget/v3/index.json" />
-    <add key="xamarin" value="https://pkgs.dev.azure.com/azure-public/vside/_packaging/xamarin-impl/nuget/v3/index.json" />
-  </packageSources>
-</configuration>
-]]>
-      </_NuGetContent>
-    </PropertyGroup>
-    <WriteLinesToFile File="$(_NuGetConfig)" Lines="$(_NuGetContent)" Overwrite="true" />
-    <Exec
-        Command="&quot;$(_ThisDotNet)&quot; workload install maui --skip-manifest-update --verbosity diag --temp-dir $(DotNetTempDirectory)"
-        WorkingDirectory="$(DotNetTempDirectory)"
-    />
-    <Delete Files="$(_NuGetConfig)" />
+    <!-- Run 'dotnet workload install' for the current running 'dotnet' install -->
+    <ItemGroup>
+      <_WorkloadSource Include="$(PackageOutputPath)" />
+    </ItemGroup>
+    <Copy SourceFiles="$(MauiRootDirectory)NuGet.config" DestinationFolder="$(DotNetTempDirectory)" />
+    <Exec Command="dotnet nuget add source &quot;$(PackageOutputPath)&quot; --name artifacts --configfile &quot;$(DotNetTempDirectory)NuGet.config&quot;" />
+    <Exec Command="&quot;$(MSBuildExtensionsPath)../../dotnet&quot; workload install tizen maui --skip-manifest-update --verbosity diag --temp-dir &quot;$(DotNetTempDirectory)&quot; --configfile &quot;$(DotNetTempDirectory)NuGet.config&quot;" WorkingDirectory="$(MauiRootDirectory)" />
 
   </Target>
 
@@ -115,6 +103,14 @@
     <RemoveDir Directories="$(DotNetDirectory)" />
     <Exec Command="$(DotNetInstallCommand)" />
     <Touch Files="$(DotNetDirectory).stamp" AlwaysCreate="true" />
+    
+    <!-- This is used by iOS pair to mac because pair to mac can't
+        determine the version of preview versions. -->
+    <WriteLinesToFile
+        File="$(DotNetDirectory)dotnet-sdk-version.txt"
+        Lines="$(MicrosoftDotnetSdkInternalPackageVersion)"
+        Condition="$([MSBuild]::IsOSPlatform('windows'))"
+        Overwrite="true" />
   </Target>
 
   <ItemGroup>
@@ -125,11 +121,12 @@
     <_PacksToRemove Include="Microsoft.NET.Workload.tvOS" />
     <_PacksToRemove Include="Microsoft.NET.Workload.macOS" />
     <!-- Ids for 'dotnet workload install' -->
-    <_WorkloadIds Include="android-aot" />
+    <_WorkloadIds Include="android" />
     <_WorkloadIds Include="maccatalyst" />
     <_WorkloadIds Include="macos" />
     <_WorkloadIds Include="ios" />
     <_WorkloadIds Include="tvos" />
+    <_WorkloadIds Include="tizen" />
   </ItemGroup>
 
   <Target Name="_AcquireWorkloadManifests"
@@ -151,11 +148,11 @@
     -->
     <ItemGroup>
       <_WorkloadFiles Include="$(_WorkloadManifestDir)microsoft.net.*/*/data/WorkloadManifest.*" />
+      <_WorkloadFiles Include="$(_WorkloadManifestDir)samsung.net.sdk.*/*/data/WorkloadManifest.*" />
     </ItemGroup>
     <CopyWorkloadFiles
         Files="@(_WorkloadFiles)"
         WorkloadDirectory="$(DotNetSdkManifestsDirectory)"
-        VersionBand="$(DotNetPreviewVersionBand)"
     />
 
     <Touch Files="$(DotNetSdkManifestsDirectory).stamp" AlwaysCreate="true" />
@@ -166,8 +163,9 @@
       Inputs="$(_Inputs)"
       Outputs="$(DotNetPacksDirectory).stamp">
     <Exec
-        Command="&quot;$(DotNetToolPath)&quot; workload install %(_WorkloadIds.Identity) --skip-manifest-update --verbosity diag --temp-dir $(DotNetTempDirectory)"
+        Command="&quot;$(DotNetToolPath)&quot; workload install %(_WorkloadIds.Identity) --skip-manifest-update --verbosity diag --temp-dir &quot;$(DotNetTempDirectory)&quot; --configfile &quot;$(MauiRootDirectory)NuGet.config&quot;"
         WorkingDirectory="$(MauiRootDirectory)"
+        EnvironmentVariables="DOTNET_MULTILEVEL_LOOKUP=0"
     />
     <Touch Files="$(DotNetPacksDirectory).stamp" AlwaysCreate="true" />
   </Target>
@@ -179,7 +177,6 @@
       <Name ParameterType="System.String" />
       <Files ParameterType="System.String[]" Required="true" />
       <WorkloadDirectory ParameterType="System.String" Required="true" />
-      <VersionBand ParameterType="System.String" Required="true" />
     </ParameterGroup>
     <Task>
       <Using Namespace="System.IO" />
@@ -189,7 +186,11 @@
           foreach (var file in Files)
           {
               var name = string.IsNullOrEmpty(Name) ? Directory.GetParent (file).Parent.Parent.Name : Name;
-              var directory = Path.Combine(WorkloadDirectory, name.Replace($".manifest-{VersionBand}", ""));
+              var index = name.IndexOf(".manifest-", StringComparison.OrdinalIgnoreCase);
+              if (index != -1) {
+                  name = name.Substring(0, index);
+              }
+              var directory = Path.Combine(WorkloadDirectory, name);
               Directory.CreateDirectory(directory);
               var destination = Path.Combine(directory, Path.GetFileName(file));
               Log.LogMessage($"Copying {file} to {destination}");

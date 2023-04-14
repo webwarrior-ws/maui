@@ -1,14 +1,18 @@
 ﻿using System;
-using UIKit;
-using Microsoft.Maui.Controls.Compatibility.Platform.iOS;
-using Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS;
 using Microsoft.Maui.Controls.Compatibility;
-using static Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues.Issue6368;
+using Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS;
+using Microsoft.Maui.Controls.Compatibility.Platform.iOS;
 using Microsoft.Maui.Controls.Platform;
+using ObjCRuntime;
+using UIKit;
+using static Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues.Issue6368;
 
+#pragma warning disable CS0612 // Type or member is obsolete
 [assembly: ExportRenderer(typeof(CustomView), typeof(CustomRenderer))]
+#pragma warning restore CS0612 // Type or member is obsolete
 namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 {
+	[System.Obsolete]
 	public class CustomRenderer : ViewRenderer<CustomView, UIView>
 	{
 		protected override void OnElementChanged(ElementChangedEventArgs<CustomView> e)

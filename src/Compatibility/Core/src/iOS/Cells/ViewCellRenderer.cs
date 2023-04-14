@@ -1,12 +1,14 @@
 using System;
 using System.ComponentModel;
 using Microsoft.Maui.Controls.Internals;
+using ObjCRuntime;
 using UIKit;
 using RectangleF = CoreGraphics.CGRect;
 using SizeF = CoreGraphics.CGSize;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[Obsolete("Use Microsoft.Maui.Controls.Platform.Compatibility.ViewCellRenderer instead")]
 	public class ViewCellRenderer : CellRenderer
 	{
 		[Preserve(Conditional = true)]
@@ -65,7 +67,9 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			void UpdateIsEnabled(bool isEnabled)
 			{
 				UserInteractionEnabled = isEnabled;
+#pragma warning disable CA1416 // TODO: 'UITableViewCell.TextLabel' is unsupported on: 'ios' 14.0 and later
 				TextLabel.Enabled = isEnabled;
+#pragma warning restore CA1416
 			}
 
 			void ViewCellPropertyChanged(object sender, PropertyChangedEventArgs e)

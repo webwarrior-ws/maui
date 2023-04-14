@@ -8,6 +8,7 @@ using AView = Android.Views.View;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 {
+	[System.Obsolete]
 	public class VisualElementPackager : IDisposable
 	{
 		readonly EventHandler<ElementEventArgs> _childAddedHandler;
@@ -178,19 +179,16 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 					IVisualElementRenderer r = Platform.GetRenderer(element);
 					if (r != null)
 					{
-						if (Forms.IsLollipopOrNewer)
+						var elevation = ElevationHelper.GetElevation(r.View) ?? 0;
+						var elementElevation = ElevationHelper.GetElevation(element, r.View.Context);
+
+						if (elementElevation == null)
 						{
-							var elevation = ElevationHelper.GetElevation(r.View) ?? 0;
-							var elementElevation = ElevationHelper.GetElevation(element, r.View.Context);
+							if (elevation > elevationToSet)
+								elevationToSet = elevation;
 
-							if (elementElevation == null)
-							{
-								if (elevation > elevationToSet)
-									elevationToSet = elevation;
-
-								if (r.View.Elevation != elevationToSet)
-									r.View.Elevation = elevationToSet;
-							}
+							if (r.View.Elevation != elevationToSet)
+								r.View.Elevation = elevationToSet;
 						}
 
 						if (!onlyUpdateElevations)
@@ -217,9 +215,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 				EnsureChildOrder();
 				return;
 			}
-
-			if (!Forms.IsLollipopOrNewer)
-				return;
 
 			Element previousChild = ElementController.LogicalChildren[itemCount - 2];
 

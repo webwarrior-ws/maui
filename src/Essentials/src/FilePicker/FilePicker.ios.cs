@@ -1,18 +1,20 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Foundation;
+using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Devices;
 using MobileCoreServices;
 using UIKit;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.Storage
 {
-	public static partial class FilePicker
+	partial class FilePickerImplementation : IFilePicker
 	{
-		static async Task<IEnumerable<FileResult>> PlatformPickAsync(PickOptions options, bool allowMultiple = false)
+		async Task<IEnumerable<FileResult>> PlatformPickAsync(PickOptions options, bool allowMultiple = false)
 		{
+#pragma warning disable CA1416 // TODO: UTType has [UnsupportedOSPlatform("ios14.0")]
 			var allowedUtis = options?.FileTypes?.Value?.ToArray() ?? new string[]
 			{
 				UTType.Content,
@@ -25,7 +27,8 @@ namespace Microsoft.Maui.Essentials
 			// Use Open instead of Import so that we can attempt to use the original file.
 			// If the file is from an external provider, then it will be downloaded.
 			using var documentPicker = new UIDocumentPickerViewController(allowedUtis, UIDocumentPickerMode.Open);
-			if (Platform.HasOSVersion(11, 0))
+#pragma warning restore CA1416 // Constructor UIDocumentPickerViewController  has [UnsupportedOSPlatform("ios14.0")]
+			if (OperatingSystem.IsIOSVersionAtLeast(11, 0))
 				documentPicker.AllowsMultipleSelection = allowMultiple;
 			documentPicker.Delegate = new PickerDelegate
 			{
@@ -34,13 +37,11 @@ namespace Microsoft.Maui.Essentials
 
 			if (documentPicker.PresentationController != null)
 			{
-				documentPicker.PresentationController.Delegate = new PickerPresentationControllerDelegate
-				{
-					PickHandler = urls => GetFileResults(urls, tcs)
-				};
+				documentPicker.PresentationController.Delegate =
+					new UIPresentationControllerDelegate(() => GetFileResults(null, tcs));
 			}
 
-			var parentController = Platform.GetCurrentViewController();
+			var parentController = WindowStateManager.Default.GetCurrentUIViewController(true);
 
 			parentController.PresentViewController(documentPicker, true, null);
 
@@ -51,7 +52,7 @@ namespace Microsoft.Maui.Essentials
 		{
 			try
 			{
-				var results = await FileSystem.EnsurePhysicalFileResultsAsync(urls);
+				var results = await FileSystemUtils.EnsurePhysicalFileResultsAsync(urls);
 
 				tcs.TrySetResult(results);
 			}
@@ -74,18 +75,11 @@ namespace Microsoft.Maui.Essentials
 			public override void DidPickDocument(UIDocumentPickerViewController controller, NSUrl url)
 				=> PickHandler?.Invoke(new NSUrl[] { url });
 		}
-
-		class PickerPresentationControllerDelegate : UIAdaptivePresentationControllerDelegate
-		{
-			public Action<NSUrl[]> PickHandler { get; set; }
-
-			public override void DidDismiss(UIPresentationController presentationController) =>
-				PickHandler?.Invoke(null);
-		}
 	}
 
 	public partial class FilePickerFileType
 	{
+#pragma warning disable CA1416 // TODO: UTType has [UnsupportedOSPlatform("ios14.0")]
 		static FilePickerFileType PlatformImageFileType() =>
 			new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
 			{
@@ -115,5 +109,6 @@ namespace Microsoft.Maui.Essentials
 			{
 				{ DevicePlatform.iOS, new[] { (string)UTType.PDF } }
 			});
+#pragma warning restore CA1416
 	}
 }

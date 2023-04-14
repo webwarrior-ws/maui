@@ -74,7 +74,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		FrameworkElement _flyoutPresenter;
 		FrameworkElement _detailPresenter;
 		SplitView _split;
-	    ToolbarPlacement _toolbarPlacement;
+		ToolbarPlacement _toolbarPlacement;
 		bool _toolbarDynamicOverflowEnabled = true;
 		FrameworkElement _titleViewPresenter;
 		TitleViewManager _titleViewManager;
@@ -94,7 +94,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			set { SetValue(DetailProperty, value); }
 		}
 
-		public Windows.Foundation.Size DetailSize
+		public global::Windows.Foundation.Size DetailSize
 		{
 			get
 			{
@@ -112,7 +112,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 						width -= _flyoutPresenter.ActualWidth;
 				}
 
-				return new Windows.Foundation.Size(Math.Max(width, 0), Math.Max(height, 0));
+				return new global::Windows.Foundation.Size(Math.Max(width, 0), Math.Max(height, 0));
 			}
 		}
 
@@ -158,7 +158,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			set { SetValue(FlyoutProperty, value); }
 		}
 
-		public Windows.Foundation.Size FlyoutSize
+		public global::Windows.Foundation.Size FlyoutSize
 		{
 			get
 			{
@@ -178,7 +178,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				else if (_flyoutPresenter != null)
 					width = _flyoutPresenter.ActualWidth;
 
-				return new Windows.Foundation.Size(Math.Max(width, 0), Math.Max(height, 0));
+				return new global::Windows.Foundation.Size(Math.Max(width, 0), Math.Max(height, 0));
 			}
 		}
 
@@ -212,16 +212,16 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			set { SetValue(CollapseStyleProperty, value); }
 		}
 
-	    public ToolbarPlacement ToolbarPlacement
-	    {
-	        get { return _toolbarPlacement; }
-	        set
-	        {
-	            _toolbarPlacement = value;
-	            _toolbarPlacementHelper.UpdateToolbarPlacement();
-	        }
-	    }
-		
+		public ToolbarPlacement ToolbarPlacement
+		{
+			get { return _toolbarPlacement; }
+			set
+			{
+				_toolbarPlacement = value;
+				_toolbarPlacementHelper.UpdateToolbarPlacement();
+			}
+		}
+
 		public bool ToolbarDynamicOverflowEnabled
 		{
 			get { return _toolbarDynamicOverflowEnabled; }
@@ -299,8 +299,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			_commandBar = GetTemplateChild("CommandBar") as CommandBar;
 			_toolbarPlacementHelper.Initialize(_commandBar, () => ToolbarPlacement, GetTemplateChild);
 			UpdateToolbarDynamicOverflowEnabled();
-			
-			UpdateMode(); 
+
+			UpdateMode();
 
 			if (_commandBarTcs != null)
 				_commandBarTcs.SetResult(_commandBar);
@@ -378,15 +378,15 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 		CommandBar ITitleViewRendererController.CommandBar { get => _commandBar; }
 
-        void UpdateToolbarDynamicOverflowEnabled()
-        {
-            if (_commandBar != null)
-            {
-                _commandBar.IsDynamicOverflowEnabled = ToolbarDynamicOverflowEnabled;
-            }
-        }
+		void UpdateToolbarDynamicOverflowEnabled()
+		{
+			if (_commandBar != null)
+			{
+				_commandBar.IsDynamicOverflowEnabled = ToolbarDynamicOverflowEnabled;
+			}
+		}
 
-    }
+	}
 
 	public class MasterDetailControl : FlyoutPageControl
 	{
@@ -414,7 +414,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			set => FlyoutToolbarVisibility = value;
 		}
 
-		public Windows.Foundation.Size MasterSize => FlyoutSize;
+		public global::Windows.Foundation.Size MasterSize => FlyoutSize;
 
 		private protected override string FlyoutPresenterTemplateName => "MasterPresenter";
 

@@ -1,13 +1,25 @@
 ﻿#nullable enable
+#if __IOS__ || MACCATALYST
+using PlatformView = Microsoft.Maui.Platform.MauiTextView;
+#elif MONOANDROID
+using PlatformView = AndroidX.AppCompat.Widget.AppCompatEditText;
+#elif WINDOWS
+using PlatformView = Microsoft.UI.Xaml.Controls.TextBox;
+#elif TIZEN
+using PlatformView = Tizen.UIExtensions.NUI.Editor;
+#elif GTK
+using PlatformView = Gtk.TextView;
+#elif (NETSTANDARD || !PLATFORM) || (NET6_0_OR_GREATER && !IOS && !ANDROID && !TIZEN)
+using PlatformView = System.Object;
+#endif
+
 namespace Microsoft.Maui.Handlers
 {
-	public partial class EditorHandler
+	public partial class EditorHandler : IEditorHandler
 	{
-		public static IPropertyMapper<IEditor, EditorHandler> EditorMapper = new PropertyMapper<IEditor, EditorHandler>(ViewHandler.ViewMapper)
+		public static IPropertyMapper<IEditor, IEditorHandler> Mapper = new PropertyMapper<IEditor, IEditorHandler>(ViewHandler.ViewMapper)
 		{
-#if __ANDROID__
 			[nameof(IEditor.Background)] = MapBackground,
-#endif
 			[nameof(IEditor.CharacterSpacing)] = MapCharacterSpacing,
 			[nameof(IEditor.Font)] = MapFont,
 			[nameof(IEditor.IsReadOnly)] = MapIsReadOnly,
@@ -17,16 +29,27 @@ namespace Microsoft.Maui.Handlers
 			[nameof(IEditor.PlaceholderColor)] = MapPlaceholderColor,
 			[nameof(IEditor.Text)] = MapText,
 			[nameof(IEditor.TextColor)] = MapTextColor,
-			[nameof(IEditor.Keyboard)] = MapKeyboard
+			[nameof(IEditor.HorizontalTextAlignment)] = MapHorizontalTextAlignment,
+			[nameof(IEditor.VerticalTextAlignment)] = MapVerticalTextAlignment,
+			[nameof(IEditor.Keyboard)] = MapKeyboard,
+			[nameof(IEditor.CursorPosition)] = MapCursorPosition,
+			[nameof(IEditor.SelectionLength)] = MapSelectionLength
 		};
 
-		public EditorHandler() : base(EditorMapper)
+		public static CommandMapper<IPicker, IEditorHandler> CommandMapper = new(ViewCommandMapper)
+		{
+		};
+
+		public EditorHandler() : base(Mapper)
 		{
 		}
 
-		public EditorHandler(IPropertyMapper? mapper = null) : base(mapper ?? EditorMapper)
+		public EditorHandler(IPropertyMapper? mapper = null) : base(mapper ?? Mapper)
 		{
-
 		}
+
+		IEditor IEditorHandler.VirtualView => VirtualView;
+
+		PlatformView IEditorHandler.PlatformView => PlatformView;
 	}
 }

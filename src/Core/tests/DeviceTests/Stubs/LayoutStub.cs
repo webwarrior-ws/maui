@@ -63,13 +63,25 @@ namespace Microsoft.Maui.DeviceTests.Stubs
 			return _children.GetEnumerator();
 		}
 
+		public Size CrossPlatformMeasure(double widthConstraint, double heightConstraint)
+		{
+			return LayoutManager.Measure(widthConstraint, heightConstraint);
+		}
+
+		public Size CrossPlatformArrange(Rect bounds)
+		{
+			return LayoutManager.ArrangeChildren(bounds);
+		}
+
 		public Thickness Padding { get; set; }
 		public int Count => _children.Count;
 		public bool IsReadOnly => _children.IsReadOnly;
 
-		public ILayoutManager LayoutManager => _layoutManager ??= new LayoutManagerStub();
+		ILayoutManager LayoutManager => _layoutManager ??= new LayoutManagerStub();
 
 		public bool IgnoreSafeArea => false;
+
+		public bool ClipsToBounds { get; set; }
 
 		public IView this[int index] { get => _children[index]; set => _children[index] = value; }
 	}

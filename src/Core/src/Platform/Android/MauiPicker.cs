@@ -1,17 +1,17 @@
 ﻿using Android.Content;
 using Android.Runtime;
 using Android.Views;
-using Android.Widget;
+using AndroidX.AppCompat.Widget;
 using AndroidX.Core.Graphics.Drawable;
 using ARect = Android.Graphics.Rect;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public class MauiPicker : MauiPickerBase
 	{
 		public bool ShowPopupOnFocus { get; set; }
 
-		public MauiPicker(Context? context) : base(context)
+		public MauiPicker(Context context) : base(context)
 		{
 			PickerManager.Init(this);
 		}
@@ -37,11 +37,12 @@ namespace Microsoft.Maui
 		}
 	}
 
-	public class MauiPickerBase : EditText
+	public class MauiPickerBase : AppCompatEditText
 	{
-		public MauiPickerBase(Context? context) : base(context)
+		public MauiPickerBase(Context context) : base(context)
 		{
-			DrawableCompat.Wrap(Background);
+			if (Background != null)
+				DrawableCompat.Wrap(Background);
 		}
 	}
 }

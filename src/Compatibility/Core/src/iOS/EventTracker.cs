@@ -8,6 +8,7 @@ using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Controls.Platform;
 
 #if __MOBILE__
+using ObjCRuntime;
 using UIKit;
 using NativeView = UIKit.UIView;
 using NativeGestureRecognizer = UIKit.UIGestureRecognizer;
@@ -397,36 +398,36 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 								if (r.NumberOfTouches != panRecognizer.TouchPoints)
 									return;
 #endif
-								panGestureRecognizer.SendPanStarted(view, Application.Current.PanGestureId);
+								panGestureRecognizer.SendPanStarted(view, PanGestureRecognizer.CurrentId.Value);
 								break;
 							case NativeGestureRecognizerState.Changed:
 #if __MOBILE__
 								if (r.NumberOfTouches != panRecognizer.TouchPoints)
 								{
 									r.State = NativeGestureRecognizerState.Ended;
-									panGestureRecognizer.SendPanCompleted(view, Application.Current.PanGestureId);
-									Application.Current.PanGestureId++;
+									panGestureRecognizer.SendPanCompleted(view, PanGestureRecognizer.CurrentId.Value);
+									PanGestureRecognizer.CurrentId.Increment();
 									return;
 								}
 #endif
 								var translationInView = r.TranslationInView(_handler);
-								panGestureRecognizer.SendPan(view, translationInView.X, translationInView.Y, Application.Current.PanGestureId);
+								panGestureRecognizer.SendPan(view, translationInView.X, translationInView.Y, PanGestureRecognizer.CurrentId.Value);
 								break;
 							case NativeGestureRecognizerState.Cancelled:
 							case NativeGestureRecognizerState.Failed:
-								panGestureRecognizer.SendPanCanceled(view, Application.Current.PanGestureId);
-								Application.Current.PanGestureId++;
+								panGestureRecognizer.SendPanCanceled(view, PanGestureRecognizer.CurrentId.Value);
+								PanGestureRecognizer.CurrentId.Increment();
 								break;
 							case NativeGestureRecognizerState.Ended:
 #if __MOBILE__
 								if (r.NumberOfTouches != panRecognizer.TouchPoints)
 								{
-									panGestureRecognizer.SendPanCompleted(view, Application.Current.PanGestureId);
-									Application.Current.PanGestureId++;
+									panGestureRecognizer.SendPanCompleted(view, PanGestureRecognizer.CurrentId.Value);
+									PanGestureRecognizer.CurrentId.Increment();
 								}
 #else
-								panGestureRecognizer.SendPanCompleted(view, Application.Current.PanGestureId);
-								Application.Current.PanGestureId++;
+								panGestureRecognizer.SendPanCompleted(view, PanGestureRecognizer.CurrentId.Value);
+								PanGestureRecognizer.CurrentId.Increment();
 #endif
 								break;
 						}
@@ -577,6 +578,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 
 			if (_dragAndDropDelegate != null)
 			{
+#pragma warning disable CA1416 // TODO: 'UIDragInteraction.Delegate', 'UIView.Interactions' is only supported on: 'ios' 11.0 and later, 'maccatalyst' 11.0 and later
 				foreach (var interaction in _renderer.NativeView.Interactions)
 				{
 					if (interaction is UIDragInteraction uIDrag && uIDrag.Delegate == _dragAndDropDelegate)
@@ -585,6 +587,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 					if (interaction is UIDropInteraction uiDrop && uiDrop.Delegate == _dragAndDropDelegate)
 						uIDropInteraction = uiDrop;
 				}
+#pragma warning restore CA1416
 			}
 
 			bool dragFound = false;
@@ -634,10 +637,10 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 			}
 
 #if __MOBILE__
-			if (!dragFound && uIDragInteraction != null)
+			if (!dragFound && uIDragInteraction != null && Forms.IsiOS11OrNewer)
 				_renderer.NativeView.RemoveInteraction(uIDragInteraction);
 
-			if (!dropFound && uIDropInteraction != null)
+			if (!dropFound && uIDropInteraction != null && Forms.IsiOS11OrNewer)
 				_renderer.NativeView.RemoveInteraction(uIDropInteraction);
 #endif
 

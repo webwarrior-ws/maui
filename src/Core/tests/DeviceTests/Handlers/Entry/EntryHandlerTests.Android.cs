@@ -15,6 +15,18 @@ namespace Microsoft.Maui.DeviceTests
 {
 	public partial class EntryHandlerTests
 	{
+		[Fact(DisplayName = "PlaceholderColor Initializes Correctly")]
+		public async Task PlaceholderColorInitializesCorrectly()
+		{
+			var entry = new EntryStub()
+			{
+				Placeholder = "Test",
+				PlaceholderColor = Colors.Yellow
+			};
+
+			await ValidatePropertyInitValue(entry, () => entry.PlaceholderColor, GetNativePlaceholderColor, entry.PlaceholderColor);
+		}
+
 		[Fact(DisplayName = "ReturnType Initializes Correctly")]
 		public async Task ReturnTypeInitializesCorrectly()
 		{
@@ -32,12 +44,12 @@ namespace Microsoft.Maui.DeviceTests
 				return new
 				{
 					ViewValue = entry.ReturnType,
-					NativeViewValue = GetNativeReturnType(handler)
+					PlatformViewValue = GetNativeReturnType(handler)
 				};
 			});
 
 			Assert.Equal(xplatReturnType, values.ViewValue);
-			Assert.Equal(expectedValue, values.NativeViewValue);
+			Assert.Equal(expectedValue, values.PlatformViewValue);
 		}
 
 		[Fact(DisplayName = "Horizontal TextAlignment Initializes Correctly")]
@@ -58,12 +70,12 @@ namespace Microsoft.Maui.DeviceTests
 				return new
 				{
 					ViewValue = entry.HorizontalTextAlignment,
-					NativeViewValue = GetNativeHorizontalTextAlignment(handler)
+					PlatformViewValue = GetNativeHorizontalTextAlignment(handler)
 				};
 			});
 
 			Assert.Equal(xplatHorizontalTextAlignment, values.ViewValue);
-			values.NativeViewValue.AssertHasFlag(expectedValue);
+			values.PlatformViewValue.AssertHasFlag(expectedValue);
 		}
 
 		[Fact(DisplayName = "Vertical TextAlignment Initializes Correctly")]
@@ -84,22 +96,34 @@ namespace Microsoft.Maui.DeviceTests
 				return new
 				{
 					ViewValue = entry.VerticalTextAlignment,
-					NativeViewValue = GetNativeVerticalTextAlignment(handler)
+					PlatformViewValue = GetNativeVerticalTextAlignment(handler)
 				};
 			});
 
 			Assert.Equal(xplatVerticalTextAlignment, values.ViewValue);
-			values.NativeViewValue.AssertHasFlag(expectedValue);
+			values.PlatformViewValue.AssertHasFlag(expectedValue);
 		}
 
-		AppCompatEditText GetNativeEntry(EntryHandler entryHandler) =>
-			(AppCompatEditText)entryHandler.NativeView;
+		static AppCompatEditText GetNativeEntry(EntryHandler entryHandler) =>
+			entryHandler.PlatformView;
 
 		string GetNativeText(EntryHandler entryHandler) =>
 			GetNativeEntry(entryHandler).Text;
 
-		void SetNativeText(EntryHandler entryHandler, string text) =>
+		internal static void SetNativeText(EntryHandler entryHandler, string text) =>
 			GetNativeEntry(entryHandler).Text = text;
+
+		internal static int GetCursorStartPosition(EntryHandler entryHandler)
+		{
+			var control = GetNativeEntry(entryHandler);
+			return control.SelectionStart;
+		}
+
+		internal static void UpdateCursorStartPosition(EntryHandler entryHandler, int position)
+		{
+			var control = GetNativeEntry(entryHandler);
+			control.SetSelection(position);
+		}
 
 		Color GetNativeTextColor(EntryHandler entryHandler)
 		{
@@ -119,6 +143,13 @@ namespace Microsoft.Maui.DeviceTests
 
 		string GetNativePlaceholder(EntryHandler entryHandler) =>
 			GetNativeEntry(entryHandler).Hint;
+
+		Color GetNativePlaceholderColor(EntryHandler entryHandler)
+		{
+			int currentHintTextColor = GetNativeEntry(entryHandler).CurrentHintTextColor;
+			AColor currentPlaceholderColor = new AColor(currentHintTextColor);
+			return currentPlaceholderColor.ToColor();
+		}
 
 		bool GetNativeIsReadOnly(EntryHandler entryHandler)
 		{
@@ -221,12 +252,12 @@ namespace Microsoft.Maui.DeviceTests
 				return new
 				{
 					ViewValue = entry.CharacterSpacing,
-					NativeViewValue = GetNativeCharacterSpacing(handler)
+					PlatformViewValue = GetNativeCharacterSpacing(handler)
 				};
 			});
 
 			Assert.Equal(xplatCharacterSpacing, values.ViewValue);
-			Assert.Equal(expectedValue, values.NativeViewValue, EmCoefficientPrecision);
+			Assert.Equal(expectedValue, values.PlatformViewValue, EmCoefficientPrecision);
 		}
 
 		double GetNativeCharacterSpacing(EntryHandler entryHandler)

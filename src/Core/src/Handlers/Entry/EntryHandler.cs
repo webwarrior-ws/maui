@@ -1,26 +1,39 @@
 ﻿#nullable enable
+#if __IOS__ || MACCATALYST
+using PlatformView = Microsoft.Maui.Platform.MauiTextField;
+#elif MONOANDROID
+using PlatformView = AndroidX.AppCompat.Widget.AppCompatEditText;
+#elif WINDOWS
+using PlatformView = Microsoft.UI.Xaml.Controls.TextBox;
+#elif TIZEN
+using PlatformView = Tizen.UIExtensions.NUI.Entry;
+#elif GTK
+using PlatformView = Gtk.Entry;
+#elif (NETSTANDARD || !PLATFORM) || (NET6_0_OR_GREATER && !IOS && !ANDROID && !TIZEN)
+using PlatformView = System.Object;
+#endif
+
 using System;
 
 namespace Microsoft.Maui.Handlers
 {
-	public partial class EntryHandler
+	public partial class EntryHandler : IEntryHandler
 	{
-		public static IPropertyMapper<IEntry, EntryHandler> EntryMapper = new PropertyMapper<IEntry, EntryHandler>(ViewHandler.ViewMapper)
+		public static IPropertyMapper<IEntry, IEntryHandler> Mapper = new PropertyMapper<IEntry, IEntryHandler>(ViewHandler.ViewMapper)
 		{
-#if __ANDROID__
 			[nameof(IEntry.Background)] = MapBackground,
-#endif
 			[nameof(IEntry.CharacterSpacing)] = MapCharacterSpacing,
 			[nameof(IEntry.ClearButtonVisibility)] = MapClearButtonVisibility,
 			[nameof(IEntry.Font)] = MapFont,
-			[nameof(ITextAlignment.HorizontalTextAlignment)] = MapHorizontalTextAlignment,
-			[nameof(ITextAlignment.VerticalTextAlignment)] = MapVerticalTextAlignment,
 			[nameof(IEntry.IsPassword)] = MapIsPassword,
+			[nameof(IEntry.HorizontalTextAlignment)] = MapHorizontalTextAlignment,
+			[nameof(IEntry.VerticalTextAlignment)] = MapVerticalTextAlignment,
 			[nameof(IEntry.IsReadOnly)] = MapIsReadOnly,
 			[nameof(IEntry.IsTextPredictionEnabled)] = MapIsTextPredictionEnabled,
 			[nameof(IEntry.Keyboard)] = MapKeyboard,
 			[nameof(IEntry.MaxLength)] = MapMaxLength,
 			[nameof(IEntry.Placeholder)] = MapPlaceholder,
+			[nameof(IEntry.PlaceholderColor)] = MapPlaceholderColor,
 			[nameof(IEntry.ReturnType)] = MapReturnType,
 			[nameof(IEntry.Text)] = MapText,
 			[nameof(IEntry.TextColor)] = MapTextColor,
@@ -28,22 +41,24 @@ namespace Microsoft.Maui.Handlers
 			[nameof(IEntry.SelectionLength)] = MapSelectionLength
 		};
 
+		public static CommandMapper<IEntry, IEntryHandler> CommandMapper = new(ViewCommandMapper)
+		{
+		};
 
 		static EntryHandler()
 		{
-#if __IOS__
-			EntryMapper.PrependToMapping(nameof(IView.FlowDirection), (h, __) => h.UpdateValue(nameof(ITextAlignment.HorizontalTextAlignment)));
-#endif
 		}
 
-		public EntryHandler() : base(EntryMapper)
+		public EntryHandler() : base(Mapper)
 		{
-
 		}
 
-		public EntryHandler(IPropertyMapper? mapper = null) : base(mapper ?? EntryMapper)
+		public EntryHandler(IPropertyMapper? mapper = null) : base(mapper ?? Mapper)
 		{
-
 		}
+
+		IEntry IEntryHandler.VirtualView => VirtualView;
+
+		PlatformView IEntryHandler.PlatformView => PlatformView;
 	}
 }

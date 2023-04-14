@@ -5,7 +5,7 @@ namespace Maui.Controls.Sample.Controls
 {
 	class BordelessEntryHandler : EntryHandler
 	{
-		public static PropertyMapper<BordelessEntry, BordelessEntryHandler> BorderlessEntryMapper = new PropertyMapper<BordelessEntry, BordelessEntryHandler>(EntryHandler.EntryMapper)
+		public static PropertyMapper<BordelessEntry, BordelessEntryHandler> BorderlessEntryMapper = new PropertyMapper<BordelessEntry, BordelessEntryHandler>(EntryHandler.Mapper)
 		{
 			["Border"] = MapBorder
 		};
@@ -23,27 +23,29 @@ namespace Maui.Controls.Sample.Controls
 #if __ANDROID__
 		public static void MapBorder(BordelessEntryHandler handler, BordelessEntry borderlessEntry)
 		{
-			handler.NativeView.Background = null;
+			handler.PlatformView.Background = null;
 		}
 #elif __IOS__
 		public static void MapBorder(BordelessEntryHandler handler, BordelessEntry borderlessEntry)
 		{
-			handler.NativeView.BorderStyle = UIKit.UITextBorderStyle.None;
+			handler.PlatformView.BorderStyle = UIKit.UITextBorderStyle.None;
 		}
 #elif WINDOWS
+		public static void MapBorder(BordelessEntryHandler handler, BordelessEntry borderlessEntry)
+		{
+		}
+#elif TIZEN
 		public static void MapBorder(BordelessEntryHandler handler, BordelessEntry borderlessEntry)
 		{
 		}
 #elif GTK
 		public static void MapBorder(BordelessEntryHandler handler, BordelessEntry borderlessEntry)
 		{
-
 		}
 #else
 		public static void MapBorder(BordelessEntryHandler handler, BordelessEntry borderlessEntry)
 		{
 		}
-
 #endif
 	}
 }

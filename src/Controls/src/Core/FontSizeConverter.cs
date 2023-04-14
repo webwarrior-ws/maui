@@ -5,11 +5,15 @@ using Microsoft.Maui.Controls.Xaml;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/FontSizeConverter.xml" path="Type[@FullName='Microsoft.Maui.Controls.FontSizeConverter']/Docs" />
+	[ProvideCompiled("Microsoft.Maui.Controls.XamlC.FontSizeTypeConverter")]
 	public class FontSizeConverter : TypeConverter, IExtendedTypeConverter
 	{
+		/// <include file="../../docs/Microsoft.Maui.Controls/FontSizeConverter.xml" path="//Member[@MemberName='CanConvertFrom']/Docs" />
 		public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
 			=> sourceType == typeof(string);
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/FontSizeConverter.xml" path="//Member[@MemberName='CanConvertTo']/Docs" />
 		public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
 			=> destinationType == typeof(string);
 
@@ -21,6 +25,7 @@ namespace Microsoft.Maui.Controls
 				if (double.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out double size))
 					return size;
 
+#pragma warning disable CS0612 // Type or member is obsolete
 				var ignoreCase = (serviceProvider?.GetService(typeof(IConverterOptions)) as IConverterOptions)?.IgnoreCase ?? false;
 				var sc = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 				NamedSize? namedSize = null;
@@ -53,10 +58,12 @@ namespace Microsoft.Maui.Controls
 					var type = serviceProvider.GetService(typeof(IProvideValueTarget)) is IProvideValueTarget valueTargetProvider ? valueTargetProvider.TargetObject.GetType() : typeof(Label);
 					return Device.GetNamedSize(namedSize.Value, type, false);
 				}
+#pragma warning restore CS0612 // Type or member is obsolete
 			}
 			throw new InvalidOperationException(string.Format("Cannot convert \"{0}\" into {1}", value, typeof(double)));
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/FontSizeConverter.xml" path="//Member[@MemberName='ConvertFrom']/Docs" />
 		public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
 		{
 			var strValue = value?.ToString();
@@ -67,6 +74,7 @@ namespace Microsoft.Maui.Controls
 					return size;
 				strValue = strValue.Trim();
 
+#pragma warning disable CS0612 // Type or member is obsolete
 				if (strValue.Equals(nameof(NamedSize.Default), StringComparison.Ordinal))
 					return Device.GetNamedSize(NamedSize.Default, typeof(Label), false);
 				if (strValue.Equals(nameof(NamedSize.Micro), StringComparison.Ordinal))
@@ -89,10 +97,12 @@ namespace Microsoft.Maui.Controls
 					return Device.GetNamedSize(NamedSize.Title, typeof(Label), false);
 				if (Enum.TryParse(strValue, out NamedSize namedSize))
 					return Device.GetNamedSize(namedSize, typeof(Label), false);
+#pragma warning restore CS0612 // Type or member is obsolete
 			}
 			throw new InvalidOperationException(string.Format("Cannot convert \"{0}\" into {1}", strValue, typeof(double)));
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/FontSizeConverter.xml" path="//Member[@MemberName='ConvertTo']/Docs" />
 		public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
 		{
 			if (value is not double d)

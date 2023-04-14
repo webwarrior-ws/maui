@@ -1,7 +1,10 @@
 ﻿using System;
+using Foundation;
+using Microsoft.Maui.Graphics;
+using ObjCRuntime;
 using UIKit;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public static class TextFieldExtensions
 	{
@@ -10,12 +13,11 @@ namespace Microsoft.Maui
 			textField.Text = entry.Text;
 		}
 
-		public static void UpdateTextColor(this UITextField textField, ITextStyle textStyle, UIColor? defaultTextColor = null)
+		public static void UpdateTextColor(this UITextField textField, ITextStyle textStyle)
 		{
-			// Default value of color documented to be black in iOS docs
-
 			var textColor = textStyle.TextColor;
-			textField.TextColor = textColor.ToNative(defaultTextColor ?? ColorExtensions.LabelColor);
+			if (textColor != null)
+				textField.TextColor = textColor.ToPlatform(ColorExtensions.LabelColor);
 		}
 
 		public static void UpdateIsPassword(this UITextField textField, IEntry entry)
@@ -33,19 +35,12 @@ namespace Microsoft.Maui
 
 		public static void UpdateHorizontalTextAlignment(this UITextField textField, ITextAlignment textAlignment)
 		{
-			bool isLtr;
-
-			if (textAlignment is IView v && v.FlowDirection == FlowDirection.LeftToRight)
-				isLtr = true;
-			else
-				isLtr = false;
-
-			textField.TextAlignment = textAlignment.HorizontalTextAlignment.ToNative(isLtr);
+			textField.TextAlignment = textAlignment.HorizontalTextAlignment.ToPlatformHorizontal(textField.EffectiveUserInterfaceLayoutDirection);
 		}
 
 		public static void UpdateVerticalTextAlignment(this UITextField textField, ITextAlignment textAlignment)
 		{
-			textField.VerticalAlignment = textAlignment.VerticalTextAlignment.ToNative();
+			textField.VerticalAlignment = textAlignment.VerticalTextAlignment.ToPlatformVertical();
 		}
 
 		public static void UpdateIsTextPredictionEnabled(this UITextField textField, IEntry entry)
@@ -63,14 +58,28 @@ namespace Microsoft.Maui
 				textField.AttributedText = newText;
 		}
 
-		public static void UpdatePlaceholder(this UITextField textField, IEntry entry)
+		public static void UpdatePlaceholder(this UITextField textField, IEntry entry, Color? defaultPlaceholderColor = null)
 		{
-			textField.Placeholder = entry.Placeholder;
+			var placeholder = entry.Placeholder;
+			if (placeholder == null)
+			{
+				textField.AttributedPlaceholder = null;
+				return;
+			}
+
+			var placeholderColor = entry.PlaceholderColor;
+			var foregroundColor = placeholderColor ?? defaultPlaceholderColor;
+
+			textField.AttributedPlaceholder = foregroundColor == null
+ 				? new NSAttributedString(placeholder)
+ 				: new NSAttributedString(str: placeholder, foregroundColor: foregroundColor.ToPlatform());
+
+			textField.AttributedPlaceholder.WithCharacterSpacing(entry.CharacterSpacing);
 		}
 
 		public static void UpdateIsReadOnly(this UITextField textField, IEntry entry)
 		{
-			textField.UserInteractionEnabled = !entry.IsReadOnly;
+			textField.UserInteractionEnabled = !(entry.IsReadOnly || entry.InputTransparent);
 		}
 
 		public static void UpdateFont(this UITextField textField, ITextStyle textStyle, IFontManager fontManager)
@@ -81,7 +90,7 @@ namespace Microsoft.Maui
 
 		public static void UpdateReturnType(this UITextField textField, IEntry entry)
 		{
-			textField.ReturnKeyType = entry.ReturnType.ToNative();
+			textField.ReturnKeyType = entry.ReturnType.ToPlatform();
 		}
 
 		public static void UpdateCharacterSpacing(this UITextField textField, ITextStyle textStyle)
@@ -89,6 +98,10 @@ namespace Microsoft.Maui
 			var textAttr = textField.AttributedText?.WithCharacterSpacing(textStyle.CharacterSpacing);
 			if (textAttr != null)
 				textField.AttributedText = textAttr;
+
+			textAttr = textField.AttributedPlaceholder?.WithCharacterSpacing(textStyle.CharacterSpacing);
+			if (textAttr != null)
+				textField.AttributedPlaceholder = textAttr;
 		}
 
 		public static void UpdateKeyboard(this UITextField textField, IEntry entry)
@@ -103,7 +116,6 @@ namespace Microsoft.Maui
 			textField.ReloadInputViews();
 		}
 
-		[PortHandler]
 		public static void UpdateCursorPosition(this UITextField textField, IEntry entry)
 		{
 			var selectedTextRange = textField.SelectedTextRange;
@@ -113,7 +125,6 @@ namespace Microsoft.Maui
 				UpdateCursorSelection(textField, entry);
 		}
 
-		[PortHandler]
 		public static void UpdateSelectionLength(this UITextField textField, IEntry entry)
 		{
 			var selectedTextRange = textField.SelectedTextRange;
@@ -128,8 +139,6 @@ namespace Microsoft.Maui
 		{
 			if (!entry.IsReadOnly)
 			{
-				if (!textField.IsFirstResponder)
-					textField.BecomeFirstResponder();
 				UITextPosition start = GetSelectionStart(textField, entry, out int startOffset);
 				UITextPosition end = GetSelectionEnd(textField, entry, start, startOffset);
 

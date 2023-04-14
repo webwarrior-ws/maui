@@ -13,6 +13,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.Maui.Devices;
 using WListView = Microsoft.UI.Xaml.Controls.ListView;
 using WBinding = Microsoft.UI.Xaml.Data.Binding;
 using WApp = Microsoft.UI.Xaml.Application;
@@ -27,6 +28,7 @@ using WSelectionChangedEventArgs = Microsoft.UI.Xaml.Controls.SelectionChangedEv
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[Obsolete("Use Microsoft.Maui.Controls.Handlers.Compatibility.ListViewRenderer instead")]
 	public class ListViewRenderer : ViewRenderer<ListView, FrameworkElement>
 	{
 		ITemplatedItemsView<Cell> TemplatedItemsView => Element;
@@ -36,7 +38,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		bool _subscribedToItemClick;
 		bool _subscribedToTapped;
 		bool _disposed;
-		CollectionViewSource _collectionViewSource;	
+		CollectionViewSource _collectionViewSource;
 
 		UwpScrollBarVisibility? _defaultHorizontalScrollVisibility;
 		UwpScrollBarVisibility? _defaultVerticalScrollVisibility;
@@ -140,7 +142,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 					foreach (var item in Element.ItemsSource)
 						_collection.Add(item);
 				}
-				else if(!object.ReferenceEquals(_collection, Element.ItemsSource))
+				else if (!object.ReferenceEquals(_collection, Element.ItemsSource))
 				{
 					_collection = (IList)Element.ItemsSource;
 				}
@@ -233,10 +235,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				ReloadData();
 			}
 
-			if (Element.Dispatcher == null)
-				Device.BeginInvokeOnMainThread(() => List?.UpdateLayout());
-			else
-				Element.Dispatcher.BeginInvokeOnMainThread(() => List?.UpdateLayout());
+			Element.Dispatcher.DispatchIfRequired(() => List?.UpdateLayout());
 		}
 
 		protected override void OnElementPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -545,7 +544,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				return; // FIXME
 
 			// Delay until after the SemanticZoom change _actually_ finishes, fixes tons of odd issues on Phone w/ virtualization.
-			if (Device.Idiom == TargetIdiom.Phone)
+			if (DeviceInfo.Idiom == DeviceIdiom.Phone)
 				await Task.Delay(1);
 
 			IListProxy listProxy = til.ListProxy;
@@ -556,7 +555,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		{
 			var selectorItem = List.ContainerFromItem(item) as Microsoft.UI.Xaml.Controls.Primitives.SelectorItem;
 			var transform = selectorItem?.TransformToVisual(viewer.Content as UIElement);
-			var position = transform?.TransformPoint(new Windows.Foundation.Point(0, 0));
+			var position = transform?.TransformPoint(new global::Windows.Foundation.Point(0, 0));
 			if (!position.HasValue)
 				return false;
 			// scroll with animation
@@ -599,7 +598,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			var semanticLocation = new SemanticZoomLocation { Item = c };
 
 			// async scrolling
-			await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+			await Dispatcher.RunAsync(global::Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
 			{
 				switch (toPosition)
 				{
@@ -621,7 +620,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 						{
 							var content = (FrameworkElement)List.ItemTemplate.LoadContent();
 							content.DataContext = c;
-							content.Measure(new Windows.Foundation.Size(viewer.ActualWidth, double.PositiveInfinity));
+							content.Measure(new global::Windows.Foundation.Size(viewer.ActualWidth, double.PositiveInfinity));
 
 							double tHeight = content.DesiredSize.Height;
 
@@ -783,7 +782,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		{
 			bool areEqual = false;
 
-			if (Element.SelectedItem != null && Element.SelectedItem.GetType().GetTypeInfo().IsValueType)
+			if (Element.SelectedItem != null && Element.SelectedItem.GetType().IsValueType)
 				areEqual = Element.SelectedItem.Equals(List.SelectedItem);
 			else
 				areEqual = Element.SelectedItem == List.SelectedItem;

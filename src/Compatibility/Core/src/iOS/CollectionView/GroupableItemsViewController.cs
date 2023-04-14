@@ -1,10 +1,12 @@
 using System;
 using CoreGraphics;
 using Foundation;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[System.Obsolete]
 	public class GroupableItemsViewController<TItemsView> : SelectableItemsViewController<TItemsView>
 		where TItemsView : GroupableItemsView
 	{

@@ -107,7 +107,7 @@ namespace " + RootNamespace + @"
 		{
 		}
 
-		protected override global::Microsoft.Maui.MauiApp CreateMauiApp() => " + mauiProgramFullName + @".CreateMauiApp();
+		protected override global::Microsoft.Maui.Hosting.MauiApp CreateMauiApp() => " + mauiProgramFullName + @".CreateMauiApp();
 	}
 }
 #endif
@@ -149,7 +149,7 @@ namespace " + RootNamespace + @"
 {
 	[global::Android.App.Activity(
 		Name = """ + ApplicationId + "." + headlessActivityName + @""",
-		Theme = ""@style/Theme.MaterialComponents"",
+		Theme = ""@style/Maui.MainTheme.NoActionBar"",
 		ConfigurationChanges =
 			global::Android.Content.PM.ConfigChanges.ScreenSize |
 			global::Android.Content.PM.ConfigChanges.Orientation |
@@ -202,7 +202,7 @@ namespace " + RootNamespace + @"
 	[global::Foundation.Register(""" + visualDelegateName + @""")]
 	partial class " + visualDelegateName + @" : global::Microsoft.Maui.MauiUIApplicationDelegate
 	{
-		protected override global::Microsoft.Maui.MauiApp CreateMauiApp() => " + mauiProgramFullName + @".CreateMauiApp();
+		protected override global::Microsoft.Maui.Hosting.MauiApp CreateMauiApp() => " + mauiProgramFullName + @".CreateMauiApp();
 	}
 }
 #endif
@@ -214,7 +214,7 @@ namespace " + RootNamespace + @"
 	partial class " + headlessDelegateName + @" : global::Microsoft.Maui.TestUtils.DeviceTests.Runners.HeadlessRunner.MauiTestApplicationDelegate
 	{
 
-		protected override global::Microsoft.Maui.MauiApp CreateMauiApp() => " + mauiProgramFullName + @".CreateMauiApp();
+		protected override global::Microsoft.Maui.Hosting.MauiApp CreateMauiApp() => " + mauiProgramFullName + @".CreateMauiApp();
 	}
 }
 #endif

@@ -4,6 +4,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
+using Microsoft.Maui.ApplicationModel;
 #if WINDOWS
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -12,19 +13,25 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media.Imaging;
 #endif
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.Media
 {
-	public static partial class Screenshot
+	partial class ScreenshotImplementation : IPlatformScreenshot, IScreenshot
 	{
-		internal static bool PlatformIsCaptureSupported =>
+		public bool IsCaptureSupported =>
 			true;
 
-		static async Task<ScreenshotResult> PlatformCaptureAsync()
+		public Task<IScreenshotResult> CaptureAsync()
 		{
-			var element = Window.Current?.Content as FrameworkElement;
-			if (element == null)
-				throw new InvalidOperationException("Unable to find main window content.");
+			var element = WindowStateManager.Default.GetActiveWindow(true);
 
+			return CaptureAsync(element);
+		}
+
+		public Task<IScreenshotResult> CaptureAsync(Window window) =>
+			CaptureAsync(window.Content);
+
+		public async Task<IScreenshotResult> CaptureAsync(UIElement element)
+		{
 			var bmp = new RenderTargetBitmap();
 
 			// NOTE: Return to the main thread so we can access view properties such as
@@ -42,7 +49,7 @@ namespace Microsoft.Maui.Essentials
 		}
 	}
 
-	public partial class ScreenshotResult
+	partial class ScreenshotResult
 	{
 		readonly byte[] bytes;
 
@@ -53,21 +60,37 @@ namespace Microsoft.Maui.Essentials
 			bytes = pixels?.ToArray() ?? throw new ArgumentNullException(nameof(pixels));
 		}
 
-		internal async Task<Stream> PlatformOpenReadAsync(ScreenshotFormat format)
+		async Task<Stream> PlatformOpenReadAsync(ScreenshotFormat format, int quality)
 		{
-			var f = format switch
-			{
-				ScreenshotFormat.Jpeg => BitmapEncoder.JpegEncoderId,
-				_ => BitmapEncoder.PngEncoderId
-			};
-
 			var ms = new InMemoryRandomAccessStream();
+			await EncodeAsync(format, ms).ConfigureAwait(false);
+			return ms.AsStreamForRead();
+		}
+
+		Task PlatformCopyToAsync(Stream destination, ScreenshotFormat format, int quality)
+		{
+			var ms = destination.AsRandomAccessStream();
+			return EncodeAsync(format, ms);
+		}
+
+		Task<byte[]> PlatformToPixelBufferAsync() =>
+			Task.FromResult(bytes);
+
+		async Task EncodeAsync(ScreenshotFormat format, IRandomAccessStream ms)
+		{
+			var f = ToBitmapEncoder(format);
 
 			var encoder = await BitmapEncoder.CreateAsync(f, ms).AsTask().ConfigureAwait(false);
 			encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, (uint)Width, (uint)Height, 96, 96, bytes);
 			await encoder.FlushAsync().AsTask().ConfigureAwait(false);
-
-			return ms.AsStreamForRead();
 		}
+
+		static Guid ToBitmapEncoder(ScreenshotFormat format) =>
+			format switch
+			{
+				ScreenshotFormat.Jpeg => BitmapEncoder.JpegEncoderId,
+				ScreenshotFormat.Png => BitmapEncoder.PngEncoderId,
+				_ => throw new ArgumentOutOfRangeException(nameof(format))
+			};
 	}
 }

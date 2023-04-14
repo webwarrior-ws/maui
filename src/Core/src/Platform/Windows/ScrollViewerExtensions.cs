@@ -1,7 +1,7 @@
 ﻿using Microsoft.UI.Xaml.Controls;
 using WScrollBarVisibility = Microsoft.UI.Xaml.Controls.ScrollBarVisibility;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public static class ScrollViewerExtensions
 	{
@@ -48,6 +48,11 @@ namespace Microsoft.Maui
 
 			// Note that the Orientation setting of "Neither" is covered by the measurement code (the size of the content is limited
 			// so that no scrolling is possible) and the xplat scrolling code (the ScrollTo methods are disabled when Orientation=Neither)
+		}
+
+		public static void UpdateContent(this ScrollViewer scrollViewer, IView? content, IMauiContext context)
+		{
+			scrollViewer.Content = content == null ? null : content.ToPlatform(context);
 		}
 	}
 }

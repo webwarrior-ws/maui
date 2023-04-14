@@ -1,9 +1,11 @@
 using System;
 using Microsoft.Maui.Controls.Internals;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[Obsolete]
 	internal static class TemplateHelpers
 	{
 		public static IVisualElementRenderer CreateRenderer(View view)

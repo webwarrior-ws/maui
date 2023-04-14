@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.DeviceTests.Stubs;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Hosting;
+using ObjCRuntime;
 using UIKit;
 using Xunit;
 
@@ -51,7 +52,7 @@ namespace Microsoft.Maui.DeviceTests
 
 			var uiimage = Assert.IsType<UIImage>(drawable.Value);
 
-			uiimage.AssertContainsColor(expectedColor.ToNative());
+			uiimage.AssertContainsColor(expectedColor.ToPlatform());
 		}
 
 		[Fact]
@@ -79,7 +80,7 @@ namespace Microsoft.Maui.DeviceTests
 
 			var uiimage = Assert.IsType<UIImage>(drawable.Value);
 
-			uiimage.AssertContainsColor(Colors.Red.ToNative());
+			uiimage.AssertContainsColor(Colors.Red.ToPlatform());
 		}
 	}
 }

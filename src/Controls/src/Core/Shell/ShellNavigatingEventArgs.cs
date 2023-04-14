@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../../docs/Microsoft.Maui.Controls/ShellNavigatingEventArgs.xml" path="Type[@FullName='Microsoft.Maui.Controls.ShellNavigatingEventArgs']/Docs" />
 	public class ShellNavigatingEventArgs : EventArgs
 	{
 		int _deferralCount;
@@ -11,14 +12,11 @@ namespace Microsoft.Maui.Controls
 		TaskCompletionSource<bool> _deferredTaskCompletionSource;
 		bool _deferralCompleted = false;
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/ShellNavigatingEventArgs.xml" path="//Member[@MemberName='.ctor']/Docs" />
 		public ShellNavigatingEventArgs(ShellNavigationState current, ShellNavigationState target, ShellNavigationSource source, bool canCancel)
 		{
 
-#if !NETSTANDARD1_0
 			_deferralFinishedTask = () => Task.CompletedTask;
-#else
-			_deferralFinishedTask = () => Task.Delay(0);
-#endif
 			Current = current;
 			Target = target;
 			Source = source;
@@ -26,14 +24,19 @@ namespace Microsoft.Maui.Controls
 			Animate = true;
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/ShellNavigatingEventArgs.xml" path="//Member[@MemberName='Current']/Docs" />
 		public ShellNavigationState Current { get; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/ShellNavigatingEventArgs.xml" path="//Member[@MemberName='Target']/Docs" />
 		public ShellNavigationState Target { get; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/ShellNavigatingEventArgs.xml" path="//Member[@MemberName='Source']/Docs" />
 		public ShellNavigationSource Source { get; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/ShellNavigatingEventArgs.xml" path="//Member[@MemberName='CanCancel']/Docs" />
 		public bool CanCancel { get; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/ShellNavigatingEventArgs.xml" path="//Member[@MemberName='Cancel']/Docs" />
 		public bool Cancel()
 		{
 			if (!CanCancel)
@@ -43,8 +46,10 @@ namespace Microsoft.Maui.Controls
 			return true;
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/ShellNavigatingEventArgs.xml" path="//Member[@MemberName='Cancelled']/Docs" />
 		public bool Cancelled { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/ShellNavigatingEventArgs.xml" path="//Member[@MemberName='GetDeferral']/Docs" />
 		public ShellNavigatingDeferral GetDeferral()
 		{
 			if (_deferralCompleted)

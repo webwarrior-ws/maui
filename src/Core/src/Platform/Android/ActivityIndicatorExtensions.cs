@@ -1,19 +1,24 @@
 ﻿using Android.Views;
 using Android.Widget;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public static class ActivityIndicatorExtensions
 	{
 		public static void UpdateIsRunning(this ProgressBar progressBar, IActivityIndicator activityIndicator)
 		{
+			progressBar.Visibility = GetActivityIndicatorVisibility(activityIndicator);
+		}
+
+		internal static ViewStates GetActivityIndicatorVisibility(this IActivityIndicator activityIndicator)
+		{
 			if (activityIndicator.Visibility == Visibility.Visible)
 			{
-				progressBar.Visibility = activityIndicator.IsRunning ? ViewStates.Visible : ViewStates.Invisible;
+				return activityIndicator.IsRunning ? ViewStates.Visible : ViewStates.Invisible;
 			}
 			else
 			{
-				progressBar.Visibility = activityIndicator.Visibility.ToNativeVisibility();
+				return activityIndicator.Visibility.ToPlatformVisibility();
 			}
 		}
 
@@ -22,7 +27,7 @@ namespace Microsoft.Maui
 			var color = activityIndicator.Color;
 
 			if (color != null)
-				progressBar.IndeterminateDrawable?.SetColorFilter(color.ToNative(), FilterMode.SrcIn);
+				progressBar.IndeterminateDrawable?.SetColorFilter(color.ToPlatform(), FilterMode.SrcIn);
 			else
 				progressBar.IndeterminateDrawable?.ClearColorFilter();
 		}

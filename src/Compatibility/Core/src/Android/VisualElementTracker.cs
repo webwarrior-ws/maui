@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using Android.Content;
 using Android.Views;
+using AndroidX.CoordinatorLayout.Widget;
+using AndroidX.Fragment.App;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Handlers;
@@ -90,13 +92,13 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			var height = Math.Max(0, (int)_context.ToPixels(view.Height));
 
 
-			if (aview is FormsViewGroup formsViewGroup)
+			if (aview is MauiViewGroup formsViewGroup)
 			{
 				Performance.Start(reference, "MeasureAndLayout");
 				formsViewGroup.MeasureAndLayout(MeasureSpecFactory.MakeMeasureSpec(width, MeasureSpecMode.Exactly), MeasureSpecFactory.MakeMeasureSpec(height, MeasureSpecMode.Exactly), x, y, x + width, y + height);
 				Performance.Stop(reference, "MeasureAndLayout");
 			}
-			else if ((aview is LayoutViewGroup || aview is PageViewGroup) && width == 0 && height == 0)
+			else if ((aview is LayoutViewGroup || aview is ContentViewGroup || aview is CoordinatorLayout || aview is FragmentContainerView) && width == 0 && height == 0)
 			{
 				// Nothing to do here; just chill.
 			}
@@ -111,13 +113,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 				Performance.Stop(reference, "Layout");
 			}
 
-			// If we're running sufficiently new Android, we have to make sure to update the ClipBounds to
-			// match the new size of the ViewGroup
-			if ((int)Forms.SdkInt >= 18)
-			{
-				UpdateClipToBounds();
-			}
-
+			// We have to make sure to update the ClipBounds to match the new size of the ViewGroup
+			UpdateClipToBounds();
 			UpdateClip();
 
 			Performance.Stop(reference);
@@ -294,32 +291,16 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 
 			bool shouldClip = layout.IsClippedToBounds;
 
-			// setClipBounds is only available in API 18 +	
-			if ((int)Forms.SdkInt >= 18)
+			if (!(_renderer.View is ViewGroup viewGroup))
 			{
-				if (!(_renderer.View is ViewGroup viewGroup))
-				{
-					return;
-				}
-
-				// Forms layouts should not impose clipping on their children	
-				viewGroup.SetClipChildren(false);
-
-				// But if IsClippedToBounds is true, they _should_ enforce clipping at their own edges	
-				viewGroup.ClipBounds = shouldClip ? new global::Android.Graphics.Rect(0, 0, viewGroup.Width, viewGroup.Height) : null;
+				return;
 			}
-			else
-			{
-				// For everything in 17 and below, use the setClipChildren method	
-				if (!(_renderer.View.Parent is ViewGroup parent))
-					return;
 
-				if ((int)Forms.SdkInt >= 18 && parent.ClipChildren == shouldClip)
-					return;
+			// Forms layouts should not impose clipping on their children	
+			viewGroup.SetClipChildren(false);
 
-				parent.SetClipChildren(shouldClip);
-				parent.Invalidate();
-			}
+			// But if IsClippedToBounds is true, they _should_ enforce clipping at their own edges	
+			viewGroup.ClipBounds = shouldClip ? new global::Android.Graphics.Rect(0, 0, viewGroup.Width, viewGroup.Height) : null;
 		}
 
 		void UpdateClip()
@@ -350,7 +331,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			VisualElement view = _renderer.Element;
 			AView aview = _renderer.View;
 
-			if (aview is FormsViewGroup formsViewGroup)
+			if (aview is MauiViewGroup formsViewGroup)
 			{
 				formsViewGroup.SendBatchUpdate((float)(view.AnchorX * _context.ToPixels(view.Width)),
 											   (float)(view.AnchorY * _context.ToPixels(view.Height)),
@@ -367,7 +348,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			}
 			else
 			{
-				FormsViewGroup.SendViewBatchUpdate(aview,
+				MauiViewGroup.SendViewBatchUpdate(aview,
 												   (float)(view.AnchorX * _context.ToPixels(view.Width)),
 												   (float)(view.AnchorY * _context.ToPixels(view.Height)),
 												   (int)(view.IsVisible ? ViewStates.Visible : ViewStates.Invisible),
@@ -431,8 +412,13 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			VisualElement view = _renderer.Element;
 			AView aview = _renderer.View;
 
-			aview.ScaleX = (float)view.Scale * (float)view.ScaleX;
-			aview.ScaleY = (float)view.Scale * (float)view.ScaleY;
+			var scale = view.Scale;
+
+			if (double.IsNaN(scale))
+				return;
+
+			aview.ScaleX = (float)scale * (float)view.ScaleX;
+			aview.ScaleY = (float)scale * (float)view.ScaleY;
 		}
 
 		[PortHandler]

@@ -6,9 +6,11 @@ using Android.Content;
 using Android.Util;
 using Android.Widget;
 using Microsoft.Maui.Controls.Platform;
+using Microsoft.Maui.Devices;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public abstract class DatePickerRendererBase<TControl> : ViewRenderer<DatePicker, TControl>, IPickerRenderer
 		where TControl : global::Android.Views.View
 	{
@@ -20,23 +22,19 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		public DatePickerRendererBase(Context context) : base(context)
 		{
 			AutoPackage = false;
-			if (Forms.IsLollipopOrNewer)
-				Device.Info.PropertyChanged += DeviceInfoPropertyChanged;
+			DeviceDisplay.MainDisplayInfoChanged += DeviceInfoPropertyChanged;
 		}
 
 		protected override void Dispose(bool disposing)
 		{
 			if (disposing && !_disposed)
 			{
-				if (Forms.IsLollipopOrNewer)
-					Device.Info.PropertyChanged -= DeviceInfoPropertyChanged;
+				DeviceDisplay.MainDisplayInfoChanged -= DeviceInfoPropertyChanged;
 
 				_disposed = true;
 				if (_dialog != null)
 				{
-					if (Forms.IsLollipopOrNewer)
-						_dialog.CancelEvent -= OnCancelButtonClicked;
-
+					_dialog.CancelEvent -= OnCancelButtonClicked;
 					_dialog.Hide();
 					_dialog.Dispose();
 					_dialog = null;
@@ -98,10 +96,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			{
 				_dialog.Hide();
 				((IElementController)Element).SetValueFromRenderer(VisualElement.IsFocusedPropertyKey, false);
-
-				if (Forms.IsLollipopOrNewer)
-					_dialog.CancelEvent -= OnCancelButtonClicked;
-
+				_dialog.CancelEvent -= OnCancelButtonClicked;
 				_dialog = null;
 			}
 		}
@@ -118,19 +113,16 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			return dialog;
 		}
 
-		void DeviceInfoPropertyChanged(object sender, PropertyChangedEventArgs e)
+		[PortHandler]
+		void DeviceInfoPropertyChanged(object sender, DisplayInfoChangedEventArgs e)
 		{
-			if (e.PropertyName == "CurrentOrientation")
+			DatePickerDialog currentDialog = _dialog;
+			if (currentDialog != null && currentDialog.IsShowing)
 			{
-				DatePickerDialog currentDialog = _dialog;
-				if (currentDialog != null && currentDialog.IsShowing)
-				{
-					currentDialog.Dismiss();
-					if (Forms.IsLollipopOrNewer)
-						currentDialog.CancelEvent -= OnCancelButtonClicked;
+				currentDialog.Dismiss();
+				currentDialog.CancelEvent -= OnCancelButtonClicked;
 
-					ShowPickerDialog(currentDialog.DatePicker.Year, currentDialog.DatePicker.Month, currentDialog.DatePicker.DayOfMonth);
-				}
+				ShowPickerDialog(currentDialog.DatePicker.Year, currentDialog.DatePicker.Month, currentDialog.DatePicker.DayOfMonth);
 			}
 		}
 
@@ -153,14 +145,22 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 
 			UpdateMinimumDate();
 			UpdateMaximumDate();
-			if (Forms.IsLollipopOrNewer)
-				_dialog.CancelEvent += OnCancelButtonClicked;
+			_dialog.CancelEvent += OnCancelButtonClicked;
 
 			_dialog.Show();
 		}
 
+		[PortHandler]
 		void OnCancelButtonClicked(object sender, EventArgs e)
 		{
+			// I would say the original bugzilla issue that added this code is wrong
+			// https://bugzilla.xamarin.com/42/42074/bug.html
+			// I don't see why cancelling the popup would cause the focus to remove from the control
+			// That's the control the user clicked on
+			// I'm pretty sure this was initially done to match the iOS behavior but we shouldn't just
+			// match focus behavior for no good reason.
+			// On WinUI when the calendar control opens the TextBox loses focus then gains it back when you close
+			// Which is also how Android works
 			Element.Unfocus();
 		}
 
@@ -170,7 +170,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			{
 				EditText.Text = date.ToShortDateString();
 			}
-			else if (Element.Format.Contains('/'))
+			else if (Element.Format.Contains('/', StringComparison.Ordinal))
 			{
 				EditText.Text = date.ToString(Element.Format, CultureInfo.InvariantCulture);
 			}
@@ -183,10 +183,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		[PortHandler]
 		void UpdateCharacterSpacing()
 		{
-			if (Forms.IsLollipopOrNewer)
-			{
-				EditText.LetterSpacing = Element.CharacterSpacing.ToEm();
-			}
+			EditText.LetterSpacing = Element.CharacterSpacing.ToEm();
 		}
 
 		[PortHandler]
@@ -218,6 +215,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 	}
 
 
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class DatePickerRenderer : DatePickerRendererBase<EditText>
 	{
 		TextColorSwitcher _textColorSwitcher;

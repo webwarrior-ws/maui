@@ -1,145 +1,123 @@
 ﻿using System;
 using Foundation;
 using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Platform.iOS;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Handlers
 {
 	public partial class EntryHandler : ViewHandler<IEntry, MauiTextField>
 	{
-		static UIColor? DefaultTextColor;
+		bool _set;
 
-		protected override MauiTextField CreateNativeView()
-		{
-			return new MauiTextField
+		protected override MauiTextField CreatePlatformView() =>
+			new MauiTextField
 			{
 				BorderStyle = UITextBorderStyle.RoundedRect,
 				ClipsToBounds = true
 			};
+
+		public override void SetVirtualView(IView view)
+		{
+			base.SetVirtualView(view);
+
+			if (!_set)
+				PlatformView.SelectionChanged += OnSelectionChanged;
+
+			_set = true;
 		}
 
-		protected override void ConnectHandler(MauiTextField nativeView)
+		protected override void ConnectHandler(MauiTextField platformView)
 		{
-			base.ConnectHandler(nativeView);
-
-			nativeView.ShouldReturn = OnShouldReturn;
-			nativeView.EditingChanged += OnEditingChanged;
-			nativeView.EditingDidEnd += OnEditingEnded;
-			nativeView.TextPropertySet += OnTextPropertySet;
-			nativeView.ShouldChangeCharacters += OnShouldChangeCharacters;
+			platformView.ShouldReturn += OnShouldReturn;
+			platformView.EditingDidBegin += OnEditingBegan;
+			platformView.EditingChanged += OnEditingChanged;
+			platformView.EditingDidEnd += OnEditingEnded;
+			platformView.TextPropertySet += OnTextPropertySet;
+			platformView.ShouldChangeCharacters += OnShouldChangeCharacters;
 		}
 
-		protected override void DisconnectHandler(MauiTextField nativeView)
+		protected override void DisconnectHandler(MauiTextField platformView)
 		{
-			base.DisconnectHandler(nativeView);
+			platformView.ShouldReturn -= OnShouldReturn;
+			platformView.EditingDidBegin -= OnEditingBegan;
+			platformView.EditingChanged -= OnEditingChanged;
+			platformView.EditingDidEnd -= OnEditingEnded;
+			platformView.TextPropertySet -= OnTextPropertySet;
+			platformView.ShouldChangeCharacters -= OnShouldChangeCharacters;
 
-			nativeView.EditingChanged -= OnEditingChanged;
-			nativeView.EditingDidEnd -= OnEditingEnded;
-			nativeView.TextPropertySet -= OnTextPropertySet;
-			nativeView.ShouldChangeCharacters -= OnShouldChangeCharacters;
+			if (_set)
+				platformView.SelectionChanged -= OnSelectionChanged;
+
+			_set = false;
 		}
 
-		void SetupDefaults(MauiTextField nativeView)
+		public static void MapText(IEntryHandler handler, IEntry entry)
 		{
-			DefaultTextColor = nativeView.TextColor;
-		}
-
-		public static void MapText(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateText(entry);
+			handler.PlatformView?.UpdateText(entry);
 
 			// Any text update requires that we update any attributed string formatting
 			MapFormatting(handler, entry);
 		}
 
-		public static void MapTextColor(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateTextColor(entry, DefaultTextColor);
-		}
+		public static void MapTextColor(IEntryHandler handler, IEntry entry) =>
+			handler.PlatformView?.UpdateTextColor(entry);
 
-		public static void MapIsPassword(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateIsPassword(entry);
-		}
+		public static void MapIsPassword(IEntryHandler handler, IEntry entry) =>
+			handler.PlatformView?.UpdateIsPassword(entry);
 
-		public static void MapHorizontalTextAlignment(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateHorizontalTextAlignment(entry);
-		}
+		public static void MapHorizontalTextAlignment(IEntryHandler handler, IEntry entry) =>
+			handler.PlatformView?.UpdateHorizontalTextAlignment(entry);
 
-		public static void MapVerticalTextAlignment(EntryHandler handler, IEntry entry)
-		{
-			handler?.NativeView?.UpdateVerticalTextAlignment(entry);
-		}
+		public static void MapVerticalTextAlignment(IEntryHandler handler, IEntry entry) =>
+			handler?.PlatformView?.UpdateVerticalTextAlignment(entry);
 
-		public static void MapIsTextPredictionEnabled(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateIsTextPredictionEnabled(entry);
-		}
+		public static void MapIsTextPredictionEnabled(IEntryHandler handler, IEntry entry) =>
+			handler.PlatformView?.UpdateIsTextPredictionEnabled(entry);
 
-		public static void MapMaxLength(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateMaxLength(entry);
-		}
+		public static void MapMaxLength(IEntryHandler handler, IEntry entry) =>
+			handler.PlatformView?.UpdateMaxLength(entry);
 
-		public static void MapPlaceholder(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdatePlaceholder(entry);
-		}
+		public static void MapPlaceholder(IEntryHandler handler, IEntry entry) =>
+			handler.PlatformView?.UpdatePlaceholder(entry);
 
-		public static void MapIsReadOnly(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateIsReadOnly(entry);
-		}
+		public static void MapPlaceholderColor(IEntryHandler handler, IEntry entry) =>
+			handler.PlatformView?.UpdatePlaceholder(entry);
 
-		public static void MapKeyboard(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateKeyboard(entry);
-		}
+		public static void MapIsReadOnly(IEntryHandler handler, IEntry entry) =>
+			handler.PlatformView?.UpdateIsReadOnly(entry);
 
-		public static void MapReturnType(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateReturnType(entry);
-		}
+		public static void MapKeyboard(IEntryHandler handler, IEntry entry) =>
+			handler.PlatformView?.UpdateKeyboard(entry);
 
-		public static void MapFont(EntryHandler handler, IEntry entry)
-		{
-			var fontManager = handler.GetRequiredService<IFontManager>();
+		public static void MapReturnType(IEntryHandler handler, IEntry entry) =>
+			handler.PlatformView?.UpdateReturnType(entry);
 
-			handler.NativeView?.UpdateFont(entry, fontManager);
-		}
+		public static void MapFont(IEntryHandler handler, IEntry entry) =>
+			handler.PlatformView?.UpdateFont(entry, handler.GetRequiredService<IFontManager>());
 
-		public static void MapFormatting(EntryHandler handler, IEntry entry)
+		public static void MapCharacterSpacing(IEntryHandler handler, IEntry entry) =>
+			handler.PlatformView?.UpdateCharacterSpacing(entry);
+
+		public static void MapCursorPosition(IEntryHandler handler, IEntry entry) =>
+			handler.PlatformView?.UpdateCursorPosition(entry);
+
+		public static void MapSelectionLength(IEntryHandler handler, IEntry entry) =>
+			handler.PlatformView?.UpdateSelectionLength(entry);
+
+		public static void MapClearButtonVisibility(IEntryHandler handler, IEntry entry) =>
+			handler.PlatformView?.UpdateClearButtonVisibility(entry);
+
+		public static void MapFormatting(IEntryHandler handler, IEntry entry)
 		{
-			handler.NativeView?.UpdateMaxLength(entry);
+			handler.PlatformView?.UpdateMaxLength(entry);
 
 			// Update all of the attributed text formatting properties
-			handler.NativeView?.UpdateCharacterSpacing(entry);
+			handler.PlatformView?.UpdateCharacterSpacing(entry);
 
 			// Setting any of those may have removed text alignment settings,
 			// so we need to make sure those are applied, too
-			handler.NativeView?.UpdateHorizontalTextAlignment(entry);
-		}
-
-		public static void MapCharacterSpacing(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateCharacterSpacing(entry);
-		}
-
-		public static void MapCursorPosition(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateCursorPosition(entry);
-		}
-
-		public static void MapSelectionLength(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateSelectionLength(entry);
-		}
-
-		public static void MapClearButtonVisibility(EntryHandler handler, IEntry entry)
-		{
-			handler.NativeView?.UpdateClearButtonVisibility(entry);
+			handler.PlatformView?.UpdateHorizontalTextAlignment(entry);
 		}
 
 		protected virtual bool OnShouldReturn(UITextField view)
@@ -153,45 +131,44 @@ namespace Microsoft.Maui.Handlers
 			return false;
 		}
 
-		void OnEditingChanged(object? sender, EventArgs e) => OnTextChanged();
-
-		void OnEditingEnded(object? sender, EventArgs e) => OnTextChanged();
-
-		void OnTextPropertySet(object? sender, EventArgs e) => OnTextChanged();
-
-		void OnTextChanged()
+		void OnEditingBegan(object? sender, EventArgs e)
 		{
-			if (VirtualView == null || NativeView == null)
+			if (VirtualView == null || PlatformView == null)
 				return;
 
-			// Even though <null> is technically different to "", it has no
-			// functional difference to apps. Thus, hide it.
-			var mauiText = VirtualView!.Text ?? string.Empty;
-			var nativeText = NativeView.Text ?? string.Empty;
-			if (mauiText != nativeText)
-				VirtualView.Text = nativeText;
+			PlatformView?.UpdateSelectionLength(VirtualView);
+
+			VirtualView.IsFocused = true;
 		}
 
-		bool OnShouldChangeCharacters(UITextField textField, NSRange range, string replacementString)
+		void OnEditingChanged(object? sender, EventArgs e) =>
+			VirtualView.UpdateText(PlatformView.Text);
+
+		void OnEditingEnded(object? sender, EventArgs e)
 		{
-			var currLength = textField?.Text?.Length ?? 0;
+			if (VirtualView == null || PlatformView == null)
+				return;
 
-			// fix a crash on undo
-			if (range.Length + range.Location > currLength)
-				return false;
+			VirtualView.UpdateText(PlatformView.Text);
+			VirtualView.IsFocused = false;
+		}
 
-			if (VirtualView == null || NativeView == null)
-				return false;
+		void OnTextPropertySet(object? sender, EventArgs e) =>
+			VirtualView.UpdateText(PlatformView.Text);
 
-			if (VirtualView.MaxLength < 0)
-				return true;
+		bool OnShouldChangeCharacters(UITextField textField, NSRange range, string replacementString) =>
+			VirtualView.TextWithinMaxLength(textField.Text, range, replacementString);
 
-			var addLength = replacementString?.Length ?? 0;
-			var remLength = range.Length;
+		private void OnSelectionChanged(object? sender, EventArgs e)
+		{
+			var cursorPostion = PlatformView.GetCursorPosition();
+			var selectedTextLength = PlatformView.GetSelectedTextLength();
 
-			var newLength = currLength + addLength - remLength;
+			if (VirtualView.CursorPosition != cursorPostion)
+				VirtualView.CursorPosition = cursorPostion;
 
-			return newLength <= VirtualView.MaxLength;
+			if (VirtualView.SelectionLength != selectedTextLength)
+				VirtualView.SelectionLength = selectedTextLength;
 		}
 	}
 }

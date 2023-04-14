@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Threading.Tasks;
 using Android.Content;
 using Android.Views;
+using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.Platform;
 using AImageView = Android.Widget.ImageView;
@@ -16,6 +17,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		void SetFormsAnimationDrawable(IFormsAnimationDrawable formsAnimationDrawable);
 	}
 
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class ImageRenderer : ViewRenderer<Image, AImageView>
 	{
 		bool _isDisposed;
@@ -80,7 +82,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 
 		void UpdateAnimations()
 		{
-			Log.Warning(nameof(ImageRenderer), "Animations do not work with Legacy Renderers. Please remove the \"UseLegacyRenderers\" flag or change your renderer to inherit from the fast image renderer.");
+
+			Application.Current?.FindMauiContext()?.CreateLogger<ImageRenderer>()?.LogWarning("Animations do not work with Legacy Renderers. Please remove the \"UseLegacyRenderers\" flag or change your renderer to inherit from the fast image renderer.");
 		}
 
 		void UpdateAspect()
@@ -106,7 +109,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			}
 			catch (Exception ex)
 			{
-				Log.Warning(nameof(ImageRenderer), "Error loading image: {0}", ex);
+				Application.Current?.FindMauiContext()?.CreateLogger<ImageRenderer>()?.LogWarning(ex, "Error loading image");
 			}
 			finally
 			{

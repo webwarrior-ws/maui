@@ -1,33 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.Maui.Controls.Internals;
-using NUnit.Framework;
+using Microsoft.Maui.UnitTests;
+using Xunit;
 
 namespace Microsoft.Maui.Controls.Core.UnitTests
 {
 	public abstract class BindingBaseUnitTests : BaseTestFixture
 	{
-		internal class Logger : LogListener
-		{
-			public IReadOnlyList<string> Messages
-			{
-				get { return messages; }
-			}
-
-			public override void Warning(string category, string message)
-			{
-				messages.Add("[" + category + "] " + message);
-			}
-
-			readonly List<string> messages = new List<string>();
-		}
-
-		internal Logger log;
-
 		protected abstract BindingBase CreateBinding(BindingMode mode = BindingMode.Default, string stringFormat = null);
 
 		internal class ComplexMockViewModel : MockViewModel
@@ -85,16 +68,31 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			ComplexMockViewModel model;
 		}
 
-		[Test]
+		public BindingBaseUnitTests()
+		{
+			ApplicationExtensions.CreateAndSetMockApplication();
+		}
+
+		protected override void Dispose(bool disposing)
+		{
+			if (disposing)
+			{
+				Application.Current = null;
+			}
+
+			base.Dispose(disposing);
+		}
+
+		[Fact]
 		public void CloneMode()
 		{
 			var binding = CreateBinding(BindingMode.Default);
 			var clone = binding.Clone();
 
-			Assert.AreEqual(binding.Mode, clone.Mode);
+			Assert.Equal(binding.Mode, clone.Mode);
 		}
 
-		[Test]
+		[Fact]
 		public void StringFormat()
 		{
 			var property = BindableProperty.Create("Foo", typeof(string), typeof(MockBindable));
@@ -104,10 +102,10 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			var bo = new MockBindable { BindingContext = vm };
 			bo.SetBinding(property, binding);
 
-			Assert.That(bo.GetValue(property), Is.EqualTo("Foo Bar"));
+			Assert.Equal("Foo Bar", bo.GetValue(property));
 		}
 
-		[Test]
+		[Fact]
 		public void StringFormatOnUpdate()
 		{
 			var property = BindableProperty.Create("Foo", typeof(string), typeof(MockBindable));
@@ -119,11 +117,10 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			vm.Text = "Baz";
 
-			Assert.That(bo.GetValue(property), Is.EqualTo("Foo Baz"));
+			Assert.Equal("Foo Baz", bo.GetValue(property));
 		}
 
-		[Test]
-		[Description("StringFormat should not be applied to OneWayToSource bindings")]
+		[Fact("StringFormat should not be applied to OneWayToSource bindings")]
 		public void StringFormatOneWayToSource()
 		{
 			var property = BindableProperty.Create("Foo", typeof(string), typeof(MockBindable));
@@ -135,11 +132,10 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			bo.SetValue(property, "Bar");
 
-			Assert.That(vm.Text, Is.EqualTo("Bar"));
+			Assert.Equal("Bar", vm.Text);
 		}
 
-		[Test]
-		[Description("StringFormat should only be applied from from source in TwoWay bindings")]
+		[Fact("StringFormat should only be applied from from source in TwoWay bindings")]
 		public void StringFormatTwoWay()
 		{
 			var property = BindableProperty.Create("Foo", typeof(string), typeof(MockBindable));
@@ -151,12 +147,11 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			bo.SetValue(property, "Baz");
 
-			Assert.That(vm.Text, Is.EqualTo("Baz"));
-			Assert.That(bo.GetValue(property), Is.EqualTo("Foo Baz"));
+			Assert.Equal("Baz", vm.Text);
+			Assert.Equal("Foo Baz", bo.GetValue(property));
 		}
 
-		[Test]
-		[Description("You should get an exception when trying to change a binding after it's been applied")]
+		[Fact("You should get an exception when trying to change a binding after it's been applied")]
 		public void ChangeAfterApply()
 		{
 			var property = BindableProperty.Create("Foo", typeof(string), typeof(MockBindable));
@@ -166,11 +161,11 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			var bo = new MockBindable { BindingContext = vm };
 			bo.SetBinding(property, binding);
 
-			Assert.That(() => binding.Mode = BindingMode.OneWayToSource, Throws.InvalidOperationException);
-			Assert.That(() => binding.StringFormat = "{0}", Throws.InvalidOperationException);
+			Assert.Throws<InvalidOperationException>(() => binding.Mode = BindingMode.OneWayToSource);
+			Assert.Throws<InvalidOperationException>(() => binding.StringFormat = "{0}");
 		}
 
-		[TestCase("en-US"), TestCase("tr-TR")]
+		[Theory, InlineData("en-US"), InlineData("tr-TR")]
 		public void StringFormatNonStringType(string culture)
 		{
 			System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo(culture);
@@ -182,10 +177,10 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			var bo = new MockBindable { BindingContext = vm };
 			bo.SetBinding(property, binding);
 
-			Assert.That(bo.GetValue(property), Is.EqualTo(string.Format(new System.Globalization.CultureInfo(culture), "{0:P2}", .95d))); //%95,00 or 95.00%
+			Assert.Equal(bo.GetValue(property), string.Format(new System.Globalization.CultureInfo(culture), "{0:P2}", .95d)); //%95,00 or 95.00%
 		}
 
-		[Test]
+		[Fact]
 		public void ReuseBindingInstance()
 		{
 			var vm = new MockViewModel();
@@ -199,16 +194,16 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			var bindable2 = new MockBindable();
 			bindable2.BindingContext = new MockViewModel();
-			Assert.Throws<InvalidOperationException>(() => bindable2.SetBinding(property, binding),
-				"Binding allowed reapplication with a different context");
+			Assert.Throws<InvalidOperationException>(() => bindable2.SetBinding(property, binding));
 
 			GC.KeepAlive(bindable);
 		}
 
-		[Test, Category("[Binding] Set Value")]
+		[MemberData(nameof(TestDataHelpers.TrueFalse), MemberType = typeof(TestDataHelpers))]
+		[Theory, Category("[Binding] Set Value")]
 		public void ValueSetOnOneWay(
-			[Values(true, false)] bool setContextFirst,
-			[Values(true, false)] bool isDefault)
+			bool setContextFirst,
+			bool isDefault)
 		{
 			const string value = "Foo";
 			var viewmodel = new MockViewModel
@@ -239,18 +234,19 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				bindable.BindingContext = viewmodel;
 			}
 
-			Assert.AreEqual(value, viewmodel.Text,
+			Assert.True(value == viewmodel.Text,
 				"BindingContext property changed");
-			Assert.AreEqual(value, bindable.GetValue(property),
+			Assert.True(value == (string)bindable.GetValue(property),
 				"Target property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			var messages = MockApplication.MockLogger.Messages;
+			Assert.True(messages.Count == 0, "An error was logged: " + messages.FirstOrDefault());
 		}
 
-		[Test, Category("[Binding] Set Value")]
+		[Theory, Category("[Binding] Set Value")]
+		[MemberData(nameof(TestDataHelpers.TrueFalse), MemberType = typeof(TestDataHelpers))]
 		public void ValueSetOnOneWayToSource(
-			[Values(true, false)] bool setContextFirst,
-			[Values(true, false)] bool isDefault)
+			bool setContextFirst,
+			bool isDefault)
 		{
 			const string value = "Foo";
 			var viewmodel = new MockViewModel();
@@ -278,18 +274,20 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				bindable.BindingContext = viewmodel;
 			}
 
-			Assert.AreEqual(value, bindable.GetValue(property),
+			Assert.True(value == (string)bindable.GetValue(property),
 				"Target property changed");
-			Assert.AreEqual(value, viewmodel.Text,
+			Assert.True(value == viewmodel.Text,
 				"BindingContext property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			var messages = MockApplication.MockLogger.Messages;
+			Assert.True(messages.Count == 0,
+				"An error was logged: " + messages.FirstOrDefault());
 		}
 
-		[Test, Category("[Binding] Set Value")]
+		[Theory, Category("[Binding] Set Value")]
+		[MemberData(nameof(TestDataHelpers.TrueFalse), MemberType = typeof(TestDataHelpers))]
 		public void ValueSetOnTwoWay(
-			[Values(true, false)] bool setContextFirst,
-			[Values(true, false)] bool isDefault)
+			bool setContextFirst,
+			bool isDefault)
 		{
 			const string value = "Foo";
 			var viewmodel = new MockViewModel
@@ -320,17 +318,20 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				bindable.BindingContext = viewmodel;
 			}
 
-			Assert.AreEqual(value, viewmodel.Text,
+			Assert.True(value == viewmodel.Text,
 				"BindingContext property changed");
-			Assert.AreEqual(value, bindable.GetValue(property),
+			Assert.True(value == (string)bindable.GetValue(property),
 				"Target property did not change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			var messages = MockApplication.MockLogger.Messages;
+			Assert.True(messages.Count == 0,
+				"An error was logged: " + messages.FirstOrDefault());
 		}
 
-		[Test, Category("[Binding] Update Value")]
+		[InlineData(true)]
+		[InlineData(false)]
+		[Theory, Category("[Binding] Update Value")]
 		public void ValueUpdatedWithSimplePathOnOneWayBinding(
-			[Values(true, false)] bool isDefault)
+			bool isDefault)
 		{
 			const string newvalue = "New Value";
 			var viewmodel = new MockViewModel
@@ -354,17 +355,20 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			bindable.SetBinding(property, binding);
 
 			viewmodel.Text = newvalue;
-			Assert.AreEqual(newvalue, bindable.GetValue(property),
+			Assert.True(newvalue == (string)bindable.GetValue(property),
 				"Bindable did not update on binding context property change");
-			Assert.AreEqual(newvalue, viewmodel.Text,
+			Assert.True(newvalue == viewmodel.Text,
 				"Source property changed when it shouldn't");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			var messages = MockApplication.MockLogger.Messages;
+			Assert.True(messages.Count == 0,
+				"An error was logged: " + messages.FirstOrDefault());
 		}
 
-		[Test, Category("[Binding] Update Value")]
+		[InlineData(true)]
+		[InlineData(false)]
+		[Theory, Category("[Binding] Update Value")]
 		public void ValueUpdatedWithSimplePathOnOneWayToSourceBinding(
-			[Values(true, false)] bool isDefault)
+			bool isDefault)
 
 		{
 			const string newvalue = "New Value";
@@ -391,21 +395,25 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			string original = (string)bindable.GetValue(property);
 			const string value = "value";
 			viewmodel.Text = value;
-			Assert.AreEqual(original, bindable.GetValue(property),
+			Assert.True(original == (string)bindable.GetValue(property),
 				"Target updated from Source on OneWayToSource");
 
 			bindable.SetValue(property, newvalue);
-			Assert.AreEqual(newvalue, bindable.GetValue(property),
+			Assert.True(newvalue == (string)bindable.GetValue(property),
 				"Bindable did not update on binding context property change");
-			Assert.AreEqual(newvalue, viewmodel.Text,
+			Assert.True(newvalue == viewmodel.Text,
 				"Source property changed when it shouldn't");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+
+			var messages = MockApplication.MockLogger.Messages;
+			Assert.True(messages.Count == 0,
+				"An error was logged: " + messages.FirstOrDefault());
 		}
 
-		[Test, Category("[Binding] Update Value")]
+		[InlineData(true)]
+		[InlineData(false)]
+		[Theory, Category("[Binding] Update Value")]
 		public void ValueUpdatedWithSimplePathOnTwoWayBinding(
-			[Values(true, false)] bool isDefault)
+			bool isDefault)
 		{
 			const string newvalue = "New Value";
 			var viewmodel = new MockViewModel
@@ -429,24 +437,26 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			bindable.SetBinding(property, binding);
 
 			viewmodel.Text = newvalue;
-			Assert.AreEqual(newvalue, bindable.GetValue(property),
+			Assert.True(newvalue == (string)bindable.GetValue(property),
 				"Target property did not update change");
-			Assert.AreEqual(newvalue, viewmodel.Text,
+			Assert.True(newvalue == viewmodel.Text,
 				"Source property changed from what it was set to");
 
 			const string newvalue2 = "New Value in the other direction";
 
 			bindable.SetValue(property, newvalue2);
-			Assert.AreEqual(newvalue2, viewmodel.Text,
+			Assert.True(newvalue2 == viewmodel.Text,
 				"Source property did not update with Target's change");
-			Assert.AreEqual(newvalue2, bindable.GetValue(property),
+			Assert.True(newvalue2 == (string)bindable.GetValue(property),
 				"Target property changed from what it was set to");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			var messages = MockApplication.MockLogger.Messages;
+			Assert.True(messages.Count == 0,
+				"An error was logged: " + messages.FirstOrDefault());
 		}
 
-		[TestCase(true)]
-		[TestCase(false)]
+		[InlineData(true)]
+		[InlineData(false)]
+		[Theory]
 		public void ValueUpdatedWithOldContextDoesNotUpdateWithOneWayBinding(bool isDefault)
 		{
 			const string newvalue = "New Value";
@@ -471,17 +481,19 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			bindable.SetBinding(property, binding);
 
 			bindable.BindingContext = new MockViewModel();
-			Assert.AreEqual(null, bindable.GetValue(property));
+			Assert.Null(bindable.GetValue(property));
 
 			viewmodel.Text = newvalue;
-			Assert.AreEqual(null, bindable.GetValue(property),
+			Assert.True(null == bindable.GetValue(property),
 				"Target updated from old Source property change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			var messages = MockApplication.MockLogger.Messages;
+			Assert.True(messages.Count == 0,
+				"An error was logged: " + messages.FirstOrDefault());
 		}
 
-		[TestCase(true)]
-		[TestCase(false)]
+		[InlineData(true)]
+		[InlineData(false)]
+		[Theory]
 		public void ValueUpdatedWithOldContextDoesNotUpdateWithTwoWayBinding(bool isDefault)
 		{
 			const string newvalue = "New Value";
@@ -506,23 +518,25 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			bindable.SetBinding(property, binding);
 
 			bindable.BindingContext = new MockViewModel();
-			Assert.AreEqual(null, bindable.GetValue(property));
+			Assert.Null(bindable.GetValue(property));
 
 			viewmodel.Text = newvalue;
-			Assert.AreEqual(null, bindable.GetValue(property),
+			Assert.True(null == bindable.GetValue(property),
 				"Target updated from old Source property change");
 
 			string original = viewmodel.Text;
 
 			bindable.SetValue(property, newvalue);
-			Assert.AreEqual(original, viewmodel.Text,
+			Assert.True(original == viewmodel.Text,
 				"Source updated from old Target property change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			var messages = MockApplication.MockLogger.Messages;
+			Assert.True(messages.Count == 0,
+				"An error was logged: " + messages.FirstOrDefault());
 		}
 
-		[TestCase(true)]
-		[TestCase(false)]
+		[InlineData(true)]
+		[InlineData(false)]
+		[Theory]
 		public void ValueUpdatedWithOldContextDoesNotUpdateWithOneWayToSourceBinding(bool isDefault)
 		{
 			const string newvalue = "New Value";
@@ -547,16 +561,17 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			bindable.SetBinding(property, binding);
 
 			bindable.BindingContext = new MockViewModel();
-			Assert.AreEqual(property.DefaultValue, bindable.GetValue(property));
+			Assert.Equal(property.DefaultValue, bindable.GetValue(property));
 
 			viewmodel.Text = newvalue;
-			Assert.AreEqual(property.DefaultValue, bindable.GetValue(property),
+			Assert.True(property.DefaultValue == bindable.GetValue(property),
 				"Target updated from old Source property change");
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			var messages = MockApplication.MockLogger.Messages;
+			Assert.True(messages.Count == 0,
+				"An error was logged: " + messages.FirstOrDefault());
 		}
 
-		[Test]
+		[Fact]
 		public void BindingStaysOnUpdateValueFromBinding()
 		{
 			const string newvalue = "New Value";
@@ -573,17 +588,17 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			bindable.SetBinding(property, binding);
 
 			viewmodel.Text = newvalue;
-			Assert.AreEqual(newvalue, bindable.GetValue(property));
+			Assert.Equal(newvalue, bindable.GetValue(property));
 
 			const string newValue2 = "new value 2";
 			viewmodel.Text = newValue2;
-			Assert.AreEqual(newValue2, bindable.GetValue(property));
-
-			Assert.That(log.Messages.Count, Is.EqualTo(0),
-				"An error was logged: " + log.Messages.FirstOrDefault());
+			Assert.Equal(newValue2, bindable.GetValue(property));
+			var messages = MockApplication.MockLogger.Messages;
+			Assert.True(messages.Count == 0,
+				"An error was logged: " + messages.FirstOrDefault());
 		}
 
-		[Test]
+		[Fact]
 		public void OneWayToSourceContextSetToNull()
 		{
 			var binding = new Binding("Text", BindingMode.OneWayToSource);
@@ -594,13 +609,13 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			};
 			bindable.SetBinding(MockBindable.TextProperty, binding);
 
-			Assert.That(() => bindable.BindingContext = null, Throws.Nothing);
+			bindable.BindingContext = null;
 		}
 
-		[Category("[Binding] Simple paths")]
-		[TestCase(BindingMode.OneWay)]
-		[TestCase(BindingMode.OneWayToSource)]
-		[TestCase(BindingMode.TwoWay)]
+		[Theory, Category("[Binding] Simple paths")]
+		[InlineData(BindingMode.OneWay)]
+		[InlineData(BindingMode.OneWayToSource)]
+		[InlineData(BindingMode.TwoWay)]
 		public void SourceAndTargetAreWeakWeakSimplePath(BindingMode mode)
 		{
 			var property = BindableProperty.Create("Text", typeof(string), typeof(MockBindable), "default value", BindingMode.OneWay);
@@ -627,7 +642,7 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				bindable.BindingContext = viewmodel;
 				bindable.SetBinding(property, binding);
 
-				Assume.That(() => bindable.BindingContext = null, Throws.Nothing);
+				bindable.BindingContext = null;
 			};
 
 			create();
@@ -636,15 +651,26 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			GC.WaitForPendingFinalizers();
 
 			if (mode == BindingMode.TwoWay || mode == BindingMode.OneWay)
-				Assert.IsFalse(weakViewModel.IsAlive, "ViewModel wasn't collected");
+				Assert.False(weakViewModel.IsAlive, "ViewModel wasn't collected");
 
 			if (mode == BindingMode.TwoWay || mode == BindingMode.OneWayToSource)
-				Assert.IsFalse(weakBindable.IsAlive, "Bindable wasn't collected");
+				Assert.False(weakBindable.IsAlive, "Bindable wasn't collected");
 		}
 
-		[Test]
-		public void PropertyChangeBindingsOccurThroughMainThread()
+		[Fact]
+		public Task PropertyChangeBindingsOccurThroughMainThread() => DispatcherTest.Run(async () =>
 		{
+			var isOnBackgroundThread = false;
+			var invokeOnMainThreadWasCalled = false;
+
+			DispatcherProviderStubOptions.InvokeOnMainThread = action =>
+			{
+				invokeOnMainThreadWasCalled = true;
+				action();
+			};
+			DispatcherProviderStubOptions.IsInvokeRequired =
+				() => isOnBackgroundThread;
+
 			var vm = new MockViewModel { Text = "text" };
 
 			var bindable = new MockBindable();
@@ -652,31 +678,30 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			bindable.BindingContext = vm;
 			bindable.SetBinding(MockBindable.TextProperty, binding);
 
-			bool invokeOnMainThreadWasCalled = false;
-			Device.PlatformServices = new MockPlatformServices(a => invokeOnMainThreadWasCalled = true, isInvokeRequired: true);
+			Assert.False(invokeOnMainThreadWasCalled);
+
+			isOnBackgroundThread = true;
 
 			vm.Text = "updated";
 
-			// If we wait five seconds and invokeOnMainThreadWasCalled still hasn't been set, something is very wrong
-			Assert.That(invokeOnMainThreadWasCalled, Is.True.After(5000, 10));
-		}
+			Assert.True(invokeOnMainThreadWasCalled);
+		});
 	}
 
-	[TestFixture]
+
 	public class BindingBaseTests : BaseTestFixture
 	{
-		[Test]
+		[Fact]
 		public void EnableCollectionSynchronizationInvalid()
 		{
-			Assert.That(() => BindingBase.EnableCollectionSynchronization(null, new object(),
-			   (collection, context, method, access) => { }), Throws.InstanceOf<ArgumentNullException>());
-			Assert.That(() => BindingBase.EnableCollectionSynchronization(new string[0], new object(),
-			   null), Throws.InstanceOf<ArgumentNullException>());
-			Assert.That(() => BindingBase.EnableCollectionSynchronization(new string[0], null,
-			   (collection, context, method, access) => { }), Throws.Nothing);
+			Assert.Throws<ArgumentNullException>(() => BindingBase.EnableCollectionSynchronization(null, new object(),
+			   (collection, context, method, access) => { }));
+			Assert.Throws<ArgumentNullException>(() => BindingBase.EnableCollectionSynchronization(new string[0], new object(), null));
+
+			BindingBase.EnableCollectionSynchronization(new string[0], null, (collection, context, method, access) => { });
 		}
 
-		[Test]
+		[Fact]
 		public void EnableCollectionSynchronization()
 		{
 			string[] stuff = new[] { "foo", "bar" };
@@ -686,14 +711,14 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			BindingBase.EnableCollectionSynchronization(stuff, context, callback);
 
 			CollectionSynchronizationContext syncContext;
-			Assert.IsTrue(BindingBase.TryGetSynchronizedCollection(stuff, out syncContext));
-			Assert.That(syncContext, Is.Not.Null);
-			Assert.AreSame(syncContext.Callback, callback);
-			Assert.That(syncContext.ContextReference, Is.Not.Null);
-			Assert.That(syncContext.ContextReference.Target, Is.SameAs(context));
+			Assert.True(BindingBase.TryGetSynchronizedCollection(stuff, out syncContext));
+			Assert.NotNull(syncContext);
+			Assert.Same(syncContext.Callback, callback);
+			Assert.NotNull(syncContext.ContextReference);
+			Assert.Same(syncContext.ContextReference.Target, context);
 		}
 
-		[Test]
+		[Fact]
 		public void DisableCollectionSynchronization()
 		{
 			string[] stuff = new[] { "foo", "bar" };
@@ -705,11 +730,11 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			BindingBase.DisableCollectionSynchronization(stuff);
 
 			CollectionSynchronizationContext syncContext;
-			Assert.IsFalse(BindingBase.TryGetSynchronizedCollection(stuff, out syncContext));
-			Assert.IsNull(syncContext);
+			Assert.False(BindingBase.TryGetSynchronizedCollection(stuff, out syncContext));
+			Assert.Null(syncContext);
 		}
 
-		[Test]
+		[Fact]
 		public void CollectionAndContextAreHeldWeakly()
 		{
 			WeakReference weakCollection = null, weakContext = null;
@@ -738,11 +763,11 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			GC.Collect();
 			GC.WaitForPendingFinalizers();
 
-			Assert.IsFalse(weakCollection.IsAlive);
-			Assert.IsFalse(weakContext.IsAlive);
+			Assert.False(weakCollection.IsAlive);
+			Assert.False(weakContext.IsAlive);
 		}
 
-		[Test]
+		[Fact]
 		public void CollectionAndContextAreHeldWeaklyClosingOverCollection()
 		{
 			WeakReference weakCollection = null, weakContext = null;
@@ -774,23 +799,24 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			GC.Collect();
 			GC.WaitForPendingFinalizers();
 
-			Assert.IsFalse(weakCollection.IsAlive);
-			Assert.IsFalse(weakContext.IsAlive);
+			Assert.False(weakCollection.IsAlive);
+			Assert.False(weakContext.IsAlive);
 		}
 
-		[Test]
+		[Fact]
 		public void DisableCollectionSynchronizationInvalid()
 		{
-			Assert.That(() => BindingBase.DisableCollectionSynchronization(null), Throws.InstanceOf<ArgumentNullException>());
+			Assert.Throws<ArgumentNullException>(() => BindingBase.DisableCollectionSynchronization(null));
 		}
 
-		[Test]
+		[Fact]
 		public void TryGetSynchronizedCollectionInvalid()
 		{
 			CollectionSynchronizationContext context;
-			Assert.That(() => BindingBase.TryGetSynchronizedCollection(null, out context),
-				Throws.InstanceOf<ArgumentNullException>());
+			Assert.Throws<ArgumentNullException>(() => BindingBase.TryGetSynchronizedCollection(null, out context));
 		}
+
+
 
 	}
 }

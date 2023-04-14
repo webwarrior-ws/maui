@@ -7,6 +7,7 @@ using ViewGroup = Android.Views.ViewGroup;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 {
+	[System.Obsolete]
 	public class ItemsViewAdapter<TItemsView, TItemsViewSource> : RecyclerView.Adapter
 		where TItemsView : ItemsView
 		where TItemsViewSource : IItemsViewSource
@@ -74,6 +75,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 					break;
 			}
 		}
+		protected virtual bool IsSelectionEnabled(ViewGroup parent, int viewType) => true;
 
 		public override RecyclerView.ViewHolder OnCreateViewHolder(ViewGroup parent, int viewType)
 		{
@@ -82,12 +84,12 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			if (viewType == ItemViewType.TextItem)
 			{
 				var view = new TextView(context);
-				return new TextViewHolder(view);
+				return new TextViewHolder(view, IsSelectionEnabled(parent, viewType));
 			}
 
 			var itemContentView = _createItemContentView.Invoke(ItemsView, context);
 
-			return new TemplatedItemViewHolder(itemContentView, ItemsView.ItemTemplate);
+			return new TemplatedItemViewHolder(itemContentView, ItemsView.ItemTemplate, IsSelectionEnabled(parent, viewType));
 		}
 
 		public override int ItemCount => ItemsSource.Count;

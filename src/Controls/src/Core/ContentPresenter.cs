@@ -1,25 +1,33 @@
 using System;
 using System.ComponentModel;
 using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Layouts;
 
 namespace Microsoft.Maui.Controls
 {
-	public class ContentPresenter : Compatibility.Layout
+	/// <include file="../../docs/Microsoft.Maui.Controls/ContentPresenter.xml" path="Type[@FullName='Microsoft.Maui.Controls.ContentPresenter']/Docs" />
+	public class ContentPresenter : Compatibility.Layout, IContentView
 	{
+		/// <include file="../../docs/Microsoft.Maui.Controls/ContentPresenter.xml" path="//Member[@MemberName='ContentProperty']/Docs" />
 		public static BindableProperty ContentProperty = BindableProperty.Create(nameof(Content), typeof(View),
 			typeof(ContentPresenter), null, propertyChanged: OnContentChanged);
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ContentPresenter.xml" path="//Member[@MemberName='.ctor']/Docs" />
 		public ContentPresenter()
 		{
 			SetBinding(ContentProperty, new Binding(ContentProperty.PropertyName, source: RelativeBindingSource.TemplatedParent,
-				converter: new ContentConverter()));
+				converterParameter: this, converter: new ContentConverter()));
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ContentPresenter.xml" path="//Member[@MemberName='Content']/Docs" />
 		public View Content
 		{
 			get { return (View)GetValue(ContentProperty); }
 			set { SetValue(ContentProperty, value); }
 		}
+
+		object IContentView.Content => Content;
+		IView IContentView.PresentedContent => Content;
 
 		protected override void LayoutChildren(double x, double y, double width, double height)
 		{
@@ -28,7 +36,7 @@ namespace Microsoft.Maui.Controls
 				Element element = LogicalChildrenInternal[i];
 				var child = element as View;
 				if (child != null)
-					LayoutChildIntoBoundingRegion(child, new Rectangle(x, y, width, height));
+					LayoutChildIntoBoundingRegion(child, new Rect(x, y, width, height));
 			}
 		}
 
@@ -89,6 +97,30 @@ namespace Microsoft.Maui.Controls
 				self.InternalChildren.Add(newView);
 				newView.ParentOverride = await TemplateUtilities.FindTemplatedParentAsync((Element)bindable);
 			}
+		}
+
+		protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
+		{
+			DesiredSize = this.ComputeDesiredSize(widthConstraint, heightConstraint);
+			return DesiredSize;
+		}
+
+		Size IContentView.CrossPlatformMeasure(double widthConstraint, double heightConstraint)
+		{
+			return this.MeasureContent(widthConstraint, heightConstraint);
+		}
+
+		protected override Size ArrangeOverride(Rect bounds)
+		{
+			Frame = this.ComputeFrame(bounds);
+			Handler?.PlatformArrange(Frame);
+			return Frame.Size;
+		}
+
+		Size IContentView.CrossPlatformArrange(Rect bounds)
+		{
+			this.ArrangeContent(bounds);
+			return bounds.Size;
 		}
 	}
 }

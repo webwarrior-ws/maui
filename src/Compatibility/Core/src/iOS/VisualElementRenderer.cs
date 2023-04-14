@@ -10,6 +10,7 @@ using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Controls.Platform;
 
 #if __MOBILE__
+using ObjCRuntime;
 using UIKit;
 using NativeView = UIKit.UIView;
 using NativeViewController = UIKit.UIViewController;
@@ -34,6 +35,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 		AutoPackage = 1 << 2
 	}
 
+	[Obsolete("Use Microsoft.Maui.Controls.Handlers.Compatibility.VisualElementRenderer instead")]
 	public class VisualElementRenderer<TElement> : NativeView, IVisualElementRenderer, IEffectControlProvider where TElement : VisualElement
 	{
 		readonly NativeColor _defaultColor = NativeColor.Clear;
@@ -163,7 +165,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 
 		public void SetElementSize(Size size)
 		{
-			Layout.LayoutChildIntoBoundingRegion(Element, new Rectangle(Element.X, Element.Y, size.Width, size.Height));
+			Layout.LayoutChildIntoBoundingRegion(Element, new Rect(Element.X, Element.Y, size.Width, size.Height));
 		}
 
 		public virtual NativeViewController ViewController => null;
@@ -235,24 +237,13 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 
 #if __MOBILE__
 
-		void ResolveLayoutChanges()
-		{
-			if (Element is Layout layout)
-			{
-				layout.ResolveLayoutChanges();
-			}
-		}
-
 		public override SizeF SizeThatFits(SizeF size)
 		{
-			ResolveLayoutChanges();
 			return new SizeF(0, 0);
 		}
 
 		public override void LayoutSubviews()
 		{
-			ResolveLayoutChanges();
-
 			base.LayoutSubviews();
 
 			if (_blur != null && Superview != null)
@@ -394,7 +385,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 
 				BackgroundColor = _defaultColor;
 			else
-				BackgroundColor = color.ToUIColor();
+				BackgroundColor = color.ToPlatform();
 
 #else
 				Layer.BackgroundColor = _defaultColor.CGColor;

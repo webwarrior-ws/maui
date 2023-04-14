@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
-using System.Text;
+using Microsoft.Maui.Controls.Shapes;
+using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.Controls.Compatibility
 {
@@ -10,6 +10,8 @@ namespace Microsoft.Maui.Controls.Compatibility
 		int ICollection<IView>.Count => _children.Count;
 		bool ICollection<IView>.IsReadOnly => ((ICollection<IView>)_children).IsReadOnly;
 		public IView this[int index] { get => _children[index]; set => _children[index] = (T)value; }
+
+		bool Maui.ILayout.ClipsToBounds => IsClippedToBounds;
 
 		void ICollection<IView>.Add(IView child)
 		{

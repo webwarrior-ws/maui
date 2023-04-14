@@ -3,10 +3,12 @@ using CoreGraphics;
 using Foundation;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Graphics;
+using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[System.Obsolete]
 	public abstract class TemplatedCell : ItemsViewCell
 	{
 		public event EventHandler<EventArgs> ContentSizeChanged;
@@ -107,7 +109,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 					oldElement.MeasureInvalidated -= MeasureInvalidated;
 					oldElement.BindingContext = null;
 					itemsView.RemoveLogicalChild(oldElement);
-					ClearSubviews();
+					ContentView.ClearSubviews();
 					_size = Size.Zero;
 				}
 
@@ -129,7 +131,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				// Prevents the use of default color when there are VisualStateManager with Selected state setting the background color
 				// First we check whether the cell has the default selected background color; if it does, then we should check
 				// to see if the cell content is the VSM to set a selected color 
-				if (SelectedBackgroundView.BackgroundColor == ColorExtensions.Gray && IsUsingVSMForSelectionColor(view))
+				if (SelectedBackgroundView.BackgroundColor == Maui.Platform.ColorExtensions.Gray && IsUsingVSMForSelectionColor(view))
 				{
 					SelectedBackgroundView = new UIView
 					{
@@ -166,9 +168,11 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			var nativeView = VisualElementRenderer.NativeView;
 
 			// Clear out any old views if this cell is being reused
-			ClearSubviews();
+			ContentView.ClearSubviews();
 
 			InitializeContentConstraints(nativeView);
+
+			UpdateVisualStates();
 
 			renderer.Element.MeasureInvalidated += MeasureInvalidated;
 		}
@@ -187,14 +191,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			var rectangle = nativeView.Frame.ToRectangle();
 			VisualElementRenderer.Element.Layout(rectangle);
 			_size = rectangle.Size;
-		}
-
-		void ClearSubviews()
-		{
-			for (int n = ContentView.Subviews.Length - 1; n >= 0; n--)
-			{
-				ContentView.Subviews[n].RemoveFromSuperview();
-			}
 		}
 
 		internal void UseContent(TemplatedCell measurementCell)
@@ -242,14 +238,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			{
 				base.Selected = value;
 
-				var element = VisualElementRenderer?.Element;
-
-				if (element != null)
-				{
-					VisualStateManager.GoToState(element, value
-						? VisualStateManager.CommonStates.Selected
-						: VisualStateManager.CommonStates.Normal);
-				}
+				UpdateVisualStates();
 			}
 		}
 
@@ -298,6 +287,18 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			}
 
 			return true;
+		}
+
+		void UpdateVisualStates()
+		{
+			var element = VisualElementRenderer?.Element;
+
+			if (element != null)
+			{
+				VisualStateManager.GoToState(element, Selected
+					? VisualStateManager.CommonStates.Selected
+					: VisualStateManager.CommonStates.Normal);
+			}
 		}
 	}
 }

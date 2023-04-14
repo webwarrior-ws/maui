@@ -3,6 +3,7 @@ using System.ComponentModel;
 using CoreGraphics;
 using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Controls.Shapes;
+using ObjCRuntime;
 
 #if __MOBILE__
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
@@ -10,6 +11,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 #endif
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class LineRenderer : ShapeRenderer<Line, LineView>
 	{
 		[Microsoft.Maui.Controls.Internals.Preserve(Conditional = true)]

@@ -1,17 +1,17 @@
-namespace Microsoft.Maui.Essentials
+#nullable enable
+
+namespace Microsoft.Maui.Devices
 {
-	public static partial class DeviceDisplay
+	partial class DeviceDisplayImplementation
 	{
-		static bool PlatformKeepScreenOn
-		{
-			get => throw ExceptionUtils.NotSupportedOrImplementedException;
-			set => throw ExceptionUtils.NotSupportedOrImplementedException;
-		}
+		protected override bool GetKeepScreenOn() => false;
 
-		static DisplayInfo GetMainDisplayInfo() => throw ExceptionUtils.NotSupportedOrImplementedException;
+		protected override void SetKeepScreenOn(bool keepScreenOn) { }
 
-		static void StartScreenMetricsListeners() => throw ExceptionUtils.NotSupportedOrImplementedException;
+		protected override DisplayInfo GetMainDisplayInfo() => default;
 
-		static void StopScreenMetricsListeners() => throw ExceptionUtils.NotSupportedOrImplementedException;
+		protected override void StartScreenMetricsListeners() { }
+
+		protected override void StopScreenMetricsListeners() { }
 	}
 }

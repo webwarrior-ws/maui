@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.Maui.DeviceTests.Stubs;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
+using ObjCRuntime;
 using UIKit;
 using Xunit;
 
@@ -44,7 +45,7 @@ namespace Microsoft.Maui.DeviceTests
 
 
 		MauiCheckBox GetNativeCheckBox(CheckBoxHandler checkBoxHandler) =>
-			(MauiCheckBox)checkBoxHandler.NativeView;
+			(MauiCheckBox)checkBoxHandler.PlatformView;
 
 		bool GetNativeIsChecked(CheckBoxHandler checkBoxHandler) =>
 			GetNativeCheckBox(checkBoxHandler).IsChecked;

@@ -1,5 +1,5 @@
 ﻿using System.Linq;
-using Microsoft.Maui.Graphics.Native.Gtk;
+using Microsoft.Maui.Graphics.Platform.Gtk;
 
 namespace Microsoft.Maui.Graphics
 {
@@ -32,7 +32,7 @@ namespace Microsoft.Maui.Graphics
 					var pixbuf = patternPaint.GetPatternBitmap(1);
 					owned = true;
 
-					// todo: create a cairo.pattern & store it in pixbuf
+					// TODO: create a cairo.pattern & store it in pixbuf
 					return pixbuf;
 
 				}
@@ -50,7 +50,7 @@ namespace Microsoft.Maui.Graphics
 			if (paint.IsNullOrEmpty())
 				return null;
 
-			string Stops(GradientStop[] sorted)
+			string Stops(PaintGradientStop[] sorted)
 			{
 #if NET48
 				var max = sorted[sorted.Length-1].Offset;

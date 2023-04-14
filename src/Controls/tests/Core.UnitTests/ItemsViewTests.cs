@@ -1,39 +1,32 @@
 using System;
 using System.Collections.Generic;
-using NUnit.Framework;
+using Microsoft.Maui.Devices;
+using Xunit;
 
 namespace Microsoft.Maui.Controls.Core.UnitTests
 {
-	[TestFixture]
+
 	public class ItemsViewTests : BaseTestFixture
 	{
-		[SetUp]
-		public override void Setup()
+		public ItemsViewTests()
 		{
-			base.Setup();
-			var mockDeviceInfo = new TestDeviceInfo();
-			Device.Info = mockDeviceInfo;
+
+			DeviceDisplay.SetCurrent(new MockDeviceDisplay());
 		}
 
-		[TearDown]
-		public override void TearDown()
-		{
-			base.TearDown();
-			Device.Info = null;
-		}
-
-		[Test]
+		[Fact]
 		public void VerticalListMeasurement()
 		{
 			var itemsView = new StructuredItemsView();
 
 			var sizeRequest = itemsView.Measure(double.PositiveInfinity, double.PositiveInfinity);
 
-			Assert.That(sizeRequest.Request.Height, Is.EqualTo(Device.Info.ScaledScreenSize.Height));
-			Assert.That(sizeRequest.Request.Width, Is.EqualTo(Device.Info.ScaledScreenSize.Width));
+			var scaled = DeviceDisplay.MainDisplayInfo.GetScaledScreenSize();
+			Assert.Equal(sizeRequest.Request.Height, scaled.Height);
+			Assert.Equal(sizeRequest.Request.Width, scaled.Width);
 		}
 
-		[Test]
+		[Fact]
 		public void HorizontalListMeasurement()
 		{
 			var itemsView = new StructuredItemsView();
@@ -42,11 +35,12 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			var sizeRequest = itemsView.Measure(double.PositiveInfinity, double.PositiveInfinity);
 
-			Assert.That(sizeRequest.Request.Height, Is.EqualTo(Device.Info.ScaledScreenSize.Height));
-			Assert.That(sizeRequest.Request.Width, Is.EqualTo(Device.Info.ScaledScreenSize.Width));
+			var scaled = DeviceDisplay.MainDisplayInfo.GetScaledScreenSize();
+			Assert.Equal(sizeRequest.Request.Height, scaled.Height);
+			Assert.Equal(sizeRequest.Request.Width, scaled.Width);
 		}
 
-		[Test]
+		[Fact]
 		public void BindingContextPropagatesLayouts()
 		{
 			var bindingContext = new object();
@@ -56,12 +50,12 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			itemsView.ItemsLayout = linearItemsLayout;
 
 			// BindingContext is set when ItemsLayout is set
-			Assert.AreEqual(itemsView.BindingContext, linearItemsLayout.BindingContext);
+			Assert.Equal(itemsView.BindingContext, linearItemsLayout.BindingContext);
 
 			// BindingContext is updated when BindingContext on ItemsView is changed
 			bindingContext = new object();
 			itemsView.BindingContext = bindingContext;
-			Assert.AreEqual(itemsView.BindingContext, linearItemsLayout.BindingContext);
+			Assert.Equal(itemsView.BindingContext, linearItemsLayout.BindingContext);
 		}
 	}
 }

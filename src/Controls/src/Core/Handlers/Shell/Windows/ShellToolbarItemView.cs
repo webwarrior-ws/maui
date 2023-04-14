@@ -24,7 +24,6 @@ namespace Microsoft.Maui.Controls.Platform
 
 		public ShellToolbarItemView()
 		{
-			Microsoft.Maui.Controls.Shell.VerifyShellUWPFlagEnabled(nameof(ShellToolbarItemView));
 			Click += OnClick;
 		}
 
@@ -42,7 +41,7 @@ namespace Microsoft.Maui.Controls.Platform
 
 		void ToolbarItemChanged(ToolbarItem oldItem, ToolbarItem newItem)
 		{
-			if(oldItem != null)
+			if (oldItem != null)
 				oldItem.PropertyChanged -= ToolbarItemPropertyChanged;
 
 			// TODO MAUI

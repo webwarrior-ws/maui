@@ -1,14 +1,16 @@
+#nullable enable
 using System;
 using Microsoft.Maui.Graphics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using WRect = Windows.Foundation.Rect; 
+using WRect = Windows.Foundation.Rect;
+using WSize = global::Windows.Foundation.Size;
 
 namespace Microsoft.Maui.Controls.Platform
 {
 	public class ViewToHandlerConverter : Microsoft.UI.Xaml.Data.IValueConverter
 	{
-		public object Convert(object value, Type targetType, object parameter, string language)
+		public object? Convert(object value, Type targetType, object parameter, string language)
 		{
 			var view = value as View;
 			if (view == null)
@@ -16,7 +18,7 @@ namespace Microsoft.Maui.Controls.Platform
 				var page = value as Page;
 				if (page != null)
 				{
-					return page.ToNative(page.FindMauiContext());
+					return page.ToPlatform(page.FindMauiContext()!);
 				}
 			}
 
@@ -34,6 +36,8 @@ namespace Microsoft.Maui.Controls.Platform
 		internal class WrapperControl : Panel
 		{
 			readonly View _view;
+			IView View => _view;
+			IPlatformViewHandler? Handler => View.Handler as IPlatformViewHandler;
 
 			FrameworkElement FrameworkElement { get; }
 
@@ -41,7 +45,7 @@ namespace Microsoft.Maui.Controls.Platform
 			{
 				_view?.Cleanup();
 
-				if(_view != null)
+				if (_view != null)
 					_view.MeasureInvalidated -= OnMeasureInvalidated;
 			}
 
@@ -50,34 +54,30 @@ namespace Microsoft.Maui.Controls.Platform
 				_view = view;
 				_view.MeasureInvalidated += OnMeasureInvalidated;
 
-				var renderer = view.ToNative(view.FindMauiContext());
-
-				FrameworkElement = renderer;
-				Children.Add(renderer);
+				FrameworkElement = view.ToPlatform(view.FindMauiContext()!);
+				Children.Add(FrameworkElement);
 
 				// make sure we re-measure once the template is applied
-				if (FrameworkElement != null)
+
+				FrameworkElement.Loaded += (sender, args) =>
 				{
-					FrameworkElement.Loaded += (sender, args) =>
-					{
-						// If the view is a layout (stacklayout, grid, etc) we need to trigger a layout pass
-						// with all the controls in a consistent native state (i.e., loaded) so they'll actually
-						// have Bounds set
-						(_view as Compatibility.Layout)?.ForceLayout();
-						InvalidateMeasure();
-					};
-				}
+					// If the view is a layout (stacklayout, grid, etc) we need to trigger a layout pass
+					// with all the controls in a consistent native state (i.e., loaded) so they'll actually
+					// have Bounds set
+					Handler?.PlatformView?.InvalidateMeasure(View);
+					InvalidateMeasure();
+				};
 			}
 
-			void OnMeasureInvalidated(object sender, EventArgs e)
+			void OnMeasureInvalidated(object? sender, EventArgs e)
 			{
 				InvalidateMeasure();
 			}
 
-			protected override Windows.Foundation.Size ArrangeOverride(Windows.Foundation.Size finalSize)
+			protected override WSize ArrangeOverride(WSize finalSize)
 			{
-				_view.IsInNativeLayout = true;
-				Compatibility.Layout.LayoutChildIntoBoundingRegion(_view, new Rectangle(0, 0, finalSize.Width, finalSize.Height));
+				_view.IsInPlatformLayout = true;
+				(_view.Handler as IPlatformViewHandler)?.LayoutVirtualView(finalSize);
 
 				if (_view.Width <= 0 || _view.Height <= 0)
 				{
@@ -88,33 +88,31 @@ namespace Microsoft.Maui.Controls.Platform
 				else
 				{
 					Opacity = 1;
-					FrameworkElement?.Arrange(new WRect(_view.X, _view.Y, _view.Width, _view.Height));
 				}
-				_view.IsInNativeLayout = false;
+
+				_view.IsInPlatformLayout = false;
 
 				return finalSize;
 			}
 
-			protected override Windows.Foundation.Size MeasureOverride(Windows.Foundation.Size availableSize)
+			protected override WSize MeasureOverride(WSize availableSize)
 			{
-				Size request = _view.Measure(availableSize.Width, availableSize.Height, MeasureFlags.IncludeMargins).Request;
+				var request = (_view.Handler as IPlatformViewHandler)?.MeasureVirtualView(availableSize) ?? WSize.Empty;
 
 				if (request.Height < 0)
 				{
 					request.Height = availableSize.Height;
 				}
 
-				Windows.Foundation.Size result;
+				WSize result;
 				if (_view.HorizontalOptions.Alignment == LayoutAlignment.Fill && !double.IsInfinity(availableSize.Width) && availableSize.Width != 0)
 				{
-					result = new Windows.Foundation.Size(availableSize.Width, request.Height);
+					result = new WSize(availableSize.Width, request.Height);
 				}
 				else
 				{
-					result = new Windows.Foundation.Size(request.Width, request.Height);
+					result = request;
 				}
-
-				FrameworkElement?.Measure(availableSize);
 
 				return result;
 			}

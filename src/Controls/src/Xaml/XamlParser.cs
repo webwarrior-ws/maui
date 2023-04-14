@@ -5,7 +5,7 @@
 //       Stephane Delcroix <stephane@mi8.be>
 //
 // Copyright (c) 2013 Mobile Inception
-// Copyright (c) 2013-2014 Microsoft.Maui.Controls, Inc
+// Copyright (c) 2013-2014 Xamarin, Inc
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,7 @@ using System.Linq;
 using System.Reflection;
 using System.Xml;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 
 namespace Microsoft.Maui.Controls.Xaml
 {
@@ -65,7 +66,7 @@ namespace Microsoft.Maui.Controls.Xaml
 						return;
 					case XmlNodeType.Element:
 						// 1. Property Element.
-						if (reader.Name.Contains("."))
+						if (reader.Name.IndexOf(".", StringComparison.Ordinal) != -1)
 						{
 							XmlName name;
 							if (reader.Name.StartsWith(elementName + ".", StringComparison.Ordinal))
@@ -215,7 +216,7 @@ namespace Microsoft.Maui.Controls.Xaml
 				}
 
 				var namespaceUri = reader.NamespaceURI;
-				if (reader.LocalName.Contains(".") && namespaceUri == "")
+				if (reader.LocalName.IndexOf(".", StringComparison.Ordinal) != -1 && namespaceUri == "")
 					namespaceUri = ((IXmlNamespaceResolver)reader).LookupNamespace("");
 				var propertyName = ParsePropertyName(new XmlName(namespaceUri, reader.LocalName));
 
@@ -288,16 +289,16 @@ namespace Microsoft.Maui.Controls.Xaml
 			{
 				var prefix = kvp.Key;
 
-				string typeName = null, ns = null, asm = null, targetPlatform = null;
-				XmlnsHelper.ParseXmlns(kvp.Value, out typeName, out ns, out asm, out targetPlatform);
+				XmlnsHelper.ParseXmlns(kvp.Value, out _, out _, out _, out var targetPlatform);
 				if (targetPlatform == null)
 					continue;
+
 				try
 				{
-					if (targetPlatform != Device.RuntimePlatform)
+					if (targetPlatform != DeviceInfo.Platform.ToString())
 					{
 						// Special case for Windows backward compatibility
-						if (targetPlatform == "Windows" && Device.RuntimePlatform == Device.UWP)
+						if (targetPlatform == "Windows" && DeviceInfo.Platform == DevicePlatform.WinUI)
 							continue;
 
 						prefixes.Add(prefix);
@@ -332,16 +333,7 @@ namespace Microsoft.Maui.Controls.Xaml
 
 		static void GatherXmlnsDefinitionAttributes()
 		{
-			Assembly[] assemblies = null;
-#if !NETSTANDARD2_0 && !NET6_0
-			assemblies = new[] {
-				typeof(XamlLoader).GetTypeInfo().Assembly,
-				typeof(View).GetTypeInfo().Assembly,
-			};
-#else
-			assemblies = AppDomain.CurrentDomain.GetAssemblies();
-#endif
-
+			Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
 			s_xmlnsDefinitions = new List<XmlnsDefinitionAttribute>();
 
 			foreach (var assembly in assemblies)
@@ -358,7 +350,7 @@ namespace Microsoft.Maui.Controls.Xaml
 				{
 					// If we can't load the custom attribute for whatever reason from the assembly,
 					// We can ignore it and keep going.
-					System.Diagnostics.Debug.WriteLine($"Failed to parse Assembly Attribute: {ex.ToString()}");
+					Debug.WriteLine($"Failed to parse Assembly Attribute: {ex.ToString()}");
 				}
 			}
 		}
@@ -366,14 +358,9 @@ namespace Microsoft.Maui.Controls.Xaml
 		public static Type GetElementType(XmlType xmlType, IXmlLineInfo xmlInfo, Assembly currentAssembly,
 			out XamlParseException exception)
 		{
-#if NETSTANDARD2_0 || NET6_0
 			bool hasRetriedNsSearch = false;
-#endif
-			IList<XamlLoader.FallbackTypeInfo> potentialTypes;
 
-#if NETSTANDARD2_0 || NET6_0
 		retry:
-#endif
 			if (s_xmlnsDefinitions == null)
 				GatherXmlnsDefinitionAttributes();
 
@@ -381,13 +368,11 @@ namespace Microsoft.Maui.Controls.Xaml
 				s_xmlnsDefinitions,
 				currentAssembly?.FullName,
 				(typeInfo) =>
-					Type.GetType($"{typeInfo.ClrNamespace}.{typeInfo.TypeName}, {typeInfo.AssemblyName}"),
-				out potentialTypes);
+					Type.GetType($"{typeInfo.clrNamespace}.{typeInfo.typeName}, {typeInfo.assemblyName}"));
 
 			var typeArguments = xmlType.TypeArguments;
 			exception = null;
 
-#if NETSTANDARD2_0 || NET6_0
 			if (type == null)
 			{
 				// This covers the scenario where the AppDomain's loaded
@@ -401,10 +386,6 @@ namespace Microsoft.Maui.Controls.Xaml
 					goto retry;
 				}
 			}
-#endif
-
-			if (XamlLoader.FallbackTypeResolver != null)
-				type = XamlLoader.FallbackTypeResolver(potentialTypes, type);
 
 			if (type != null && typeArguments != null)
 			{

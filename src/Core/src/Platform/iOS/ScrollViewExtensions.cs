@@ -1,7 +1,9 @@
-﻿using Microsoft.Maui.Graphics;
+﻿using System;
+using Microsoft.Maui.Graphics;
+using ObjCRuntime;
 using UIKit;
 
-namespace Microsoft.Maui
+namespace Microsoft.Maui.Platform
 {
 	public static class ScrollViewExtensions
 	{
@@ -15,9 +17,13 @@ namespace Microsoft.Maui
 			scrollView.ShowsHorizontalScrollIndicator = scrollBarVisibility == ScrollBarVisibility.Always || scrollBarVisibility == ScrollBarVisibility.Default;
 		}
 
-		public static void UpdateContent(this UIScrollView scrollView, UIView content)
+
+		// TODO ezhart This method is no longer used internally; we can't delete it right now because that'd be a breaking change
+		public static void UpdateContent(this UIScrollView scrollView, IView? content, IMauiContext context)
 		{
-			if (scrollView.Subviews.Length > 0 && scrollView.Subviews[0] == content)
+			var nativeContent = content == null ? null : content.ToPlatform(context);
+
+			if (scrollView.Subviews.Length > 0 && scrollView.Subviews[0] == nativeContent)
 			{
 				return;
 			}
@@ -28,7 +34,10 @@ namespace Microsoft.Maui
 				scrollView.Subviews[0].RemoveFromSuperview();
 			}
 
-			scrollView.AddSubview(content);
+			if (nativeContent != null)
+			{
+				scrollView.AddSubview(nativeContent);
+			}
 		}
 
 		public static void UpdateContentSize(this UIScrollView scrollView, Size contentSize)
@@ -39,6 +48,11 @@ namespace Microsoft.Maui
 			{
 				scrollView.ContentSize = nativeContentSize;
 			}
+		}
+
+		public static void UpdateIsEnabled(this UIScrollView nativeScrollView, IScrollView scrollView)
+		{
+			nativeScrollView.ScrollEnabled = scrollView.IsEnabled;
 		}
 	}
 }
