@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Gtk;
 using Microsoft.Maui.Graphics.Platform.Gtk;
+using Microsoft.Maui.Primitives;
 using Point = Microsoft.Maui.Graphics.Point;
 using Rectangle = Microsoft.Maui.Graphics.Rect;
 using Size = Microsoft.Maui.Graphics.Size;
@@ -231,6 +232,31 @@ namespace Microsoft.Maui.Platform
 					var mesuredAllocation = Measure(allocation.Width, allocation.Height);
 					mAllocation.Size = mesuredAllocation;
 					CurrentAllocation = mAllocation;
+				}
+				
+				if (crossPlatformLayout is IView virtualView)
+				{
+					var measuredAllocation = Measure(allocation.Width, allocation.Height);
+					
+					// Adjust for VerticalOptions
+					if (virtualView.VerticalLayoutAlignment == LayoutAlignment.Center)
+					{
+						mAllocation.Top += (allocation.Height - measuredAllocation.Height) / 2.0;
+					}
+					else if (virtualView.VerticalLayoutAlignment == LayoutAlignment.End)
+					{
+						mAllocation.Top += (allocation.Height - measuredAllocation.Height);
+					}
+
+					// Adjust for HorizontalOptions
+					if (virtualView.HorizontalLayoutAlignment == LayoutAlignment.Center)
+					{
+						mAllocation.Left += (allocation.Width - measuredAllocation.Width) / 2.0;
+					}
+					else if (virtualView.VerticalLayoutAlignment == LayoutAlignment.End)
+					{
+						mAllocation.Left += (allocation.Width - measuredAllocation.Width);
+					}
 				}
 
 				ArrangeAllocation(new Rectangle(Point.Zero, mAllocation.Size));
