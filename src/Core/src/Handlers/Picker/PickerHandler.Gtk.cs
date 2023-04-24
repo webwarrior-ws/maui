@@ -8,6 +8,7 @@ namespace Microsoft.Maui.Handlers
 
 	public partial class PickerHandler : ViewHandler<IPicker, ComboBox>
 	{
+		bool ValuesAreChanging { get; set; }
 
 		protected override ComboBox CreatePlatformView()
 		{
@@ -28,7 +29,7 @@ namespace Microsoft.Maui.Handlers
 			_ = PlatformView ?? throw new InvalidOperationException($"{nameof(PlatformView)} should have been set by base class.");
 			_ = VirtualView ?? throw new InvalidOperationException($"{nameof(VirtualView)} should have been set by base class.");
 
-			SetValues(PlatformView, VirtualView);
+			SetValues(this);
 		}
 
 		protected override void ConnectHandler(ComboBox nativeView)
@@ -42,6 +43,8 @@ namespace Microsoft.Maui.Handlers
 
 		void OnNativeViewChanged(object? sender, EventArgs args)
 		{
+			if (ValuesAreChanging)
+				return;
 			if (sender is ComboBox nativeView && VirtualView is { } virtualView)
 			{
 				virtualView.SelectedIndex = nativeView.Active;
@@ -57,26 +60,37 @@ namespace Microsoft.Maui.Handlers
 			PlatformView.Changed -= OnNativeViewChanged;
 		}
 
-		public static void SetValues(ComboBox nativeView, IPicker virtualView)
+		public static void SetValues(PickerHandler handler)
 		{
-			var list = new ItemDelegateList<string>(virtualView);
+			var list = new ItemDelegateList<string>(handler.VirtualView);
 
-			if (nativeView.Model is not ListStore model)
+			if (handler.PlatformView.Model is not ListStore model)
 				return;
 
-			model.Clear();
-
-			foreach (var text in list)
+			try
 			{
-				model.AppendValues(text);
-			}
+				handler.ValuesAreChanging = true;
 
-			nativeView.Active = virtualView.SelectedIndex;
+				model.Clear();
+
+				foreach (var text in list)
+				{
+					model.AppendValues(text);
+				}
+
+				handler.PlatformView.Active = handler.VirtualView.SelectedIndex;
+			}
+			finally
+			{
+				handler.ValuesAreChanging = false;
+			}
 		}
 
 		internal static void MapItems(IPickerHandler handler, IPicker picker)
 		{
-			SetValues(handler.PlatformView, picker);
+			if (handler is not PickerHandler pickerHandler)
+				return;
+			SetValues(pickerHandler);
 		}
 
 		public static void MapSelectedIndex(PickerHandler handler, IPicker view)
@@ -92,7 +106,7 @@ namespace Microsoft.Maui.Handlers
 			var nativeView = handler.PlatformView ?? throw new InvalidOperationException($"{nameof(PlatformView)} should have been set by base class.");
 			_ = picker ?? throw new InvalidOperationException($"{nameof(picker)} should have been set by base class.");
 
-			SetValues(nativeView, picker);
+			SetValues(handler);
 
 		}
 
