@@ -1,4 +1,4 @@
-﻿#define TRACE_ALLOCATION
+﻿#define TRACE_ALLOCATION_
 
 using System;
 using System.Collections.Concurrent;
@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using Gtk;
 using Microsoft.Maui.Graphics.Platform.Gtk;
+using Microsoft.Maui.Primitives;
 using Rectangle = Microsoft.Maui.Graphics.Rect;
 using Size = Microsoft.Maui.Graphics.Size;
 using Point = Microsoft.Maui.Graphics.Point;
@@ -233,6 +234,25 @@ namespace Microsoft.Maui.Platform
 				if (RestrictToMesuredAllocation)
 					mAllocation.Size = mesuredAllocation;
 
+				// Adjust for VerticalOptions
+				if (VirtualView.VerticalLayoutAlignment == LayoutAlignment.Center)
+				{
+					mAllocation.Top += (allocation.Height - mesuredAllocation.Height) / 2.0;
+				}
+				else if (VirtualView.VerticalLayoutAlignment == LayoutAlignment.End)
+				{
+					mAllocation.Top += (allocation.Height - mesuredAllocation.Height);
+				}
+				// Adjust for HorizontalOptions
+				if (VirtualView.HorizontalLayoutAlignment == LayoutAlignment.Center)
+				{
+					mAllocation.Left += (allocation.Width - mesuredAllocation.Width) / 2.0;
+				}
+				else if (VirtualView.VerticalLayoutAlignment == LayoutAlignment.End)
+				{
+					mAllocation.Left += (allocation.Width - mesuredAllocation.Width);
+				}
+
 				ArrangeAllocation(new Rectangle(Point.Zero, mAllocation.Size));
 				AllocateChildren(mAllocation);
 
@@ -302,7 +322,10 @@ namespace Microsoft.Maui.Platform
 			Size cached = Size.Zero;
 
 			bool cacheHit = CanBeCached() && MeasureCache.TryGetValue(key, out cached);
-
+// TODO: the code is commented because using cache was causing problems for Layout sizes 
+// after window looses or gains focus. Ultimately we need to figure out the problem caused
+// by caching and stop disabling it to have better performance.
+/*
 			if (cacheHit)
 			{
 #if TRACE_ALLOCATION
@@ -311,6 +334,7 @@ namespace Microsoft.Maui.Platform
 					return cached;
 
 			}
+*/
 
 			var measured = VirtualView.CrossPlatformMeasure(widthConstraint, heightConstraint);
 
