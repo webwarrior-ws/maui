@@ -70,8 +70,8 @@
     </style>
 
     <style name="MauiAlertDialogTheme" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
-      <item name="android:textColor">@android:color/white</item>
-      <item name="colorPrimary">@android:color/white</item>
+      <item name="android:textColor">?attr/colorOnSurface</item>
+      <item name="colorPrimary">?attr/colorOnSurface</item>
     </style>
 
   <!-- 
