@@ -322,19 +322,19 @@ namespace Microsoft.Maui.Platform
 			Size cached = Size.Zero;
 
 			bool cacheHit = CanBeCached() && MeasureCache.TryGetValue(key, out cached);
-// TODO: the code is commented because using cache was causing problems for Layout sizes 
-// after window looses or gains focus. Ultimately we need to figure out the problem caused
-// by caching and stop disabling it to have better performance.
-/*
-			if (cacheHit)
-			{
-#if TRACE_ALLOCATION
-				if (!_checkCacheHitFailed)
-#endif
-					return cached;
+			// TODO: the code is commented because using cache was causing problems for Layout sizes 
+			// after window looses or gains focus. Ultimately we need to figure out the problem caused
+			// by caching and stop disabling it to have better performance.
+			/*
+						if (cacheHit)
+						{
+			#if TRACE_ALLOCATION
+							if (!_checkCacheHitFailed)
+			#endif
+								return cached;
 
-			}
-*/
+						}
+			*/
 
 			var measured = VirtualView.CrossPlatformMeasure(widthConstraint, heightConstraint);
 
