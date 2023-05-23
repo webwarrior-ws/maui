@@ -13,6 +13,11 @@ global using NativePlatformCameraPreviewView = global::Microsoft.UI.Xaml.Framewo
 global using NativePlatformView = global::Microsoft.UI.Xaml.FrameworkElement;
 global using NativePlatformImageView = global::Microsoft.UI.Xaml.Controls.Image;
 global using NativePlatformImage = global::Microsoft.UI.Xaml.Media.Imaging.WriteableBitmap;
+#elif GTK
+global using NativePlatformCameraPreviewView = global::Gtk.Widget;
+global using NativePlatformView = global::Gtk.Widget;
+global using NativePlatformImageView = global::Microsoft.Maui.Platform.ImageView;
+global using NativePlatformImage = global::Gdk.Pixbuf;
 #endif
 
 using Microsoft.Extensions.DependencyInjection;

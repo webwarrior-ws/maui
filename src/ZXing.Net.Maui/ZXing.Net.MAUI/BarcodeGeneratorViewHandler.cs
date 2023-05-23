@@ -4,6 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Platform;
+using Size = Microsoft.Maui.Graphics.Size;
 
 namespace ZXing.Net.Maui
 {
@@ -19,6 +21,9 @@ namespace ZXing.Net.Maui
 			[nameof(IBarcodeGeneratorView.ForegroundColor)] = MapUpdateBarcode,
 			[nameof(IBarcodeGeneratorView.BackgroundColor)] = MapUpdateBarcode,
 			[nameof(IBarcodeGeneratorView.Margin)] = MapUpdateBarcode,
+#if GTK
+			[nameof(IBarcodeGeneratorView.Visibility)] = UpdateVisibility,
+#endif
 		};
 
 		public BarcodeGeneratorViewHandler() : base(BarcodeGeneratorViewMapper)
@@ -43,7 +48,20 @@ namespace ZXing.Net.Maui
 
 			UpdateBarcode();
 		}
+#if GTK
+		public override Size GetDesiredSize(double widthConstraint, double heightConstraint)
+		{
+			if (VirtualView is Microsoft.Maui.Controls.View { } virtualView)
+				return new Size(virtualView.WidthRequest, virtualView.HeightRequest);
+			else
+				return base.GetDesiredSize(widthConstraint, heightConstraint);
+		}
 
+		public static void UpdateVisibility(BarcodeGeneratorViewHandler handler, IBarcodeGeneratorView barcodeGeneratorView)
+		{
+			handler.imageView.Visible = barcodeGeneratorView.Visibility == Visibility.Visible;
+		}
+#endif
 		NativePlatformImageView imageView;
 
 		protected override NativePlatformImageView CreatePlatformView()
@@ -55,6 +73,8 @@ namespace ZXing.Net.Maui
 			imageView.SetBackgroundColor(Android.Graphics.Color.Transparent);
 #elif WINDOWS
 			imageView = new NativePlatformImageView();
+#elif GTK
+			imageView = new ImageView();
 #endif
 			return imageView;
 		}
@@ -85,6 +105,8 @@ namespace ZXing.Net.Maui
 			imageView?.SetImageBitmap(image);
 #elif WINDOWS
 			imageView.Source = image;
+#elif GTK
+			imageView.Image = image;
 #endif
 		}
 
