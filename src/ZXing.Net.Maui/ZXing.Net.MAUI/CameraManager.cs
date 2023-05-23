@@ -14,7 +14,10 @@ namespace ZXing.Net.Maui
 		}
 
 		protected readonly IMauiContext Context;
+// Event 'FrameReady' is never invoked (there is no camera support on Gtk)	
+#pragma warning disable CS0067
 		public event EventHandler<CameraFrameBufferEventArgs> FrameReady;
+#pragma warning restore CS0067
 
 		public CameraLocation CameraLocation { get; private set; }
 
