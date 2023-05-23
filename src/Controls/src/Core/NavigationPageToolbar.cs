@@ -147,7 +147,8 @@ namespace Microsoft.Maui.Controls
 
 			// Set this before BackButtonVisible triggers an update to the handler
 			// This way all useful information is present
-			if (Parent is FlyoutPage && !anyPagesPushed.Value)
+			if ((Parent is FlyoutPage || (Parent is Window window && window.Page is NavigationPage navPage && navPage.CurrentPage is FlyoutPage)) 
+				&& !anyPagesPushed.Value)
 				_drawerToggleVisible = true;
 			else
 				_drawerToggleVisible = false;

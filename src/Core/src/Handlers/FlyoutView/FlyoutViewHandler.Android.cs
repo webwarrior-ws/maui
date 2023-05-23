@@ -13,7 +13,7 @@ namespace Microsoft.Maui.Handlers
 		const uint DefaultScrimColor = 0x99000000;
 		View? _navigationRoot;
 		LinearLayoutCompat? _sideBySideView;
-		DrawerLayout DrawerLayout => (DrawerLayout)PlatformView;
+		internal DrawerLayout DrawerLayout => (DrawerLayout)PlatformView;
 		ScopedFragment? _detailViewFragment;
 
 		protected override View CreatePlatformView()

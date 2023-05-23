@@ -514,7 +514,10 @@ namespace Microsoft.Maui.Platform
 				{
 					if (toolbar.Handler is ToolbarHandler th)
 					{
-						th.SetupWithNavController(controller, _stackNavigationManager);
+						if(_stackNavigationManager.CurrentPage.Handler is FlyoutViewHandler flyoutHandler)
+							th.SetupWithDrawerLayout(flyoutHandler.DrawerLayout);
+						else
+							th.SetupWithNavController(controller, _stackNavigationManager);
 					}
 				}
 			}
