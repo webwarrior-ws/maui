@@ -110,6 +110,17 @@ namespace Microsoft.Maui.Controls.Platform
 				}
 				else
 				{
+					// Replace default NavigationIcon with Flyout.IconImageSource if the latter is defined
+					if (toolbar.Parent is FlyoutPage flyoutPage && toolbar.Handler?.MauiContext is { } mauiContext
+						&& flyoutPage.Flyout.IconImageSource is not null && nativeToolbar.NavigationIcon is DrawerArrowDrawable)
+					{
+						flyoutPage.Flyout.IconImageSource.LoadImage(mauiContext, 
+							(IImageSourceServiceResult<Drawable>? sourceResult) =>
+							{
+								if(sourceResult is not null)
+									nativeToolbar.NavigationIcon = sourceResult.Value;
+							});
+					}
 					nativeToolbar.SetNavigationContentDescription(Resource.String.nav_app_bar_open_drawer_description);
 				}
 			}
