@@ -157,13 +157,23 @@ namespace Microsoft.Maui.Controls.Platform
 
 		public static void UpdateIconColor(this AToolbar nativeToolbar, Toolbar toolbar)
 		{
-			var navIconColor = toolbar.IconColor;
+			var navIconColor = toolbar.IconColor ?? toolbar.BarTextColor;
 			if (navIconColor != null && nativeToolbar.NavigationIcon != null)
 			{
 				if (nativeToolbar.NavigationIcon is DrawerArrowDrawable dad)
+				{
 					dad.Color = AGraphics.Color.White;
+				}
+				else
+				{
+					// Copy icon beacuse it might be used in other places and mutating it (setting color filter)
+					// will have unintended consequences.
+					// Call Mutate() so that we can apply filter without affecting other instances.
+					// see https://stackoverflow.com/a/18542972/20881435
+					nativeToolbar.NavigationIcon = nativeToolbar.NavigationIcon.GetConstantState()?.NewDrawable().Mutate();
+				}
 
-				nativeToolbar.NavigationIcon.SetColorFilter(navIconColor, FilterMode.SrcAtop);
+				nativeToolbar.NavigationIcon?.SetColorFilter(navIconColor, FilterMode.SrcAtop);
 			}
 		}
 
