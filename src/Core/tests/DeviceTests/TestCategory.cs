@@ -5,6 +5,7 @@
 		public const string MauiContext = "MauiContext";
 
 		public const string Application = "Application";
+		public const string Activity = "Activity";
 		public const string ActivityIndicator = "ActivityIndicator";
 		public const string Border = "Border";
 		public const string BoxView = "BoxView";
