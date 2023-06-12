@@ -1,7 +1,8 @@
-﻿using Android.Graphics.Drawables;
+﻿using System.Threading.Tasks;
+using Android.Graphics.Drawables;
 using Android.Views;
 using AndroidX.AppCompat.App;
-using Microsoft.Maui.Hosting;
+using Microsoft.Maui.ApplicationModel;
 
 using Xunit;
 
@@ -11,34 +12,35 @@ namespace Microsoft.Maui.DeviceTests
 	public class ActivityTests
 	{
 		[Fact(DisplayName = "Application UI colors are updated on dark mode change")]
-		public void UIColorsAreUpdatedOnDarkModeChange()
+		public async Task UIColorsAreUpdatedOnDarkModeChange()
 		{
-			var mauiApp = MauiApp
-				.CreateBuilder()
-				.Build();
+			var activity = MauiProgram.DefaultContext as AppCompatActivity;
 
-			var mauiContext = new MauiContext(mauiApp.Services, MauiProgram.DefaultContext);
-			var activity = mauiContext.GetActivity();
-
-			activity.RunOnUiThread(() =>
+			Android.Graphics.Color? bgColorInLightMode = null, bgColorInDarkMode = null;
+			
+			await MainThread.InvokeOnMainThreadAsync(() =>
 			{
 				activity.SetTheme(Resource.Style.Theme_AppCompat_DayNight);
-
-				// set to light mode
+				// light mode
 				activity.Delegate.SetLocalNightMode(AppCompatDelegate.ModeNightNo);
-
-				var rootView = activity.Window.DecorView as ViewGroup;
-
-				Assert.True((rootView.Background as ColorDrawable).Color.GetBrightness() > 0.5);
-
-				// set to dark mode
-				activity.Delegate.SetLocalNightMode(AppCompatDelegate.ModeNightYes);
-
-				rootView = activity.Window.DecorView as ViewGroup;
-
-				Assert.True((rootView.Background as ColorDrawable).Color.GetBrightness() < 0.5);
 			});
 
+			await MainThread.InvokeOnMainThreadAsync(() => 
+			{ 
+				var rootView = activity.Window.DecorView.RootView as ViewGroup;
+				bgColorInLightMode = (rootView.Background as ColorDrawable).Color;
+				// dark mode
+				activity.Delegate.SetLocalNightMode(AppCompatDelegate.ModeNightYes);
+			});
+
+			await MainThread.InvokeOnMainThreadAsync(() =>
+			{
+				var rootView = activity.Window.DecorView.RootView as ViewGroup;
+				bgColorInDarkMode = (rootView.Background as ColorDrawable).Color;
+			});
+
+			Assert.True(bgColorInLightMode?.GetBrightness() > 0.5);
+			Assert.True(bgColorInDarkMode?.GetBrightness() < 0.5);
 		}
 	}
 }
