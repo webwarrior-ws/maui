@@ -8,7 +8,7 @@ namespace Microsoft.Maui.Platform;
 public static class FrameExtensions
 {
 	// https://www.w3.org/TR/css-backgrounds-3/
-	
+
 	static (string mainNode, string subNode)? _borderCssNode = default;
 
 	public static (string mainNode, string subNode) BorderCssNode(this Gtk.Frame platformView)
@@ -62,7 +62,7 @@ public static class FrameExtensions
 
 		var (mainNode, subNode) = platformView.BorderCssNode();
 		if (tr is not { } || br is not { } || bl is not { } ||
-		    (radius == tr && radius == br && radius == bl))
+			(radius == tr && radius == br && radius == bl))
 		{
 			platformView.SetStyleValueNode($"{Clamp(radius)}px", mainNode, "border-radius", subNode);
 			return;

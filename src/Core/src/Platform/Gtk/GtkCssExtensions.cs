@@ -8,7 +8,7 @@ namespace Microsoft.Maui
 {
 
 	// https://docs.gtk.org/gtk3/css-properties.html
-	
+
 	public static class GtkCssExtensions
 	{
 
