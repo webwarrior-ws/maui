@@ -64,7 +64,7 @@ namespace Microsoft.Maui.Controls.Handlers.Compatibility
 
 		public static void MapCornerRadius(FrameHandler handler, Frame frame)
 		{
-			handler.PlatformView.UpdateMapCornerRadius(frame.CornerRadius);
+			handler.PlatformView.UpdateBorderRadius(frame.CornerRadius);
 		}
 
 		public static void MapBorderColor(FrameHandler handler, Frame frame)
