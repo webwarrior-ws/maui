@@ -7,6 +7,8 @@ namespace Microsoft.Maui.Platform;
 
 public static class FrameExtensions
 {
+	// https://www.w3.org/TR/css-backgrounds-3/
+	
 	static (string mainNode, string subNode)? _borderCssNode = default;
 
 	public static (string mainNode, string subNode) BorderCssNode(this Gtk.Frame platformView)
