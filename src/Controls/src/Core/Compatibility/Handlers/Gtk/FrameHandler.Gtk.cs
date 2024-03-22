@@ -12,6 +12,7 @@ namespace Microsoft.Maui.Controls.Handlers.Compatibility
 			[Frame.ContentProperty.PropertyName] = MapContent,
 			[Frame.CornerRadiusProperty.PropertyName] = MapCornerRadius,
 			[Frame.BorderColorProperty.PropertyName] = MapBorderColor,
+			[Frame.ShadowProperty.PropertyName] = MapShadow,
 		};
 
 		public static CommandMapper<Frame, FrameHandler> CommandMapper = new(ViewRenderer.VisualElementRendererCommandMapper) { };
@@ -24,6 +25,7 @@ namespace Microsoft.Maui.Controls.Handlers.Compatibility
 		public FrameHandler(IPropertyMapper? mapper, CommandMapper? commandMapper)
 			: base(mapper ?? Mapper, commandMapper ?? CommandMapper) { }
 
+		
 		[MissingMapper]
 		protected override FrameView CreatePlatformView()
 		{
@@ -31,6 +33,7 @@ namespace Microsoft.Maui.Controls.Handlers.Compatibility
 
 			var view = new FrameView() { CrossPlatformLayout = VirtualView };
 
+			ContainerView = view;
 			return view;
 		}
 
@@ -70,6 +73,16 @@ namespace Microsoft.Maui.Controls.Handlers.Compatibility
 		public static void MapBorderColor(FrameHandler handler, Frame frame)
 		{
 			handler.PlatformView.UpdateBorderColor(frame.BorderColor);
+		}
+
+		// see: https://docs.gtk.org/gtk3/css-properties.html
+		// https://www.w3.org/TR/css-backgrounds-3/#box-shadow
+		public static void UpdateShadow(FrameView platformView, Frame view)
+		{
+			if (platformView is not { })
+				return;
+
+			platformView.UpdateShadow((IView)view);
 		}
 	}
 }
