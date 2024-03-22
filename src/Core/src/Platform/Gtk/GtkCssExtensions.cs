@@ -6,12 +6,10 @@ using Microsoft.Maui.Graphics.Platform.Gtk;
 
 namespace Microsoft.Maui
 {
-
 	// https://docs.gtk.org/gtk3/css-properties.html
 
 	public static class GtkCssExtensions
 	{
-
 		public static string CssMainNode(this Gtk.Widget nativeView)
 		{
 			var mainNode = string.Empty;
@@ -95,6 +93,6 @@ namespace Microsoft.Maui
 				_ => throw new ArgumentOutOfRangeException(nameof(it), it, null)
 			};
 
+		public static string? ToCssColor(this Color? color) => color?.ToGdkRgba().ToString();
 	}
-
 }

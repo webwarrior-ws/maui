@@ -33,7 +33,6 @@ namespace Microsoft.Maui.Controls.Handlers.Compatibility
 
 			var view = new FrameView() { CrossPlatformLayout = VirtualView };
 
-			ContainerView = view;
 			return view;
 		}
 

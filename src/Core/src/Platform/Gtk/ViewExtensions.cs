@@ -8,10 +8,8 @@ using Action = System.Action;
 
 namespace Microsoft.Maui.Platform
 {
-
 	public static partial class ViewExtensions
 	{
-
 		public static void UpdateAutomationId(this Widget platformView, IView view) { }
 
 		public static void UpdateBackground(this Widget platformView, IView view)
@@ -224,7 +222,9 @@ namespace Microsoft.Maui.Platform
 			}
 			else
 			{
-				platformView.SetStyleValueNode($"{view.Shadow.Offset} {view.Shadow.Offset} 2px -2px {view.Shadow.Paint.ToColor()}", platformView.CssMainNode(), "box-shadow");
+				var color = view.Shadow.Paint.ToColor().ToCssColor();
+				// no effect:
+				platformView.SetStyleValueNode($"{(int)view.Shadow.Offset.X}px {(int)view.Shadow.Offset.Y}px {color}", platformView.CssMainNode(), "box-shadow");
 			}
 		}
 
@@ -356,7 +356,5 @@ namespace Microsoft.Maui.Platform
 
 			return default;
 		}
-
 	}
-
 }

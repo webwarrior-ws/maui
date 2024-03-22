@@ -379,9 +379,16 @@ namespace Microsoft.Maui.Handlers
 		/// <param name="view">The associated <see cref="IView"/> instance.</param>
 		public static void MapShadow(IViewHandler handler, IView view)
 		{
+#if GTK
+			if (handler.ContainerView is not { })
+			{
+				((PlatformView?)handler.PlatformView)?.UpdateShadow(view);
+			}
+#else
 			handler.UpdateValue(nameof(IViewHandler.ContainerView));
 
 			((PlatformView?)handler.ContainerView)?.UpdateShadow(view);
+#endif
 		}
 
 		static partial void MappingSemantics(IViewHandler handler, IView view);
