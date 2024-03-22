@@ -1,6 +1,6 @@
 namespace Microsoft.Maui.Graphics.Platform.Gtk;
 
-public class GtkGraphicsView : global::Gtk.EventBox
+public class GtkGraphicsView : global::Gtk.DrawingArea
 {
 	private IDrawable? _drawable;
 	private RectF _dirtyRect;
@@ -8,8 +8,8 @@ public class GtkGraphicsView : global::Gtk.EventBox
 
 	public GtkGraphicsView()
 	{
-		AppPaintable = true;
-		VisibleWindow = false;
+		// AppPaintable = true;
+		// VisibleWindow = false;
 	}
 
 	protected override bool OnDrawn(Cairo.Context context)
