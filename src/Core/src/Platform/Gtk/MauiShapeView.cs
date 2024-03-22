@@ -6,6 +6,8 @@ namespace Microsoft.Maui.Platform
 	{
 		public MauiShapeView()
 		{
+			CanFocus = true;
+			AddEvents((int)Gdk.EventMask.AllEventsMask);
 		}
 	}
 }
