@@ -51,8 +51,6 @@ public static class FrameExtensions
 			platformView.SetStyleValueNode($"{BorderStyle.Solid}", mainNode, "border-style", subNode);
 		}
 
-		// no effect:
-		// platformView.SetStyleValueNode("content-box", mainNode, "background-clip");
 	}
 
 	// border-top-left-radius, border-top-right-radius, border-bottom-right-radius, border-bottom-left-radius
@@ -72,6 +70,9 @@ public static class FrameExtensions
 		platformView.SetStyleValueNode($"{Clamp(tr.Value)}px", mainNode, "border-top-right-radius", subNode);
 		platformView.SetStyleValueNode($"{Clamp(br.Value)}px", mainNode, "border-bottom-right-radius", subNode);
 		platformView.SetStyleValueNode($"{Clamp(bl.Value)}px", mainNode, "border-bottom-left-radius", subNode);
+		
+		// no effect:
+		platformView.SetStyleValueNode("padding-box", mainNode, "background-clip");
 	}
 
 
