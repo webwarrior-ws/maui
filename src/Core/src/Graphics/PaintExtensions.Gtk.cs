@@ -60,7 +60,7 @@ namespace Microsoft.Maui.Graphics
 				var max = sorted[^1].Offset;
 #endif
 				max = 100 / (max == 0 ? 1 : max);
-				var stops = string.Join(",", sorted.Select(s => $"{s.Color.ToGdkRgba().ToString()} {(s.Offset * max).ToString(CultureInfo.InvariantCulture)}%"));
+				var stops = string.Join(",", sorted.Select(s => $"{s.Color.ToCssColor()} {(s.Offset * max).ToString(CultureInfo.InvariantCulture)}%"));
 
 				return stops;
 			}
