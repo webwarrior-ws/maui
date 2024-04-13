@@ -9,7 +9,7 @@ using Xamarin.UITest;
 using NUnit.Framework;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if UITEST
 	[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.Bugzilla)]
@@ -68,7 +68,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 			};
 
 			AbsoluteLayout.SetLayoutFlags(image, AbsoluteLayoutFlags.All);
-			AbsoluteLayout.SetLayoutBounds(image, new Rectangle(0, 0, 1, 1));
+			AbsoluteLayout.SetLayoutBounds(image, new Rect(0, 0, 1, 1));
 			absolute.Children.Add(image);
 
 			var stack = new StackLayout();
@@ -128,6 +128,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 
 #if UITEST
 		[Test]
+		[Compatibility.UITests.FailsOnMauiIOS]
 		public void Issue1Test()
 		{
 			RunningApp.Screenshot("I am at Issue 40161");

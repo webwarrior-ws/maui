@@ -1,9 +1,11 @@
+#nullable disable
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.Maui.Controls.Internals;
@@ -11,12 +13,15 @@ using Microsoft.Maui.Controls.Internals;
 namespace Microsoft.Maui.Controls
 {
 	[ContentProperty("Children")]
-	public abstract class MultiPage<T> : Page, IViewContainer<T>, IPageContainer<T>, IItemsView<T>, IMultiPageController<T> where T : Page
+	public abstract class MultiPage<[DynamicallyAccessedMembers(BindableProperty.DeclaringTypeMembers)] T> : Page, IViewContainer<T>, IPageContainer<T>, IItemsView<T>, IMultiPageController<T> where T : Page
 	{
+		/// <summary>Bindable property for <see cref="ItemsSource"/>.</summary>
 		public static readonly BindableProperty ItemsSourceProperty = BindableProperty.Create("ItemsSource", typeof(IEnumerable), typeof(MultiPage<>), null);
 
+		/// <summary>Bindable property for <see cref="ItemTemplate"/>.</summary>
 		public static readonly BindableProperty ItemTemplateProperty = BindableProperty.Create("ItemTemplate", typeof(DataTemplate), typeof(MultiPage<>), null);
 
+		/// <summary>Bindable property for <see cref="SelectedItem"/>.</summary>
 		public static readonly BindableProperty SelectedItemProperty = BindableProperty.Create("SelectedItem", typeof(object), typeof(MultiPage<>), null, BindingMode.TwoWay);
 
 		internal static readonly BindableProperty IndexProperty = BindableProperty.Create("Index", typeof(int), typeof(Page), -1);

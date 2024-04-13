@@ -1,20 +1,25 @@
+#nullable disable
 using System.Collections.Specialized;
 using System.ComponentModel;
 
 namespace Microsoft.Maui.Controls.Shapes
 {
+	/// <include file="../../../docs/Microsoft.Maui.Controls.Shapes/TransformGroup.xml" path="Type[@FullName='Microsoft.Maui.Controls.Shapes.TransformGroup']/Docs/*" />
 	[ContentProperty("Children")]
 	public sealed class TransformGroup : Transform
 	{
+		/// <summary>Bindable property for <see cref="Children"/>.</summary>
 		public static readonly BindableProperty ChildrenProperty =
 			BindableProperty.Create(nameof(Children), typeof(TransformCollection), typeof(TransformGroup), null,
 				propertyChanged: OnTransformGroupChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Shapes/TransformGroup.xml" path="//Member[@MemberName='.ctor']/Docs/*" />
 		public TransformGroup()
 		{
 			Children = new TransformCollection();
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Shapes/TransformGroup.xml" path="//Member[@MemberName='Children']/Docs/*" />
 		public TransformCollection Children
 		{
 			set { SetValue(ChildrenProperty, value); }

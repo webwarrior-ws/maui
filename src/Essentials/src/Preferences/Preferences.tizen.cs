@@ -1,15 +1,16 @@
+using System;
 using System.Linq;
 using Tizen.Applications;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.Storage
 {
-	public static partial class Preferences
+	class PreferencesImplementation : IPreferences
 	{
 		const string separator = "~";
 
 		static readonly object locker = new object();
 
-		static bool PlatformContainsKey(string key, string sharedName)
+		public bool ContainsKey(string key, string sharedName)
 		{
 			lock (locker)
 			{
@@ -17,7 +18,7 @@ namespace Microsoft.Maui.Essentials
 			}
 		}
 
-		static void PlatformRemove(string key, string sharedName)
+		public void Remove(string key, string sharedName)
 		{
 			lock (locker)
 			{
@@ -27,7 +28,7 @@ namespace Microsoft.Maui.Essentials
 			}
 		}
 
-		static void PlatformClear(string sharedName)
+		public void Clear(string sharedName)
 		{
 			lock (locker)
 			{
@@ -44,19 +45,25 @@ namespace Microsoft.Maui.Essentials
 			}
 		}
 
-		static void PlatformSet<T>(string key, T value, string sharedName)
+		public void Set<T>(string key, T value, string sharedName)
 		{
+			Preferences.CheckIsSupportedType<T>();
+
 			lock (locker)
 			{
 				var fullKey = GetFullKey(key, sharedName);
 				if (value == null)
 					Preference.Remove(fullKey);
+				else if (value is DateTime dt)
+				{
+					Preference.Set(fullKey, dt.ToBinary());
+				}
 				else
 					Preference.Set(fullKey, value);
 			}
 		}
 
-		static T PlatformGet<T>(string key, T defaultValue, string sharedName)
+		public T Get<T>(string key, T defaultValue, string sharedName)
 		{
 			lock (locker)
 			{
@@ -73,6 +80,10 @@ namespace Microsoft.Maui.Essentials
 						case float f:
 						case string s:
 							value = Preference.Get<T>(fullKey);
+							break;
+						case DateTime dt:
+							var encodedValue = Preference.Get<long>(fullKey);
+							value = (T)(object)DateTime.FromBinary(encodedValue);
 							break;
 						default:
 							// the case when the string is null

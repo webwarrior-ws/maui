@@ -1,7 +1,9 @@
 using System;
+using System.IO;
 using System.Text.RegularExpressions;
+using System.Xml;
 using System.Xml.Linq;
-using Microsoft.UI.Xaml;
+using System.Xml.Resolvers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 
@@ -9,64 +11,52 @@ namespace Microsoft.Maui.Platform
 {
 	public static class TextBlockExtensions
 	{
-		public static void UpdateFont(this TextBlock nativeControl, Font font, IFontManager fontManager)
+		public static void UpdateFont(this TextBlock platformControl, Font font, IFontManager fontManager)
 		{
-			nativeControl.FontSize = fontManager.GetFontSize(font);
-			nativeControl.FontFamily = fontManager.GetFontFamily(font);
-			nativeControl.FontStyle = font.ToFontStyle();
-			nativeControl.FontWeight = font.ToFontWeight();
-			nativeControl.IsTextScaleFactorEnabled = font.AutoScalingEnabled;
+			platformControl.FontSize = fontManager.GetFontSize(font);
+			platformControl.FontFamily = fontManager.GetFontFamily(font);
+			platformControl.FontStyle = font.ToFontStyle();
+			platformControl.FontWeight = font.ToFontWeight();
+			platformControl.IsTextScaleFactorEnabled = font.AutoScalingEnabled;
 		}
 
-		public static void UpdateFont(this TextBlock nativeControl, IText text, IFontManager fontManager) =>
-			nativeControl.UpdateFont(text.Font, fontManager);
+		public static void UpdateFont(this TextBlock platformControl, IText text, IFontManager fontManager) =>
+			platformControl.UpdateFont(text.Font, fontManager);
 
-		public static void UpdateText(this TextBlock nativeControl, ILabel label)
+		public static void UpdateText(this TextBlock platformControl, ILabel label)
 		{
-			nativeControl.UpdateTextPlainText(label);
+			platformControl.UpdateTextPlainText(label);
 		}
 
-		public static void UpdateTextColor(this TextBlock nativeControl, ITextStyle text) =>
-			nativeControl.UpdateProperty(TextBlock.ForegroundProperty, text.TextColor);
+		public static void UpdateTextColor(this TextBlock platformControl, ITextStyle text) =>
+			platformControl.UpdateProperty(TextBlock.ForegroundProperty, text.TextColor);
 
-		public static void UpdatePadding(this TextBlock nativeControl, ILabel label) =>
-			nativeControl.UpdateProperty(TextBlock.PaddingProperty, label.Padding.ToNative());
+		public static void UpdatePadding(this TextBlock platformControl, ILabel label) =>
+			platformControl.UpdateProperty(TextBlock.PaddingProperty, label.Padding.ToPlatform());
 
-		public static void UpdateCharacterSpacing(this TextBlock nativeControl, ITextStyle label)
+		public static void UpdateCharacterSpacing(this TextBlock platformControl, ITextStyle label)
 		{
-			nativeControl.CharacterSpacing = label.CharacterSpacing.ToEm();
+			platformControl.CharacterSpacing = label.CharacterSpacing.ToEm();
 		}
 
-		public static void UpdateMaxLines(this TextBlock nativeControl, ILabel label)
-		{
-			if (label.MaxLines >= 0)
-			{
-				nativeControl.MaxLines = label.MaxLines;
-			}
-			else
-			{
-				nativeControl.MaxLines = 0;
-			}
-		}
-
-		public static void UpdateTextDecorations(this TextBlock nativeControl, ILabel label)
+		public static void UpdateTextDecorations(this TextBlock platformControl, ILabel label)
 		{
 			var elementTextDecorations = label.TextDecorations;
 
 			if ((elementTextDecorations & TextDecorations.Underline) == 0)
-				nativeControl.TextDecorations &= ~global::Windows.UI.Text.TextDecorations.Underline;
+				platformControl.TextDecorations &= ~global::Windows.UI.Text.TextDecorations.Underline;
 			else
-				nativeControl.TextDecorations |= global::Windows.UI.Text.TextDecorations.Underline;
+				platformControl.TextDecorations |= global::Windows.UI.Text.TextDecorations.Underline;
 
 			if ((elementTextDecorations & TextDecorations.Strikethrough) == 0)
-				nativeControl.TextDecorations &= ~global::Windows.UI.Text.TextDecorations.Strikethrough;
+				platformControl.TextDecorations &= ~global::Windows.UI.Text.TextDecorations.Strikethrough;
 			else
-				nativeControl.TextDecorations |= global::Windows.UI.Text.TextDecorations.Strikethrough;
+				platformControl.TextDecorations |= global::Windows.UI.Text.TextDecorations.Strikethrough;
 
 			// TextDecorations are not updated in the UI until the text changes
-			if (nativeControl.Inlines != null && nativeControl.Inlines.Count > 0)
+			if (platformControl.Inlines != null && platformControl.Inlines.Count > 0)
 			{
-				foreach (var inline in nativeControl.Inlines)
+				foreach (var inline in platformControl.Inlines)
 				{
 					if (inline is Run run)
 					{
@@ -86,31 +76,31 @@ namespace Microsoft.Maui.Platform
 			}
 			else
 			{
-				nativeControl.Text = nativeControl.Text;
+				platformControl.Text = platformControl.Text;
 			}
 		}
 
-		public static void UpdateLineHeight(this TextBlock nativeControl, ILabel label)
+		public static void UpdateLineHeight(this TextBlock platformControl, ILabel label)
 		{
 			if (label.LineHeight >= 0)
 			{
-				nativeControl.LineHeight = label.LineHeight * nativeControl.FontSize;
+				platformControl.LineHeight = label.LineHeight * platformControl.FontSize;
 			}
 		}
 
-		public static void UpdateHorizontalTextAlignment(this TextBlock nativeControl, ILabel label)
+		public static void UpdateHorizontalTextAlignment(this TextBlock platformControl, ILabel label)
 		{
 			// We don't have a FlowDirection yet, so there's nothing to pass in here. 
 			// TODO: Update this when FlowDirection is available 
-			nativeControl.TextAlignment = label.HorizontalTextAlignment.ToNative(true);
+			platformControl.TextAlignment = label.HorizontalTextAlignment.ToPlatform(true);
 		}
 
-		public static void UpdateVerticalTextAlignment(this TextBlock nativeControl, ILabel label)
+		public static void UpdateVerticalTextAlignment(this TextBlock platformControl, ILabel label)
 		{
-			nativeControl.VerticalAlignment = label.VerticalTextAlignment.ToNativeVerticalAlignment();
+			platformControl.VerticalAlignment = label.VerticalTextAlignment.ToPlatformVerticalAlignment();
 		}
 
-		internal static void UpdateTextHtml(this TextBlock nativeControl, ILabel label)
+		internal static void UpdateTextHtml(this TextBlock platformControl, ILabel label)
 		{
 			var text = label.Text ?? string.Empty;
 
@@ -119,63 +109,51 @@ namespace Microsoft.Maui.Platform
 			modifiedText = Regex.Replace(modifiedText, "<br>", "<br></br>", RegexOptions.IgnoreCase);
 
 			// Reset the text because we will add to it.
-			nativeControl.Inlines.Clear();
+			platformControl.Inlines.Clear();
 
 			try
 			{
-				var element = XElement.Parse(modifiedText);
-				LabelHtmlHelper.ParseText(element, nativeControl.Inlines, label);
+				var element = ParseXhtml(modifiedText);
+				LabelHtmlHelper.ParseText(element, platformControl.Inlines, label);
 			}
 			catch (Exception)
 			{
 				// If anything goes wrong just show the html
-				nativeControl.Text = global::Windows.Data.Html.HtmlUtilities.ConvertToText(label.Text);
+				platformControl.Text = label.Text;
 			}
 		}
 
-		public static void UpdateLineBreakMode(this TextBlock nativeControl, ILabel label)
+		internal static void UpdateTextPlainText(this TextBlock platformControl, IText label)
 		{
-			var lineBreakMode = label.LineBreakMode;
+			platformControl.Text = label.Text;
+		}
 
-			switch (lineBreakMode)
+		static XElement? ParseXhtml(string? html)
+		{
+			if (string.IsNullOrEmpty(html))
+				return null;
+
+			XmlNameTable nt = new NameTable();
+			XmlNamespaceManager nsmgr = new XmlNamespaceManager(nt);
+			var xmlParserContext = new XmlParserContext(null, nsmgr, null, XmlSpace.None);
+			XmlParserContext context = xmlParserContext;
+			context.DocTypeName = "html";
+			context.PublicId = "-//W3C//DTD XHTML 1.0 Strict//EN";
+			context.SystemId = "xhtml1-strict.dtd";
+			XmlParserContext xhtmlContext = context;
+
+			StringReader stringReader = new StringReader(html);
+
+			XmlReaderSettings settings = new XmlReaderSettings
 			{
-				case LineBreakMode.NoWrap:
-					nativeControl.TextTrimming = TextTrimming.Clip;
-					nativeControl.TextWrapping = TextWrapping.NoWrap;
-					break;
-				case LineBreakMode.WordWrap:
-					nativeControl.TextTrimming = TextTrimming.None;
-					nativeControl.TextWrapping = TextWrapping.Wrap;
-					break;
-				case LineBreakMode.CharacterWrap:
-					nativeControl.TextTrimming = TextTrimming.WordEllipsis;
-					nativeControl.TextWrapping = TextWrapping.Wrap;
-					break;
-				case LineBreakMode.HeadTruncation:
-					// TODO: This truncates at the end.
-					nativeControl.TextTrimming = TextTrimming.WordEllipsis;
-					nativeControl.DetermineTruncatedTextWrapping();
-					break;
-				case LineBreakMode.TailTruncation:
-					nativeControl.TextTrimming = TextTrimming.CharacterEllipsis;
-					nativeControl.DetermineTruncatedTextWrapping();
-					break;
-				case LineBreakMode.MiddleTruncation:
-					// TODO: This truncates at the end.
-					nativeControl.TextTrimming = TextTrimming.WordEllipsis;
-					nativeControl.DetermineTruncatedTextWrapping();
-					break;
-				default:
-					throw new ArgumentOutOfRangeException();
-			}
-		}
+				DtdProcessing = DtdProcessing.Parse,
+				ValidationType = ValidationType.DTD,
+				XmlResolver = new XmlPreloadedResolver(XmlKnownDtds.All)
+			};
 
-		internal static void DetermineTruncatedTextWrapping(this TextBlock textBlock) =>
-			textBlock.TextWrapping = textBlock.MaxLines > 1 ? TextWrapping.Wrap : TextWrapping.NoWrap;
+			XmlReader reader = XmlReader.Create(stringReader, settings, xhtmlContext);
 
-		internal static void UpdateTextPlainText(this TextBlock nativeControl, IText label)
-		{
-			nativeControl.Text = label.Text;
+			return XElement.Load(reader);
 		}
 	}
 }

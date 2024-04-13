@@ -1,3 +1,4 @@
+using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Toolchains.InProcess.Emit;
 
 namespace Benchmarks.Droid;
@@ -5,71 +6,68 @@ namespace Benchmarks.Droid;
 [Instrumentation(Name = "com.microsoft.maui.MainInstrumentation")]
 public class MainInstrumentation : Instrumentation
 {
-    const string Tag = "MAUI";
+	const string Tag = "MAUI";
 
-    protected MainInstrumentation(IntPtr handle, JniHandleOwnership transfer)
-        : base(handle, transfer) { }
+	public static MainInstrumentation? Instance { get; private set; }
 
-    public override void OnCreate (Bundle? arguments)
-    {
-        base.OnCreate (arguments);
+	protected MainInstrumentation(IntPtr handle, JniHandleOwnership transfer)
+		: base(handle, transfer) { }
 
-        Start ();
-    }
+	public override void OnCreate(Bundle? arguments)
+	{
+		base.OnCreate(arguments);
 
-    public async override void OnStart ()
-    {
-        base.OnStart ();
+		Instance = this;
 
-        var success = await Task.Factory.StartNew (Run);
-        Log.Debug (Tag, $"Benchmark complete, success: {success}");
-        Finish (success ? Result.Ok : Result.Canceled, new Bundle());
-    }
+		Start();
+	}
 
-    static bool Run()
-    {
-        bool success = false;
-        try {
-            // NOTE: this is mostly working around bugs in BenchmarkDotNet configuration
-            var logger = new Logger();
-            var baseConfig = new DebugInProcessConfig();
+	public async override void OnStart()
+	{
+		base.OnStart();
+#if PERFLAB_INLAB
+		Environment.SetEnvironmentVariable("PERFLAB_INLAB", "1");
+		Environment.SetEnvironmentVariable("PERFLAB_BUILDTIMESTAMP", "0001-01-01T00:00:00.0000000Z");
+		Environment.SetEnvironmentVariable("PERFLAB_BUILDNUM", "REPLACE_BUILDNUM");
+		Environment.SetEnvironmentVariable("DOTNET_VERSION", "REPLACE_DOTNET_VERSION");
+		Environment.SetEnvironmentVariable("PERFLAB_HASH", "REPLACE_HASH");
+		Environment.SetEnvironmentVariable("HELIX_CORRELATION_ID", "REPLACE_HELIX_CORRELATION_ID");
+		Environment.SetEnvironmentVariable("PERFLAB_PERFHASH", "REPLACE_PERFLAB_PERFHASH");
+		Environment.SetEnvironmentVariable("PERFLAB_RUNNAME", "REPLACE_PERFLAB_RUNNAME");
+		Environment.SetEnvironmentVariable("HELIX_WORKITEM_FRIENDLYNAME", "REPLACE_HELIX_WORKITEM_FRIENDLYNAME");
+		Environment.SetEnvironmentVariable("PERFLAB_REPO", "REPLACE_PERFLAB_REPO");
+		Environment.SetEnvironmentVariable("PERFLAB_BRANCH", "REPLACE_PERFLAB_BRANCH");
+		Environment.SetEnvironmentVariable("PERFLAB_QUEUE", "REPLACE_PERFLAB_QUEUE");
+		Environment.SetEnvironmentVariable("PERFLAB_BUILDARCH", "REPLACE_PERFLAB_BUILDARCH");
+		Environment.SetEnvironmentVariable("PERFLAB_LOCALE", "REPLACE_PERFLAB_LOCALE");
+		Directory.CreateDirectory("/storage/emulated/0/Android/data/com.microsoft.maui.benchmarks/files");
+#endif
 
-            var config = new ManualConfig();
-            foreach (var e in baseConfig.GetExporters())
-                config.AddExporter (e);
-            foreach (var d in baseConfig.GetDiagnosers())
-                config.AddDiagnoser (d);
-            foreach (var a in baseConfig.GetAnalysers())
-                config.AddAnalyser (a);
-            foreach (var v in baseConfig.GetValidators())
-                config.AddValidator (v);
-            foreach (var p in baseConfig.GetColumnProviders())
-                config.AddColumnProvider(p);
-            config.AddJob(JobMode<Job>.Default.WithToolchain(new InProcessEmitToolchain(TimeSpan.FromMinutes(10), logOutput: true)));
-            config.UnionRule = ConfigUnionRule.AlwaysUseGlobal; // Overriding the default
-            config.AddLogger(logger);
+		var success = await Task.Factory.StartNew(Run);
+		Log.Debug(Tag, $"Benchmark complete, success: {success}");
+		Finish(success ? Result.Ok : Result.Canceled, new Bundle());
+	}
 
-            BenchmarkRunner.Run<ViewHandlerBenchmark>(config.WithOptions(ConfigOptions.DisableLogFile));
-            success = true;
-        } catch (Exception ex) {
-            Log.Error (Tag, $"Error: {ex}");
-        }
-        return success;
-    }
+	static bool Run()
+	{
+		bool success = false;
+		try
+		{
+			var config = ManualConfig.CreateMinimumViable()
+				.AddJob(Job.Default.WithToolchain(new InProcessEmitToolchain(TimeSpan.FromMinutes(10), logOutput: true)))
+				.AddDiagnoser(MemoryDiagnoser.Default)
+				.WithOrderer(new DefaultOrderer(SummaryOrderPolicy.FastestToSlowest, MethodOrderPolicy.Alphabetical));
 
-    // NOTE: the built-in ConsoleLogger throws PlatformNotSupportedException
-    class Logger : ILogger
-    {
-        public string Id => "AndroidLogger";
+			// ImageBenchmark class is hardcoded here for now
+			BenchmarkRunner.Run<ImageBenchmark>(config);
+			BenchmarkRunner.Run<ViewHandlerBenchmark>(config);
 
-        public int Priority => 0;
-
-        public void Flush() { }
-
-        public void Write(LogKind logKind, string text) => Console.Write(text);
-
-        public void WriteLine() => Console.WriteLine();
-
-        public void WriteLine(LogKind logKind, string text) => Console.WriteLine(text);
-    }
+			success = true;
+		}
+		catch (Exception ex)
+		{
+			Log.Error(Tag, $"Error: {ex}");
+		}
+		return success;
+	}
 }

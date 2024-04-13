@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -6,9 +7,11 @@ namespace Microsoft.Maui.Controls
 {
 	static class DecorableTextElement
 	{
+		/// <summary>Bindable property for <see cref="TextDecorations"/>.</summary>
 		public static readonly BindableProperty TextDecorationsProperty = BindableProperty.Create(nameof(IDecorableTextElement.TextDecorations), typeof(TextDecorations), typeof(IDecorableTextElement), TextDecorations.None);
 	}
 
+	/// <include file="../../docs/Microsoft.Maui.Controls/TextDecorationConverter.xml" path="Type[@FullName='Microsoft.Maui.Controls.TextDecorationConverter']/Docs/*" />
 	public class TextDecorationConverter : TypeConverter
 	{
 		public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)

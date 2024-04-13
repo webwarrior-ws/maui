@@ -6,6 +6,7 @@ using Object = Java.Lang.Object;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 {
+	[System.Obsolete]
 	public class SelectableItemsViewAdapter<TItemsView, TItemsSource> : StructuredItemsViewAdapter<TItemsView, TItemsSource>
 		where TItemsView : SelectableItemsView
 		where TItemsSource : IItemsViewSource
@@ -80,13 +81,13 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			switch (ItemsView.SelectionMode)
 			{
 				case SelectionMode.None:
-					return new int[0];
+					return Array.Empty<int>();
 
 				case SelectionMode.Single:
 					var selectedItem = ItemsView.SelectedItem;
 					if (selectedItem == null)
 					{
-						return new int[0];
+						return Array.Empty<int>();
 					}
 
 					return new int[1] { GetPositionForItem(selectedItem) };
@@ -103,7 +104,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 					return result;
 			}
 
-			return new int[0];
+			return Array.Empty<int>();
 		}
 
 		bool PositionIsSelected(int position)

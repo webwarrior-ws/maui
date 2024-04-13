@@ -1,12 +1,34 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Platform;
 
 #if WINDOWS
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using WinPoint = Windows.Foundation.Point;
+using WinRect = Windows.Foundation.Rect;
+#endif
+
+#if (NETSTANDARD || !PLATFORM) || (NET6_0_OR_GREATER && !IOS && !ANDROID)
+using IPlatformViewHandler = Microsoft.Maui.IViewHandler;
+#endif
+#if IOS || MACCATALYST
+using PlatformView = UIKit.UIView;
+using ParentView = UIKit.UIView;
+#elif ANDROID
+using PlatformView = Android.Views.View;
+using ParentView = Android.Views.IViewParent;
+#elif WINDOWS
+using PlatformView = Microsoft.UI.Xaml.FrameworkElement;
+using ParentView = Microsoft.UI.Xaml.DependencyObject;
+#elif TIZEN
+using PlatformView = Tizen.NUI.BaseComponents.View;
+using ParentView = Tizen.NUI.BaseComponents.View;
+#else
+using PlatformView = System.Object;
+using ParentView = System.Object;
 #endif
 
 namespace Microsoft.Maui
@@ -35,10 +57,10 @@ namespace Microsoft.Maui
 		/// </summary>
 		/// <param name="visualElement"><see cref="IVisualTreeElement"/> to scan.</param>
 		/// <returns>List of Children Elements.</returns>
-		public static IList<IVisualTreeElement> GetVisualTreeDescendants(this IVisualTreeElement visualElement) =>
+		public static IReadOnlyList<IVisualTreeElement> GetVisualTreeDescendants(this IVisualTreeElement visualElement) =>
 			visualElement.GetVisualTreeDescendantsInternal();
 
-		static IList<IVisualTreeElement> GetVisualTreeDescendantsInternal(this IVisualTreeElement visualElement, IList<IVisualTreeElement>? elements = null)
+		static List<IVisualTreeElement> GetVisualTreeDescendantsInternal(this IVisualTreeElement visualElement, List<IVisualTreeElement>? elements = null)
 		{
 			if (elements == null)
 				elements = new List<IVisualTreeElement>();
@@ -52,36 +74,34 @@ namespace Microsoft.Maui
 		}
 
 		/// <summary>
-		/// Gets list of a Visual Tree Elements children based off of a given x, y point.
+		/// Gets list of a Visual Tree Elements children based off of a rectangle defined by its coordinates which are specified in platform units, not pixels.
 		/// </summary>
 		/// <param name="visualElement"><see cref="IVisualTreeElement"/> to scan.</param>
-		/// <param name="x1">The X point.</param>
-		/// <param name="y1">The Y point.</param>
-		/// <param name="x2">The X point.</param>
-		/// <param name="y2">The Y point.</param>
-		/// <param name="useNativeViewBounds">If true, use native view bounds for given elements. Else, use the Elements Frame.</param>
+		/// <param name="x1">The X coordinate of the top left point.</param>
+		/// <param name="y1">The Y coordinate of the top left point.</param>
+		/// <param name="x2">The X coordinate of the bottom right point.</param>
+		/// <param name="y2">The Y coordinate of the bottom right point.</param>
 		/// <returns>List of Children Elements.</returns>
-		public static IList<IVisualTreeElement> GetVisualTreeElements(this IVisualTreeElement visualElement, double x1, double y1, double x2, double y2, bool useNativeViewBounds = true) =>
-			GetVisualTreeElements(visualElement, new Rectangle(x1, y1, x2 - x1, y2 - y1), useNativeViewBounds);
+		public static IReadOnlyList<IVisualTreeElement> GetVisualTreeElements(this IVisualTreeElement visualElement, double x1, double y1, double x2, double y2) =>
+			GetVisualTreeElements(visualElement, new Rect(x1, y1, x2 - x1, y2 - y1));
 
 		/// <summary>
 		/// Gets list of a Visual Tree Elements children based off of a rectangle.
 		/// </summary>
 		/// <param name="visualElement"><see cref="IVisualTreeElement"/> to scan.</param>
 		/// <param name="rectangle">The rectangle.</param>
-		/// <param name="useNativeViewBounds">If true, use native view bounds for given elements. Else, use the Elements Frame.</param>
 		/// <returns>List of Children Elements.</returns>
-		public static IList<IVisualTreeElement> GetVisualTreeElements(this IVisualTreeElement visualElement, Rectangle rectangle, bool useNativeViewBounds = true) =>
-			GetVisualTreeElementsInternal(
+		public static IReadOnlyList<IVisualTreeElement> GetVisualTreeElements(this IVisualTreeElement visualElement, Rect rectangle)
+		{
+#if WINDOWS
+			return GetVisualTreeElementsWindowsInternal(visualElement,
+				uiElement => VisualTreeHelper.FindElementsInHostCoordinates(new WinRect(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height), uiElement));
+#else
+			return GetVisualTreeElementsInternal(
 				visualElement,
-				new List<Point>
-				{
-					new Point(rectangle.X, rectangle.Y),
-					new Point(rectangle.X + rectangle.Width, rectangle.Y + rectangle.Height),
-					new Point(rectangle.X + rectangle.Width, rectangle.Y),
-					new Point(rectangle.X, rectangle.Y + rectangle.Height)
-				},
-				useNativeViewBounds);
+				bounds => bounds.IntersectsWith(rectangle));
+#endif
+		}
 
 		/// <summary>
 		/// Gets list of a Visual Tree Elements children based off of a given x, y point.
@@ -89,91 +109,222 @@ namespace Microsoft.Maui
 		/// <param name="visualElement"><see cref="IVisualTreeElement"/> to scan.</param>
 		/// <param name="x">The X point.</param>
 		/// <param name="y">The Y point.</param>
-		/// <param name="useNativeViewBounds">If true, use native view bounds for given elements. Else, use the Elements Frame.</param>
 		/// <returns>List of Children Elements.</returns>
-		public static IList<IVisualTreeElement> GetVisualTreeElements(this IVisualTreeElement visualElement, double x, double y, bool useNativeViewBounds = true) =>
-			GetVisualTreeElements(visualElement, new Point(x, y), useNativeViewBounds);
+		public static IReadOnlyList<IVisualTreeElement> GetVisualTreeElements(this IVisualTreeElement visualElement, double x, double y) =>
+			GetVisualTreeElements(visualElement, new Point(x, y));
 
 		/// <summary>
 		/// Gets list of a Visual Tree Element's children based off of a given Point.
 		/// </summary>
 		/// <param name="visualElement"><see cref="IVisualTreeElement"/> to scan.</param>
 		/// <param name="point"><see cref="Point"/>.</param>
-		/// <param name="useNativeViewBounds">If true, use native view bounds for given elements. Else, use the Element's Frame.</param>
 		/// <returns>List of Children Elements.</returns>
-		public static IList<IVisualTreeElement> GetVisualTreeElements(this IVisualTreeElement visualElement, Point point, bool useNativeViewBounds = true) =>
-#if WINDOWS
-			GetVisualTreeElementsWindowsInternal(visualElement, new List<Point>() { point }, useNativeViewBounds);
-#else
-			GetVisualTreeElementsInternal(visualElement, new List<Point>() { point }, useNativeViewBounds);
-#endif
-
-#if WINDOWS
-		static IList<IVisualTreeElement> GetVisualTreeElementsWindowsInternal(IVisualTreeElement visualElement, IList<Point> points, bool useNativeViewBounds = true)
+		public static IReadOnlyList<IVisualTreeElement> GetVisualTreeElements(this IVisualTreeElement visualElement, Point point)
 		{
-			if (!useNativeViewBounds)
-			{
-				return GetVisualTreeElementsInternal(visualElement, points, false);
-			}
+#if WINDOWS
+			return GetVisualTreeElementsWindowsInternal(visualElement,
+				uiElement => VisualTreeHelper.FindElementsInHostCoordinates(new WinPoint(point.X, point.Y), uiElement));
+#else
+			return GetVisualTreeElementsInternal(visualElement, bounds => bounds.Contains(point));
+#endif
+		}
 
+#if WINDOWS
+		static List<IVisualTreeElement> GetVisualTreeElementsWindowsInternal(IVisualTreeElement visualElement, Func<UIElement, IEnumerable<UIElement>> findChildren)
+		{
 			UIElement? uiElement = null;
 			var visualElements = new List<IVisualTreeElement>();
 			if (visualElement is IWindow window)
 			{
-				uiElement = window.Content.ToNative();
+				uiElement = window.Content.ToPlatform();
 			}
 			else if (visualElement is IView view)
 			{
-				uiElement = view.ToNative();
+				uiElement = view.ToPlatform();
 			}
 
 			if (uiElement != null)
 			{
-				var uiElements = new List<UIElement>();
-				foreach (var point in points)
-				{
-					uiElements.AddRange(VisualTreeHelper.FindElementsInHostCoordinates(new WinPoint(point.X, point.Y), uiElement));
-				}
+				var uniqueElements = findChildren(uiElement).ToHashSet();
 
-				var uniqueElements = uiElements.Distinct();
-				var viewTree = visualElement.GetVisualTreeDescendants().Where(n => n is IView).Select(n => new Tuple<IView, object?>((IView)n, ((IView)n).ToNative()));
-				var testList = viewTree.Where(n => uniqueElements.Contains(n.Item2)).Select(n => n.Item1);
-				if (testList != null && testList.Any())
-					visualElements.AddRange(testList.Select(n => (IVisualTreeElement)n));
+				var descendants = visualElement.GetVisualTreeDescendants();
+
+				// Add in reverse order
+				for (int i = descendants.Count - 1; i >= 0; i--)
+				{
+					var descendant = descendants[i];
+
+					if (descendant is not IView view || view.Handler is null)
+					{
+						continue;
+					}
+					
+					if (uniqueElements.Contains(view.ToPlatform()))
+					{
+						visualElements.Add(descendant);
+					}
+				}
 			}
 
-			visualElements.Reverse();
 			return visualElements;
 		}
 #endif
 
-		static IList<IVisualTreeElement> GetVisualTreeElementsInternal(IVisualTreeElement visualElement, IList<Point> points, bool useNativeViewBounds = true, IList<IVisualTreeElement>? elements = null)
-		{
-			if (elements == null)
-				elements = new List<IVisualTreeElement>();
+		/// <summary>
+		/// Locates the <see cref="IVisualTreeElement"/> that's a best fit for the given platform view.		 
+		/// </summary>
+		/// <remarks>
+		/// If an exact <see cref="IVisualTreeElement"/> counterpart isn't found, then the
+		/// first <see cref="IVisualTreeElement"/> within the ancestors of the given platform view will 
+		/// be returned. 
+		/// </remarks>
+		/// <param name="platformView">The platform view.</param>
+		/// <returns>
+		/// A visual tree element if found, <see langword="null"/> otherwise.
+		/// </returns>
+		internal static IVisualTreeElement? GetVisualTreeElement(
+			this PlatformView platformView) =>
+				platformView.GetVisualTreeElement(true);
 
-			if (visualElement is IView view)
+		/// <summary>
+		/// Locates the <see cref="IVisualTreeElement"/> that's a best fit for the given platform view.		 
+		/// </summary>
+		/// <remarks>
+		/// If an exact <see cref="IVisualTreeElement"/> counterpart isn't found, then the
+		/// first <see cref="IVisualTreeElement"/> within the ancestors of the given platform view will 
+		/// be returned. 
+		/// </remarks>
+		/// <param name="platformView">The platform view.</param>
+		/// <param name="searchAncestors">
+		/// <see langword="true"/> to search within the ancestors of the given platform view;  
+		/// otherwise, <see langword="false"/>.</param>
+		/// <returns>
+		/// A visual tree element if found, <see langword="null"/> otherwise.
+		/// </returns>
+		internal static IVisualTreeElement? GetVisualTreeElement(
+			this PlatformView platformView, bool searchAncestors)
+		{
+			var platformParentPath = new List<PlatformView>();
+			IVisualTreeElement? foundParent = null;
+
+			// Locate the first Platform View we can find that can return us its Maui Element
+			var nearestParentContainer =
+				platformView
+					.FindParent(x =>
+					{
+						if (x is PlatformView pv)
+							platformParentPath.Add(pv);
+
+						if (x is IVisualTreeElementProvidable backing)
+						{
+							foundParent = backing.GetElement();
+							return foundParent is not null;
+						}
+
+						return false;
+					});
+
+			platformParentPath.Reverse();
+
+			if (foundParent?.IsThisMyPlatformView(platformView) == true)
+				return foundParent;
+
+			if (nearestParentContainer is null || foundParent is null)
+				return null;
+
+			// Now that we have an xplat starting point
+			// Let's search back down the xplat tree to figure out what IElement to return
+			// This searches down the xplat tree to figure out what path going down the xplat tree
+			// matches up against the path we took to go up the platform tree
+			var returnValue = FindNextChild(foundParent, platformView, platformParentPath);
+
+			// If we aren't searching ancestors, then we only want to return
+			// IVTE if it matches the found platformView
+			if (!searchAncestors &&
+				returnValue != null &&
+				!returnValue.IsThisMyPlatformView(platformView))
 			{
-				if (useNativeViewBounds)
+				return null;
+			}
+
+			return returnValue;
+
+			static IVisualTreeElement? FindNextChild(
+				IVisualTreeElement parent,
+				PlatformView platformView,
+				List<PlatformView> platformParentPath)
+			{
+				var children = parent.GetVisualChildren();
+				IVisualTreeElement? childMatch = null;
+				foreach (var child in children)
 				{
-					var bounds = view.GetNativeViewBounds();
-					if (points.All(n => bounds.Contains(n)))
+					if (child is not IVisualTreeElement childVTE)
+					{
+						return parent;
+					}
+
+					if (childVTE.IsThisMyPlatformView(platformView))
+					{
+						return childVTE;
+					}
+
+					// We only want to check children with platform components that have been realized
+					if (childVTE is IElement element &&
+						element.Handler is IPlatformViewHandler pvh &&
+						pvh.PlatformView is not null)
+					{
+						var indexOfPlatformView = platformParentPath.IndexOf(pvh.PlatformView);
+
+						if (indexOfPlatformView < 0)
+							continue;
+
+						childMatch = child;
+						platformParentPath.RemoveRange(0, indexOfPlatformView + 1);
+						break;
+					}
+				}
+
+				// If I've ran out of children then we just return the parent 
+				// as the furthest down element we've been able to match to
+				if (childMatch is null)
+					return parent;
+
+				return FindNextChild(childMatch, platformView, platformParentPath);
+			}
+		}
+
+		internal static bool IsThisMyPlatformView(this IVisualTreeElement? visualTreeElement, PlatformView platformView)
+		{
+			if (visualTreeElement is IElement element)
+				return element.IsThisMyPlatformView(platformView);
+
+			return false;
+		}
+
+		static List<IVisualTreeElement> GetVisualTreeElementsInternal(IVisualTreeElement visualElement, Predicate<Rect> intersectElementBounds)
+		{
+			var elements = new List<IVisualTreeElement>();
+
+			Impl(visualElement, intersectElementBounds, elements);
+
+			elements.Reverse();
+			return elements;
+
+			static void Impl(IVisualTreeElement visualElement, Predicate<Rect> intersectElementBounds, List<IVisualTreeElement> elements)
+			{
+				if (visualElement is IView view && view.Handler is not null)
+				{
+					Rect bounds = view.GetBoundingBox();
+					if (intersectElementBounds(bounds))
 						elements.Add(visualElement);
 				}
-				else if (points.All(n => view.Frame.Contains(n)))
+				var children = visualElement.GetVisualChildren();
+
+				foreach (var child in children)
 				{
-					elements.Add(visualElement);
+					Impl(child, intersectElementBounds, elements);
 				}
 			}
-
-			var children = visualElement.GetVisualChildren();
-
-			foreach (var child in children)
-			{
-				GetVisualTreeElementsInternal(child, points, useNativeViewBounds, elements);
-			}
-
-			return elements.Reverse().ToList();
 		}
 	}
 }

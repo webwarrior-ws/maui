@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 
 #if UITEST
@@ -11,7 +12,7 @@ using NUnit.Framework;
 using Xamarin.UITest.iOS;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if UITEST
 	[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.Github5000)]
@@ -157,7 +158,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 					Children = { logoImg }
 				};
 
-				var paddingTop = Device.RuntimePlatform == Device.iOS ? 40 : 2;
+				var paddingTop = DeviceInfo.Platform == DevicePlatform.iOS ? 40 : 2;
 				Content = new StackLayout
 				{
 					Spacing = 0,

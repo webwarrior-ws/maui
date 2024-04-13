@@ -1,61 +1,62 @@
-﻿using System.Linq;
-using ObjCRuntime;
+﻿using System;
 using UIKit;
 
 namespace Microsoft.Maui.Platform
 {
 	public static class SwitchExtensions
 	{
+		static UIColor DefaultBackgroundColor = UIColor.FromRGBA(120, 120, 128, 40);
+
 		public static void UpdateIsOn(this UISwitch uiSwitch, ISwitch view)
 		{
 			uiSwitch.SetState(view.IsOn, true);
 		}
 
-		public static void UpdateTrackColor(this UISwitch uiSwitch, ISwitch view, UIColor? defaultOnTrackColor, UIColor? defaultOffTrackColor)
+		public static void UpdateTrackColor(this UISwitch uiSwitch, ISwitch view)
 		{
 			if (view == null)
 				return;
 
-			if (view.TrackColor == null)
-				uiSwitch.OnTintColor = defaultOnTrackColor;
-			else
-				uiSwitch.OnTintColor = view.TrackColor.ToNative();
+			var uIView = GetTrackSubview(uiSwitch);
 
-			UIView uIView;
-			if (NativeVersion.IsAtLeast(13))
-				uIView = uiSwitch.Subviews[0].Subviews[0];
-			else
-				uIView = uiSwitch.Subviews[0].Subviews[0].Subviews[0];
+			if (uIView is null)
+				return;
 
-			if (view.TrackColor == null)
-				uIView.BackgroundColor = defaultOffTrackColor;
-			else
+			if (!view.IsOn)
+			{
+				// iOS 13+ uses the UIColor.SecondarySystemFill to support Light and Dark mode
+				// else, use the RGBA equivalent of UIColor.SecondarySystemFill in Light mode
+				uIView.BackgroundColor = OperatingSystem.IsIOSVersionAtLeast(13) ? UIColor.SecondarySystemFill : DefaultBackgroundColor;
+			}
+
+			else if (view.TrackColor is not null)
+			{
+				uiSwitch.OnTintColor = view.TrackColor.ToPlatform();
 				uIView.BackgroundColor = uiSwitch.OnTintColor;
+			}
 		}
 
-		public static void UpdateThumbColor(this UISwitch uiSwitch, ISwitch view, UIColor? defaultThumbColor)
+		public static void UpdateThumbColor(this UISwitch uiSwitch, ISwitch view)
 		{
 			if (view == null)
 				return;
 
 			Graphics.Color thumbColor = view.ThumbColor;
-			uiSwitch.ThumbTintColor = thumbColor?.ToNative() ?? defaultThumbColor;
+			if (thumbColor != null)
+				uiSwitch.ThumbTintColor = thumbColor?.ToPlatform();
 		}
 
-		internal static UIView GetTrackSubview(this UISwitch uISwitch)
+		internal static UIView? GetTrackSubview(this UISwitch uISwitch)
 		{
-			UIView uIView;
-			if (NativeVersion.IsAtLeast(13))
-				uIView = uISwitch.Subviews[0].Subviews[0];
+			if (OperatingSystem.IsIOSVersionAtLeast(13) || OperatingSystem.IsTvOSVersionAtLeast(13))
+				return uISwitch.Subviews?.FirstOrDefaultNoLinq()?.Subviews?.FirstOrDefaultNoLinq();
 			else
-				uIView = uISwitch.Subviews[0].Subviews[0].Subviews[0];
-
-			return uIView;
+				return uISwitch.Subviews?.FirstOrDefaultNoLinq()?.Subviews?.FirstOrDefaultNoLinq()?.Subviews?.FirstOrDefaultNoLinq();
 		}
 
-		internal static UIColor? GetOffTrackColor(this UISwitch uISwitch)
+		internal static UIColor? GetTrackColor(this UISwitch uISwitch)
 		{
-			return uISwitch.GetTrackSubview().BackgroundColor;
+			return uISwitch.GetTrackSubview()?.BackgroundColor;
 		}
 	}
 }

@@ -3,6 +3,7 @@ using System.IO;
 
 namespace Microsoft.Maui
 {
+	/// <inheritdoc/>
 	public partial class FontRegistrar : IFontRegistrar
 	{
 		string? LoadNativeAppFont(string font, string filename, string? alias)
@@ -15,12 +16,12 @@ namespace Microsoft.Maui
 			return LoadEmbeddedFont(font, filename, alias, GetNativeFontStream(filename, alias));
 		}
 
-		string? ResolveFileSystemFont(string filename)
+		static string? ResolveFileSystemFont(string filename)
 		{
 			var mainBundlePath = Foundation.NSBundle.MainBundle.BundlePath;
 
 #if MACCATALYST
-			// MacOS Apps have Contents folder in the bundle root, iOS does not
+			// macOS Apps have Contents folder in the bundle root, iOS does not
 			mainBundlePath = Path.Combine(mainBundlePath, "Contents");
 #endif
 
@@ -45,7 +46,7 @@ namespace Microsoft.Maui
 			return null;
 		}
 
-		Stream GetNativeFontStream(string filename, string? alias)
+		static FileStream GetNativeFontStream(string filename, string? alias)
 		{
 			var resolvedFilename = ResolveFileSystemFont(filename);
 

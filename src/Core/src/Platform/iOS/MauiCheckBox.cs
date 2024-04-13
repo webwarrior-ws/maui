@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using CoreGraphics;
 using Microsoft.Maui.Graphics;
 using ObjCRuntime;
@@ -6,7 +7,7 @@ using UIKit;
 
 namespace Microsoft.Maui.Platform
 {
-	public class MauiCheckBox : UIButton
+	public class MauiCheckBox : UIButton, IUIViewLifeCycleEvents
 	{
 		// All these values were chosen to just match the android drawables that are used
 		const float DefaultSize = 18.0f;
@@ -14,43 +15,46 @@ namespace Microsoft.Maui.Platform
 
 		static UIImage? Checked;
 		static UIImage? Unchecked;
+		UIImage? CheckedDisabledAndTinted;
+		UIImage? UncheckedDisabledAndTinted;
+
 		UIAccessibilityTrait _accessibilityTraits;
 
 		Color? _tintColor;
 		bool _isChecked;
 		bool _isEnabled;
-		float _minimumViewSize;
 		bool _disposed;
 
-		public EventHandler? CheckedChanged;
+		readonly WeakEventManager _weakEventManager = new WeakEventManager();
+
+		public event EventHandler? CheckedChanged
+		{
+			add => _weakEventManager.AddEventHandler(value);
+			remove => _weakEventManager.RemoveEventHandler(value);
+		}
 
 		public MauiCheckBox()
 		{
 			ContentMode = UIViewContentMode.Center;
 			ImageView.ContentMode = UIViewContentMode.ScaleAspectFit;
-			HorizontalAlignment = UIControlContentHorizontalAlignment.Left;
+			HorizontalAlignment = UIControlContentHorizontalAlignment.Center;
 			VerticalAlignment = UIControlContentVerticalAlignment.Center;
+#pragma warning disable CA1416 // TODO: both has [UnsupportedOSPlatform("ios15.0")]
+#pragma warning disable CA1422 // Validate platform compatibility
 			AdjustsImageWhenDisabled = false;
 			AdjustsImageWhenHighlighted = false;
+#pragma warning restore CA1422 // Validate platform compatibility
+#pragma warning restore CA1416
 			TouchUpInside += OnTouchUpInside;
 		}
 
 		void OnTouchUpInside(object? sender, EventArgs e)
 		{
 			IsChecked = !IsChecked;
-			CheckedChanged?.Invoke(this, EventArgs.Empty);
+			_weakEventManager.HandleEvent(this, e, nameof(CheckedChanged));
 		}
 
-		internal float MinimumViewSize
-		{
-			get { return _minimumViewSize; }
-			set
-			{
-				_minimumViewSize = value;
-				var xOffset = (value - DefaultSize + LineWidth) / 4;
-				ContentEdgeInsets = new UIEdgeInsets(0, xOffset, 0, 0);
-			}
-		}
+		internal float MinimumViewSize { get; set; }
 
 		public bool IsChecked
 		{
@@ -87,8 +91,10 @@ namespace Microsoft.Maui.Platform
 				if (_tintColor == value)
 					return;
 
+				CheckedDisabledAndTinted = null;
+				UncheckedDisabledAndTinted = null;
 				_tintColor = value;
-				CheckBoxTintUIColor = CheckBoxTintColor?.ToNative();
+				CheckBoxTintUIColor = CheckBoxTintColor?.ToPlatform();
 			}
 		}
 
@@ -132,43 +138,44 @@ namespace Microsoft.Maui.Platform
 			}
 		}
 
-		protected virtual UIImage GetCheckBoximage()
+		protected virtual UIImage GetCheckBoxImage()
 		{
 			// Ideally I would use the static images here but when disabled it always tints them grey
 			// and I don't know how to make it not tint them gray
 			if (!Enabled && CheckBoxTintColor != null)
 			{
 				if (IsChecked)
-					return CreateCheckBox(CreateCheckMark()).ImageWithRenderingMode(UIImageRenderingMode.AlwaysOriginal);
+				{
+					return CheckedDisabledAndTinted ??=
+						CreateCheckBox(CreateCheckMark()).ImageWithRenderingMode(UIImageRenderingMode.AlwaysOriginal);
+				}
 
-				return CreateCheckBox(null).ImageWithRenderingMode(UIImageRenderingMode.AlwaysOriginal);
+				return UncheckedDisabledAndTinted ??=
+					CreateCheckBox(null).ImageWithRenderingMode(UIImageRenderingMode.AlwaysOriginal);
 			}
 
-			if (Checked == null)
-				Checked = CreateCheckBox(CreateCheckMark()).ImageWithRenderingMode(UIImageRenderingMode.AlwaysTemplate);
-
-			if (Unchecked == null)
-				Unchecked = CreateCheckBox(null).ImageWithRenderingMode(UIImageRenderingMode.AlwaysTemplate);
+			Checked ??= CreateCheckBox(CreateCheckMark()).ImageWithRenderingMode(UIImageRenderingMode.AlwaysTemplate);
+			Unchecked ??= CreateCheckBox(null).ImageWithRenderingMode(UIImageRenderingMode.AlwaysTemplate);
 
 			return IsChecked ? Checked : Unchecked;
 		}
 
-		internal virtual UIBezierPath CreateBoxPath(CGRect backgroundRect) => UIBezierPath.FromOval(backgroundRect);
-		internal virtual UIBezierPath CreateCheckPath() => new UIBezierPath
+		static UIBezierPath CreateBoxPath(CGRect backgroundRect) => UIBezierPath.FromOval(backgroundRect);
+		static UIBezierPath CreateCheckPath() => new UIBezierPath
 		{
 			LineWidth = (nfloat)0.077,
 			LineCapStyle = CGLineCap.Round,
 			LineJoinStyle = CGLineJoin.Round
 		};
 
-		internal virtual void DrawCheckMark(UIBezierPath path)
+		static void DrawCheckMark(UIBezierPath path)
 		{
 			path.MoveTo(new CGPoint(0.72f, 0.22f));
 			path.AddLineTo(new CGPoint(0.33f, 0.6f));
 			path.AddLineTo(new CGPoint(0.15f, 0.42f));
 		}
 
-		internal virtual UIImage CreateCheckBox(UIImage? check)
+		UIImage CreateCheckBox(UIImage? check)
 		{
 			UIGraphics.BeginImageContextWithOptions(new CGSize(DefaultSize, DefaultSize), false, 0);
 			var context = UIGraphics.GetCurrentContext();
@@ -204,7 +211,7 @@ namespace Microsoft.Maui.Platform
 			return img;
 		}
 
-		internal UIImage CreateCheckMark()
+		static UIImage CreateCheckMark()
 		{
 			UIGraphics.BeginImageContextWithOptions(new CGSize(DefaultSize, DefaultSize), false, 0);
 			var context = UIGraphics.GetCurrentContext();
@@ -259,7 +266,7 @@ namespace Microsoft.Maui.Platform
 
 		void UpdateDisplay()
 		{
-			SetImage(GetCheckBoximage(), UIControlState.Normal);
+			SetImage(GetCheckBoxImage(), UIControlState.Normal);
 			SetNeedsDisplay();
 		}
 
@@ -293,6 +300,20 @@ namespace Microsoft.Maui.Platform
 		{
 			get => (IsChecked) ? "1" : "0";
 			set { }
+		}
+
+		[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = IUIViewLifeCycleEvents.UnconditionalSuppressMessage)]
+		EventHandler? _movedToWindow;
+		event EventHandler IUIViewLifeCycleEvents.MovedToWindow
+		{
+			add => _movedToWindow += value;
+			remove => _movedToWindow -= value;
+		}
+
+		public override void MovedToWindow()
+		{
+			base.MovedToWindow();
+			_movedToWindow?.Invoke(this, EventArgs.Empty);
 		}
 	}
 }

@@ -1,8 +1,7 @@
 using System.IO;
 using System.Windows.Input;
-using Microsoft.Maui;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Essentials;
+using Microsoft.Maui.Storage;
 
 namespace Samples.ViewModel
 {
@@ -17,9 +16,9 @@ namespace Samples.ViewModel
 
 		public FileSystemViewModel()
 		{
-			LoadFileCommand = new Command(() => DoLoadFile());
-			SaveFileCommand = new Command(() => DoSaveFile());
-			DeleteFileCommand = new Command(() => DoDeleteFile());
+			LoadFileCommand = new Command(DoLoadFile);
+			SaveFileCommand = new Command(DoSaveFile);
+			DeleteFileCommand = new Command(DoDeleteFile);
 
 			DoLoadFile();
 		}
@@ -58,6 +57,9 @@ namespace Samples.ViewModel
 
 		void DoSaveFile()
 		{
+			var dir = Path.GetDirectoryName(localPath);
+			Directory.CreateDirectory(dir);
+
 			File.WriteAllText(localPath, CurrentContents);
 		}
 

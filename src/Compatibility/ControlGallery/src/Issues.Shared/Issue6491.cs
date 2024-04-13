@@ -1,8 +1,9 @@
 ﻿using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.Github, 6491, "[Bug] Some Font Image are cropped on iOS",
@@ -34,7 +35,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 				FontFamily = "FontAwesome5Free-Solid"
 			};
 
-			if (Device.RuntimePlatform == Device.UWP)
+			if (DeviceInfo.Platform == DevicePlatform.WinUI)
 				((FontImageSource)button.ImageSource).FontFamily = "Assets/Fonts/fa-solid-900.ttf#Font Awesome 5 Free";
 
 			stack.Children.Add(label);

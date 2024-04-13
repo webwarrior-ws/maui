@@ -13,7 +13,7 @@ namespace Maui.Controls.Sample.Pages
 	{
 		static int pageCount = 0;
 
-		static List<Page> _currentNavStack;
+		static List<Page>? _currentNavStack;
 		public NavigationGallery()
 		{
 			InitializeComponent();
@@ -58,22 +58,44 @@ namespace Maui.Controls.Sample.Pages
 			NavigationPage.SetHasBackButton(this, !NavigationPage.GetHasBackButton(this));
 		}
 
+		void ToggleSecondaryToolbarItem(object sender, EventArgs e)
+		{
+			if (!this.ToolbarItems.Where(x => x.Order == ToolbarItemOrder.Secondary).Any())
+			{
+				this.ToolbarItems.Add(new ToolbarItem() { Text = "One", Order = ToolbarItemOrder.Secondary });
+				this.ToolbarItems.Add(new ToolbarItem() { Text = "Two", Order = ToolbarItemOrder.Secondary });
+			}
+			else
+			{
+				foreach (var ti in this.ToolbarItems.Where(x => x.Order == ToolbarItemOrder.Secondary).ToList())
+				{
+					this.ToolbarItems.Remove(ti);
+				}
+			}
+		}
+
 
 		void SwapRoot(object sender, EventArgs e)
 		{
 			if (_currentNavStack == null)
 			{
 				_currentNavStack = Navigation.NavigationStack.ToList();
-				(Parent as INavigationView).RequestNavigation(
-				new NavigationRequest(
-					new List<NavigationGallery>
-					{
-						new NavigationGallery()
-					}, false));
+
+				var stackNavigationView = Parent as IStackNavigationView;
+
+				if (stackNavigationView == null && Parent is FlyoutPage fp)
+					stackNavigationView = fp.Detail as IStackNavigationView;
+
+				stackNavigationView!.RequestNavigation(
+					new NavigationRequest(
+						new List<NavigationGallery>
+						{
+							new NavigationGallery()
+						}, false));
 			}
 			else
 			{
-				(Parent as INavigationView).RequestNavigation(
+				(Parent as IStackNavigationView)!.RequestNavigation(
 				   new NavigationRequest(_currentNavStack, true));
 
 				_currentNavStack = null;

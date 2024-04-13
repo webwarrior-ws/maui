@@ -5,7 +5,7 @@ using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Graphics;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.Github, 2595, "ScrollView.Content is not re-layouted on Android", PlatformAffected.Android)]
@@ -90,7 +90,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 
 			void OnTimerElapsed()
 			{
-				Label.Text = $"{ DateTime.Now.ToString() }: expecting {ScrollContent?.Children.Count} dates to show up.";
+				Label.Text = $"{DateTime.Now.ToString()}: expecting {ScrollContent?.Children.Count} dates to show up.";
 				ScrollContent.Children.Add(new Label { Text = DateTime.Now.ToString() });
 			}
 		}

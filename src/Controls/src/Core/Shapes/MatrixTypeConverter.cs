@@ -1,9 +1,11 @@
+#nullable disable
 using System;
 using System.ComponentModel;
 using System.Globalization;
 
 namespace Microsoft.Maui.Controls.Shapes
 {
+	/// <include file="../../../docs/Microsoft.Maui.Controls.Shapes/MatrixTypeConverter.xml" path="Type[@FullName='Microsoft.Maui.Controls.Shapes.MatrixTypeConverter']/Docs/*" />
 	public class MatrixTypeConverter : TypeConverter
 	{
 		public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)

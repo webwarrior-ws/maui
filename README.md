@@ -1,36 +1,34 @@
-# .NET Multi-platform App UI (MAUI) for Linux
+# .NET Multi-platform App UI (.NET MAUI)
 
 [![Build Status](https://dev.azure.com/xamarin/public/_apis/build/status/MAUI-public?repoName=dotnet%2Fmaui&branchName=main&label=Public)](https://dev.azure.com/xamarin/public/_build/latest?definitionId=57&repoName=dotnet%2Fmaui&branchName=main) [![Build Status](https://devdiv.visualstudio.com/DevDiv/_apis/build/status/MAUI?repoName=dotnet%2Fmaui&branchName=main&label=Private)](https://devdiv.visualstudio.com/DevDiv/_build/latest?definitionId=13330&repoName=dotnet%2Fmaui&branchName=main)
 
-* Multi-platform native UI for Android, iOS, macOS and Windows
-* Deploy to multiple devices across mobile & desktop
-* Using a single project, single codebase
-* Evolution of [Xamarin.Forms](https://github.com/xamarin/xamarin.forms)
-* .NET 6
+[.NET Multi-platform App UI (.NET MAUI)](https://dotnet.microsoft.com/en-us/apps/maui) is a cross-platform framework for creating mobile and desktop apps with C# and XAML. Using .NET MAUI, you can develop apps that can run on Android, iOS, iPadOS, macOS, and Windows from a single shared codebase.
 
-This repository is a fork of the official repository to add **Linux** support using **GtkSharp**.
+## Getting Started ##
 
-![.NET MAUI for Linux](net-maui-linux.png)
+* [Install .NET MAUI](https://dot.net/maui)
+* [.NET MAUI Documentation](https://docs.microsoft.com/dotnet/maui)
+* [.NET MAUI Samples](https://github.com/dotnet/maui-samples)
+* [Development Guide](./.github/DEVELOPMENT.md)
 
-(Image from [focus_bell](https://www.shutterstock.com/es/g/focus_bell))
+## Overview
 
-This project is a **community** project. Any kind of collaboration is more than welcome!. To know more details about it, you can visit the Faq.
+.NET Multi-platform App UI (.NET MAUI) is the evolution of Xamarin.Forms that expands capabilities beyond mobile Android and iOS into desktop apps for Windows and macOS. With .NET MAUI, you can build apps that perform great for any device that runs Windows, macOS, Android, & iOS from a single codebase. Coupled with Visual Studio productivity tools and emulators, .NET and Visual Studio significantly speed up the development process for building apps that target the widest possible set of devices. Use a single development stack that supports the best of breed solutions for all modern workloads with a unified SDK, base class libraries, and toolchain. [Read More](https://docs.microsoft.com/dotnet/maui/what-is-maui)
 
-## Status
+![.NET MAUI Weather App on all platforms](Assets/maui-weather-hero-sm.png)
 
-Currently, the **GtkSharp** Backend allows to develop applications, but it is still in development. If you want to know in detail the status, navigate to the [Status](https://github.com/jsuarezruiz/maui-linux/wiki/Status) section.
+## Current News
+* November 14, 2023 - [Announcing .NET MAUI in .NET 8](https://devblogs.microsoft.com/dotnet/announcing-dotnet-maui-in-dotnet-8/)
 
-## Faq
+Follow the [.NET MAUI Blog](https://devblogs.microsoft.com/dotnet/category/net-maui/) and visit the [News](https://github.com/dotnet/maui/wiki/News) wiki page for more news and updates.
 
-Still with doubts or questions?. Do not worry, we have prepared a complete [Faq](https://github.com/jsuarezruiz/maui-linux/wiki/Faq) answering the most common doubts.
+## FAQs
 
-## How to Contribute
+Do you have questions? Do not worry, we have prepared a complete [FAQ](https://github.com/dotnet/maui/wiki/FAQs) answering the most common questions.
 
-Are you interested?. [You can contribute](https://github.com/jsuarezruiz/maui-linux/wiki/Contributing)!.
+## How to Engage, Contribute, and Give Feedback
 
-## Communication Channels
+Some of the best ways to [contribute](./.github/CONTRIBUTING.md) are to try things out, file issues, join in design conversations,
+and make pull-requests. Proposals for changes specific to MAUI can be found [here for discussion](https://github.com/dotnet/maui/issues).
 
-I.t.m. there are no official communication channels by Microsoft. Here is a place to start:
-
-* Matrix: *#maui-linux:matrix.org* (If you don't already have a Matrix client installed, try https://matrix.to/#/#maui-linux:matrix.org)
-* ...
+See [CONTRIBUTING](./.github/CONTRIBUTING.md), [CODE-OF-CONDUCT](./.github/CODE_OF_CONDUCT.md) and the [Development Guide](./.github/DEVELOPMENT.md).

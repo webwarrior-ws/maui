@@ -1,9 +1,15 @@
+#nullable disable
+using System;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.Controls.Shapes
 {
-	public sealed partial class Path : Shape
+	/// <include file="../../../docs/Microsoft.Maui.Controls.Shapes/Path.xml" path="Type[@FullName='Microsoft.Maui.Controls.Shapes.Path']/Docs/*" />
+	public sealed partial class Path : Shape, IShape
 	{
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Shapes/Path.xml" path="//Member[@MemberName='.ctor'][1]/Docs/*" />
 		public Path() : base()
 		{
 		}
@@ -13,14 +19,17 @@ namespace Microsoft.Maui.Controls.Shapes
 			Data = data;
 		}
 
+		/// <summary>Bindable property for <see cref="Data"/>.</summary>
 		public static readonly BindableProperty DataProperty =
 			 BindableProperty.Create(nameof(Data), typeof(Geometry), typeof(Path), null,
 				 propertyChanged: OnGeometryPropertyChanged);
 
+		/// <summary>Bindable property for <see cref="RenderTransform"/>.</summary>
 		public static readonly BindableProperty RenderTransformProperty =
 			BindableProperty.Create(nameof(RenderTransform), typeof(Transform), typeof(Path), null,
 				propertyChanged: OnTransformPropertyChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Shapes/Path.xml" path="//Member[@MemberName='Data']/Docs/*" />
 		[System.ComponentModel.TypeConverter(typeof(PathGeometryConverter))]
 		public Geometry Data
 		{
@@ -28,6 +37,7 @@ namespace Microsoft.Maui.Controls.Shapes
 			get { return (Geometry)GetValue(DataProperty); }
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Shapes/Path.xml" path="//Member[@MemberName='RenderTransform']/Docs/*" />
 		public Transform RenderTransform
 		{
 			set { SetValue(RenderTransformProperty, value); }
@@ -39,11 +49,17 @@ namespace Microsoft.Maui.Controls.Shapes
 			if (oldValue != null)
 			{
 				(oldValue as Geometry).PropertyChanged -= (bindable as Path).OnGeometryPropertyChanged;
+
+				if (oldValue is PathGeometry pathGeometry)
+					pathGeometry.InvalidatePathGeometryRequested -= (bindable as Path).OnInvalidatePathGeometryRequested;
 			}
 
 			if (newValue != null)
 			{
 				(newValue as Geometry).PropertyChanged += (bindable as Path).OnGeometryPropertyChanged;
+
+				if (newValue is PathGeometry pathGeometry)
+					pathGeometry.InvalidatePathGeometryRequested += (bindable as Path).OnInvalidatePathGeometryRequested;
 			}
 		}
 
@@ -62,7 +78,12 @@ namespace Microsoft.Maui.Controls.Shapes
 
 		void OnGeometryPropertyChanged(object sender, PropertyChangedEventArgs args)
 		{
-			OnPropertyChanged(nameof(Geometry));
+			OnPropertyChanged(nameof(Data));
+		}
+
+		void OnInvalidatePathGeometryRequested(object sender, EventArgs e)
+		{
+			OnPropertyChanged(nameof(Data));
 		}
 
 		void OnTransformPropertyChanged(object sender, PropertyChangedEventArgs args)
@@ -71,6 +92,27 @@ namespace Microsoft.Maui.Controls.Shapes
 			{
 				OnPropertyChanged(nameof(RenderTransform));
 			}
+		}
+
+		// TODO this should move to a remapped mapper
+		protected override void OnPropertyChanged([CallerMemberName] string propertyName = null)
+		{
+			base.OnPropertyChanged(propertyName);
+
+			if (propertyName == DataProperty.PropertyName)
+			{
+				Handler?.UpdateValue(nameof(IShapeView.Shape));
+			}
+		}
+
+		public override PathF GetPath()
+		{
+			var path = new PathF();
+
+			if (Data != null)
+				Data.AppendPath(path);
+
+			return path;
 		}
 	}
 }

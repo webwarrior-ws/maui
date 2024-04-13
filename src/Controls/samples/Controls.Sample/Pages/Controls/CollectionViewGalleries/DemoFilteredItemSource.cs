@@ -12,10 +12,20 @@ namespace Maui.Controls.Sample.Pages.CollectionViewGalleries
 
 		public ObservableCollection<CollectionViewGalleryTestItem> Items { get; }
 
-		public DemoFilteredItemSource(int count = 50, Func<string, CollectionViewGalleryTestItem, bool> filter = null)
+		public DemoFilteredItemSource(int count = 50, Func<string, CollectionViewGalleryTestItem, bool>? filter = null)
 		{
 			_source = new List<CollectionViewGalleryTestItem>();
 
+			AddItems(_source, count);
+
+			Items = new ObservableCollection<CollectionViewGalleryTestItem>(_source);
+
+			_filter = filter ?? ItemMatches;
+		}
+
+
+		public void AddItems(IList<CollectionViewGalleryTestItem> list, int count)
+		{
 			string[] images =
 			{
 				"cover1.jpg",
@@ -29,18 +39,9 @@ namespace Maui.Controls.Sample.Pages.CollectionViewGalleries
 
 			for (int n = 0; n < count; n++)
 			{
-				_source.Add(new CollectionViewGalleryTestItem(DateTime.Now.AddDays(n),
+				list.Add(new CollectionViewGalleryTestItem(DateTime.Now.AddDays(n),
 					$"{images[n % images.Length]}, {n}", images[n % images.Length], n));
 			}
-			Items = new ObservableCollection<CollectionViewGalleryTestItem>(_source);
-
-			_filter = filter ?? ItemMatches;
-		}
-
-		private bool ItemMatches(string filter, CollectionViewGalleryTestItem item)
-		{
-			filter = filter ?? "";
-			return item.Caption.ToLower().Contains(filter?.ToLower());
 		}
 
 		public void FilterItems(string filter)
@@ -61,6 +62,11 @@ namespace Maui.Controls.Sample.Pages.CollectionViewGalleries
 					}
 				}
 			}
+		}
+		bool ItemMatches(string filter, CollectionViewGalleryTestItem item)
+		{
+			filter = filter ?? "";
+			return item.Caption!.Contains(filter, StringComparison.OrdinalIgnoreCase);
 		}
 	}
 }

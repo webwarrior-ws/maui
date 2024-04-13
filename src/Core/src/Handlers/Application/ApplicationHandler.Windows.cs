@@ -5,21 +5,21 @@ namespace Microsoft.Maui.Handlers
 {
 	public partial class ApplicationHandler : ElementHandler<IApplication, UI.Xaml.Application>
 	{
-		public static void MapTerminate(ApplicationHandler handler, IApplication application, object? args)
+		public static partial void MapTerminate(ApplicationHandler handler, IApplication application, object? args)
 		{
-			handler.NativeView.Exit();
+			handler.PlatformView.Exit();
 		}
 
-		public static void MapOpenWindow(ApplicationHandler handler, IApplication application, object? args)
+		public static partial void MapOpenWindow(ApplicationHandler handler, IApplication application, object? args)
 		{
-			handler.NativeView?.CreateNativeWindow(application, args as OpenWindowRequest);
+			handler.PlatformView?.CreatePlatformWindow(application, args as OpenWindowRequest);
 		}
 
-		public static void MapCloseWindow(ApplicationHandler handler, IApplication application, object? args)
+		public static partial void MapCloseWindow(ApplicationHandler handler, IApplication application, object? args)
 		{
 			if (args is IWindow window)
 			{
-				(window.Handler?.NativeView as Window)?.Close();
+				(window.Handler?.PlatformView as Window)?.Close();
 			}
 		}
 	}

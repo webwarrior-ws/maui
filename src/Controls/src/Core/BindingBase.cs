@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.Collections;
 using System.Runtime.CompilerServices;
@@ -6,6 +7,7 @@ using Microsoft.Maui.Controls.Internals;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/BindingBase.xml" path="Type[@FullName='Microsoft.Maui.Controls.BindingBase']/Docs/*" />
 	public abstract class BindingBase
 	{
 		static readonly ConditionalWeakTable<IEnumerable, CollectionSynchronizationContext> SynchronizedCollections = new ConditionalWeakTable<IEnumerable, CollectionSynchronizationContext>();
@@ -20,6 +22,7 @@ namespace Microsoft.Maui.Controls
 		{
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/BindingBase.xml" path="//Member[@MemberName='Mode']/Docs/*" />
 		public BindingMode Mode
 		{
 			get { return _mode; }
@@ -38,6 +41,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/BindingBase.xml" path="//Member[@MemberName='StringFormat']/Docs/*" />
 		public string StringFormat
 		{
 			get { return _stringFormat; }
@@ -48,6 +52,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/BindingBase.xml" path="//Member[@MemberName='TargetNullValue']/Docs/*" />
 		public object TargetNullValue
 		{
 			get { return _targetNullValue; }
@@ -58,6 +63,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/BindingBase.xml" path="//Member[@MemberName='FallbackValue']/Docs/*" />
 		public object FallbackValue
 		{
 			get => _fallbackValue;
@@ -91,6 +97,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/BindingBase.xml" path="//Member[@MemberName='DisableCollectionSynchronization']/Docs/*" />
 		public static void DisableCollectionSynchronization(IEnumerable collection)
 		{
 			if (collection == null)
@@ -99,6 +106,9 @@ namespace Microsoft.Maui.Controls
 			SynchronizedCollections.Remove(collection);
 		}
 
+#pragma warning disable CS1734 // XML comment on 'BindingBase.EnableCollectionSynchronization(IEnumerable, object, CollectionSynchronizationCallback)' has a paramref tag for 'writeAccess', but there is no parameter by that name
+		/// <include file="../../docs/Microsoft.Maui.Controls/BindingBase.xml" path="//Member[@MemberName='EnableCollectionSynchronization']/Docs/*" />
+#pragma warning restore CS1734
 		public static void EnableCollectionSynchronization(IEnumerable collection, object context, CollectionSynchronizationCallback callback)
 		{
 			if (collection == null)
@@ -116,9 +126,11 @@ namespace Microsoft.Maui.Controls
 				throw new InvalidOperationException("Cannot change a binding while it's applied");
 		}
 
-		internal virtual void Apply(bool fromTarget) => IsApplied = true;
+		internal virtual void Apply(bool fromTarget)
+				=> IsApplied = true;
 
-		internal virtual void Apply(object context, BindableObject bindObj, BindableProperty targetProperty, bool fromBindingContextChanged = false) => IsApplied = true;
+		internal virtual void Apply(object context, BindableObject bindObj, BindableProperty targetProperty, bool fromBindingContextChanged, SetterSpecificity specificity)
+			=> IsApplied = true;
 
 		internal abstract BindingBase Clone();
 
@@ -133,7 +145,7 @@ namespace Microsoft.Maui.Controls
 			return value;
 		}
 
-		internal bool TryFormat(string format, object arg0, out string value)
+		internal static bool TryFormat(string format, object arg0, out string value)
 		{
 			try
 			{
@@ -148,7 +160,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
-		internal bool TryFormat(string format, object[] args, out string value)
+		internal static bool TryFormat(string format, object[] args, out string value)
 		{
 			try
 			{

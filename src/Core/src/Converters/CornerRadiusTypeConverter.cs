@@ -4,6 +4,7 @@ using System.Globalization;
 
 namespace Microsoft.Maui.Converters
 {
+	/// <inheritdoc/>
 	public class CornerRadiusTypeConverter : TypeConverter
 	{
 		public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
@@ -14,11 +15,13 @@ namespace Microsoft.Maui.Converters
 
 		public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object? value)
 		{
+			// IMPORTANT! Update CornerRadiusDesignTypeConverter.IsValid if making changes here
 			var strValue = value?.ToString();
+
 			if (strValue != null)
 			{
-				value = strValue.Trim();
-				if (strValue.Contains(","))
+				strValue = strValue.Trim();
+				if (strValue.ContainsChar(','))
 				{ //Xaml
 					var cornerRadius = strValue.Split(',');
 					if (cornerRadius.Length == 4
@@ -32,7 +35,7 @@ namespace Microsoft.Maui.Converters
 						&& double.TryParse(cornerRadius[0], NumberStyles.Number, CultureInfo.InvariantCulture, out double l))
 						return new CornerRadius(l);
 				}
-				else if (strValue.Trim().Contains(" "))
+				else if (strValue.ContainsChar(' '))
 				{ //CSS
 					var cornerRadius = strValue.Split(' ');
 					if (cornerRadius.Length == 2
@@ -65,7 +68,9 @@ namespace Microsoft.Maui.Converters
 		{
 			if (value is not CornerRadius cr)
 				throw new NotSupportedException();
-			return $"{cr.TopLeft.ToString(CultureInfo.InvariantCulture)}, {cr.TopRight.ToString(CultureInfo.InvariantCulture)}, {cr.BottomLeft.ToString(CultureInfo.InvariantCulture)}, {cr.BottomRight.ToString(CultureInfo.InvariantCulture)}";
+
+			return $"{cr.TopLeft.ToString(CultureInfo.InvariantCulture)}, {cr.TopRight.ToString(CultureInfo.InvariantCulture)}, " +
+				$"{cr.BottomLeft.ToString(CultureInfo.InvariantCulture)}, {cr.BottomRight.ToString(CultureInfo.InvariantCulture)}";
 
 		}
 	}

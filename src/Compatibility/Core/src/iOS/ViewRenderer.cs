@@ -27,10 +27,12 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 		NativeView TabStop { get; }
 	}
 
+	[Obsolete("Use Microsoft.Maui.Controls.Handlers.Compatibility.ViewRenderer instead")]
 	public abstract class ViewRenderer : ViewRenderer<View, NativeView>
 	{
 	}
 
+	[Obsolete("Use Microsoft.Maui.Controls.Handlers.Compatibility.ViewRenderer instead")]
 	public abstract class ViewRenderer<TView, TNativeView> : VisualElementRenderer<TView>, IVisualNativeElementRenderer, ITabStop where TView : View where TNativeView : NativeView
 	{
 		string _defaultAccessibilityLabel;
@@ -212,7 +214,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 			if (color == null)
 				Control.BackgroundColor = _defaultColor;
 			else
-				Control.BackgroundColor = color.ToUIColor();
+				Control.BackgroundColor = color.ToPlatform();
 #else
 			Control.Layer.BackgroundColor = color == null ? _defaultColor : color.ToCGColor();
 #endif
@@ -253,8 +255,9 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 #if __MOBILE__
 		public override void TraitCollectionDidChange(UITraitCollection previousTraitCollection)
 		{
+#pragma warning disable CA1422 // Validate platform compatibility
 			base.TraitCollectionDidChange(previousTraitCollection);
-			// Make sure the control adheres to changes in UI theme
+#pragma warning restore CA1422 // Validate platform compatibility			// Make sure the control adheres to changes in UI theme
 			if (Forms.IsiOS13OrNewer && previousTraitCollection?.UserInterfaceStyle != TraitCollection.UserInterfaceStyle)
 				Control?.SetNeedsDisplay();
 		}
@@ -305,6 +308,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 			Control.UpdateFlowDirection(Element);
 		}
 
+		[PortHandler]
 		void ViewOnFocusChangeRequested(object sender, VisualElement.FocusRequestArgs focusRequestArgs)
 		{
 			if (Control == null)

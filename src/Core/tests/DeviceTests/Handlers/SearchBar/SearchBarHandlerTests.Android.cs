@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Android.Text;
+using Android.Text.Method;
 using Android.Widget;
 using Microsoft.Maui.DeviceTests.Stubs;
-using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Handlers;
 using Xunit;
 using AColor = Android.Graphics.Color;
 using SearchView = AndroidX.AppCompat.Widget.SearchView;
@@ -43,12 +43,12 @@ namespace Microsoft.Maui.DeviceTests
 				return new
 				{
 					ViewValue = searchBarStub.HorizontalTextAlignment,
-					NativeViewValue = GetNativeHorizontalTextAlignment(handler)
+					PlatformViewValue = GetNativeHorizontalTextAlignment(handler)
 				};
 			});
 
 			Assert.Equal(xplatHorizontalTextAlignment, values.ViewValue);
-			values.NativeViewValue.AssertHasFlag(expectedValue);
+			values.PlatformViewValue.AssertHasFlag(expectedValue);
 		}
 
 		[Fact(DisplayName = "Vertical TextAlignment Initializes Correctly")]
@@ -69,12 +69,12 @@ namespace Microsoft.Maui.DeviceTests
 				return new
 				{
 					ViewValue = searchBarStub.VerticalTextAlignment,
-					NativeViewValue = GetNativeVerticalTextAlignment(handler)
+					PlatformViewValue = GetNativeVerticalTextAlignment(handler)
 				};
 			});
 
 			Assert.Equal(xplatVerticalTextAlignment, values.ViewValue);
-			values.NativeViewValue.AssertHasFlag(expectedValue);
+			values.PlatformViewValue.AssertHasFlag(expectedValue);
 		}
 
 		[Fact(DisplayName = "CharacterSpacing Initializes Correctly")]
@@ -95,12 +95,12 @@ namespace Microsoft.Maui.DeviceTests
 				return new
 				{
 					ViewValue = searchBar.CharacterSpacing,
-					NativeViewValue = GetNativeCharacterSpacing(handler)
+					PlatformViewValue = GetNativeCharacterSpacing(handler)
 				};
 			});
 
 			Assert.Equal(xplatCharacterSpacing, values.ViewValue);
-			Assert.Equal(expectedValue, values.NativeViewValue, EmCoefficientPrecision);
+			Assert.Equal(expectedValue, values.PlatformViewValue, EmCoefficientPrecision);
 		}
 
 		[Fact]
@@ -116,8 +116,45 @@ namespace Microsoft.Maui.DeviceTests
 			});
 		}
 
+		[Fact]
+		public async Task SearchBarTakesFullWidthByDefault()
+		{
+			await InvokeOnMainThreadAsync(async () =>
+			{
+				var layout = new LayoutStub()
+				{
+					Width = 500
+				};
+
+				var searchbar = new SearchBarStub
+				{
+					Text = "My Search Term",
+				};
+
+				layout.Add(searchbar);
+
+				var layoutHandler = CreateHandler(layout);
+				await layoutHandler.PlatformView.AttachAndRun(() =>
+				{
+					var layoutSize = layout.Measure(double.PositiveInfinity, double.PositiveInfinity);
+					var rect = new Rect(0, 0, layoutSize.Width, layoutSize.Height);
+					var searchbarSize = searchbar.Measure(rect.Width, rect.Height);
+
+					Assert.Equal(layoutSize.Width, searchbarSize.Width);
+				});
+			});
+		}
+
+		double GetInputFieldHeight(SearchBarHandler searchBarHandler)
+		{
+			var control = GetNativeSearchBar(searchBarHandler);
+			var editText = control.GetChildrenOfType<EditText>().FirstOrDefault();
+			return MauiContext.Context.FromPixels((double)editText.MeasuredHeight);
+		}
+
+
 		static SearchView GetNativeSearchBar(SearchBarHandler searchBarHandler) =>
-			searchBarHandler.NativeView;
+			searchBarHandler.PlatformView;
 
 		string GetNativeText(SearchBarHandler searchBarHandler) =>
 			GetNativeSearchBar(searchBarHandler).Query;
@@ -206,14 +243,120 @@ namespace Microsoft.Maui.DeviceTests
 			return editText.TextAlignment;
 		}
 
-		Task ValidateHasColor(ISearchBar searchBar, Color color, Action action = null)
+		bool GetNativeIsReadOnly(SearchBarHandler searchBarHandler)
 		{
-			return InvokeOnMainThreadAsync(() =>
-			{
-				var nativeSearchBar = GetNativeSearchBar(CreateHandler(searchBar));
-				action?.Invoke();
-				nativeSearchBar.AssertContainsColor(color);
-			});
+			var searchView = GetNativeSearchBar(searchBarHandler);
+			var editText = searchView.GetChildrenOfType<EditText>().First();
+
+			if (editText is null)
+				return false;
+
+			return !editText.Focusable && !editText.FocusableInTouchMode;
+		}
+
+		bool GetNativeIsNumericKeyboard(SearchBarHandler searchBarHandler)
+		{
+			var searchView = GetNativeSearchBar(searchBarHandler);
+			var editText = searchView.GetChildrenOfType<EditText>().First();
+
+			if (editText is null)
+				return false;
+
+			var inputTypes = editText.InputType;
+
+			return editText.KeyListener is NumberKeyListener
+				&& (inputTypes.HasFlag(InputTypes.NumberFlagDecimal) && inputTypes.HasFlag(InputTypes.ClassNumber) && inputTypes.HasFlag(InputTypes.NumberFlagSigned));
+		}
+
+		bool GetNativeIsChatKeyboard(SearchBarHandler searchBarHandler)
+		{
+			var searchView = GetNativeSearchBar(searchBarHandler);
+			var editText = searchView.GetChildrenOfType<EditText>().First();
+
+			if (editText is null)
+				return false;
+
+			var inputTypes = editText.InputType;
+
+			return inputTypes.HasFlag(InputTypes.ClassText) && inputTypes.HasFlag(InputTypes.TextFlagCapSentences) && inputTypes.HasFlag(InputTypes.TextFlagAutoComplete);
+		}
+
+		bool GetNativeIsEmailKeyboard(SearchBarHandler searchBarHandler)
+		{
+			var searchView = GetNativeSearchBar(searchBarHandler);
+			var editText = searchView.GetChildrenOfType<EditText>().First();
+
+			if (editText is null)
+				return false;
+
+			var inputTypes = editText.InputType;
+
+			return (inputTypes.HasFlag(InputTypes.ClassText) && inputTypes.HasFlag(InputTypes.TextVariationEmailAddress));
+		}
+
+		bool GetNativeIsTelephoneKeyboard(SearchBarHandler searchBarHandler)
+		{
+			var searchView = GetNativeSearchBar(searchBarHandler);
+			var editText = searchView.GetChildrenOfType<EditText>().First();
+
+			if (editText is null)
+				return false;
+
+			var inputTypes = editText.InputType;
+
+			return inputTypes.HasFlag(InputTypes.ClassPhone);
+		}
+
+		bool GetNativeIsUrlKeyboard(SearchBarHandler searchBarHandler)
+		{
+			var searchView = GetNativeSearchBar(searchBarHandler);
+			var editText = searchView.GetChildrenOfType<EditText>().First();
+
+			if (editText is null)
+				return false;
+
+			var inputTypes = editText.InputType;
+
+			return inputTypes.HasFlag(InputTypes.ClassText) && inputTypes.HasFlag(InputTypes.TextVariationUri);
+		}
+
+		bool GetNativeIsTextKeyboard(SearchBarHandler searchBarHandler)
+		{
+			var searchView = GetNativeSearchBar(searchBarHandler);
+			var editText = searchView.GetChildrenOfType<EditText>().First();
+
+			if (editText is null)
+				return false;
+
+			var inputTypes = editText.InputType;
+
+			return inputTypes.HasFlag(InputTypes.ClassText) && inputTypes.HasFlag(InputTypes.TextFlagCapSentences) && inputTypes.HasFlag(InputTypes.TextFlagAutoComplete);
+		}
+
+		bool GetNativeIsTextPredictionEnabled(SearchBarHandler searchBarHandler)
+		{
+			var searchView = GetNativeSearchBar(searchBarHandler);
+			var editText = searchView.GetChildrenOfType<EditText>().First();
+
+			if (editText is null)
+				return false;
+
+			var inputTypes = editText.InputType;
+
+			return inputTypes.HasFlag(InputTypes.TextFlagAutoCorrect);
+		}
+
+		bool GetNativeIsSpellCheckEnabled(SearchBarHandler searchBarHandler)
+		{
+			var searchView = GetNativeSearchBar(searchBarHandler);
+			var editText = searchView.GetChildrenOfType<EditText>().First();
+
+			if (editText is null)
+				return false;
+
+			var inputTypes = editText.InputType;
+
+			return !inputTypes.HasFlag(InputTypes.TextFlagNoSuggestions);
 		}
 	}
 }

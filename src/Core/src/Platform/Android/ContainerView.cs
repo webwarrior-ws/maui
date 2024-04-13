@@ -39,6 +39,10 @@ namespace Microsoft.Maui.Platform
 
 				if (_mainView != null)
 				{
+					if (_mainView.Parent is ContainerView cv && cv != this)
+						cv.CurrentView = null;
+
+					_mainView.RemoveFromParent();
 					_mainView.LayoutParameters = new ViewGroup.LayoutParams(LayoutParams.MatchParent, LayoutParams.MatchParent);
 					AddView(_mainView);
 				}
@@ -69,7 +73,7 @@ namespace Microsoft.Maui.Platform
 			if (_view != null)
 			{
 				_ = _context ?? throw new ArgumentNullException(nameof(_context));
-				MainView = _view.ToNative(_context);
+				MainView = _view.ToPlatform(_context);
 			}
 		}
 

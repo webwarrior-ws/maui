@@ -1,4 +1,5 @@
-﻿using Microsoft.Maui.Graphics;
+﻿#nullable disable
+using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Layouts;
 
 namespace Microsoft.Maui.Controls
@@ -31,7 +32,7 @@ namespace Microsoft.Maui.Controls
 			return _horizontalStackLayoutManager ??= new HorizontalStackLayoutManager(_stackLayout);
 		}
 
-		public Size ArrangeChildren(Rectangle bounds)
+		public Size ArrangeChildren(Rect bounds)
 		{
 			return SelectLayoutManager().ArrangeChildren(bounds);
 		}

@@ -6,23 +6,29 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using Microsoft.Maui.Storage;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Contacts;
 using Windows.Devices.Enumeration;
 using Windows.Devices.Geolocation;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.ApplicationModel
 {
 	public static partial class Permissions
 	{
+		/// <summary>
+		/// Checks if the capability specified in <paramref name="capabilityName"/> is declared in the application's <c>AppxManifest.xml</c> file.
+		/// </summary>
+		/// <param name="capabilityName">The capability to check for specification in the <c>AppxManifest.xml</c> file.</param>
+		/// <returns><see langword="true"/> when the capability is specified, otherwise <see langword="false"/>.</returns>
 		public static bool IsCapabilityDeclared(string capabilityName)
 		{
-			var docPath = Path.Combine(Package.Current.InstalledLocation.Path, Platform.AppManifestFilename);
+			var docPath = FileSystemUtils.PlatformGetFullAppPackageFilePath(PlatformUtils.AppManifestFilename);
 			var doc = XDocument.Load(docPath, LoadOptions.None);
 			var reader = doc.CreateReader();
 			var namespaceManager = new XmlNamespaceManager(reader.NameTable);
-			namespaceManager.AddNamespace("x", Platform.AppManifestXmlns);
-			namespaceManager.AddNamespace("uap", Platform.AppManifestUapXmlns);
+			namespaceManager.AddNamespace("x", PlatformUtils.AppManifestXmlns);
+			namespaceManager.AddNamespace("uap", PlatformUtils.AppManifestUapXmlns);
 
 			// If the manifest doesn't contain a capability we need, throw
 			return (doc.Root.XPathSelectElements($"//x:DeviceCapability[@Name='{capabilityName}']", namespaceManager)?.Any() ?? false) ||
@@ -30,19 +36,28 @@ namespace Microsoft.Maui.Essentials
 				(doc.Root.XPathSelectElements($"//uap:Capability[@Name='{capabilityName}']", namespaceManager)?.Any() ?? false);
 		}
 
+		/// <summary>
+		/// Represents the platform-specific abstract base class for all permissions on this platform.
+		/// </summary>
 		public abstract partial class BasePlatformPermission : BasePermission
 		{
+			/// <summary>
+			/// Gets the required entries that need to be present in the application's <c>AppxManifest.xml</c> file for this permission.
+			/// </summary>
 			protected virtual Func<IEnumerable<string>> RequiredDeclarations { get; } = () => Array.Empty<string>();
 
+			/// <inheritdoc/>
 			public override Task<PermissionStatus> CheckStatusAsync()
 			{
 				EnsureDeclared();
 				return Task.FromResult(PermissionStatus.Granted);
 			}
 
+			/// <inheritdoc/>
 			public override Task<PermissionStatus> RequestAsync()
 				=> CheckStatusAsync();
 
+			/// <inheritdoc/>
 			public override void EnsureDeclared()
 			{
 				foreach (var d in RequiredDeclarations())
@@ -52,6 +67,7 @@ namespace Microsoft.Maui.Essentials
 				}
 			}
 
+			/// <inheritdoc/>
 			public override bool ShouldShowRationale() => false;
 		}
 
@@ -59,16 +75,16 @@ namespace Microsoft.Maui.Essentials
 		{
 		}
 
+		public partial class Bluetooth : BasePlatformPermission
+		{
+		}
+
 		public partial class CalendarRead : BasePlatformPermission
 		{
-			protected override Func<IEnumerable<string>> RequiredDeclarations => () =>
-				new[] { "appointments" };
 		}
 
 		public partial class CalendarWrite : BasePlatformPermission
 		{
-			protected override Func<IEnumerable<string>> RequiredDeclarations => () =>
-				new[] { "appointments" };
 		}
 
 		public partial class Camera : BasePlatformPermission
@@ -77,9 +93,7 @@ namespace Microsoft.Maui.Essentials
 
 		public partial class ContactsRead : BasePlatformPermission
 		{
-			protected override Func<IEnumerable<string>> RequiredDeclarations => () =>
-				new[] { "contacts" };
-
+			/// <inheritdoc/>
 			public override async Task<PermissionStatus> CheckStatusAsync()
 			{
 				EnsureDeclared();
@@ -94,9 +108,7 @@ namespace Microsoft.Maui.Essentials
 
 		public partial class ContactsWrite : BasePlatformPermission
 		{
-			protected override Func<IEnumerable<string>> RequiredDeclarations => () =>
-				   new[] { "contacts" };
-
+			/// <inheritdoc/>
 			public override async Task<PermissionStatus> CheckStatusAsync()
 			{
 				EnsureDeclared();
@@ -119,9 +131,7 @@ namespace Microsoft.Maui.Essentials
 
 		public partial class LocationWhenInUse : BasePlatformPermission
 		{
-			protected override Func<IEnumerable<string>> RequiredDeclarations => () =>
-				new[] { "location" };
-
+			/// <inheritdoc/>
 			public override Task<PermissionStatus> CheckStatusAsync()
 			{
 				EnsureDeclared();
@@ -145,9 +155,7 @@ namespace Microsoft.Maui.Essentials
 
 		public partial class LocationAlways : BasePlatformPermission
 		{
-			protected override Func<IEnumerable<string>> RequiredDeclarations => () =>
-				new[] { "location" };
-
+			/// <inheritdoc/>
 			public override Task<PermissionStatus> CheckStatusAsync()
 			{
 				EnsureDeclared();
@@ -165,8 +173,10 @@ namespace Microsoft.Maui.Essentials
 
 		public partial class Microphone : BasePlatformPermission
 		{
-			protected override Func<IEnumerable<string>> RequiredDeclarations => () =>
-				new[] { "microphone" };
+		}
+
+		public partial class NearbyWifiDevices : BasePlatformPermission
+		{
 		}
 
 		public partial class NetworkState : BasePlatformPermission
@@ -181,6 +191,10 @@ namespace Microsoft.Maui.Essentials
 		{
 		}
 
+		public partial class PostNotifications : BasePlatformPermission
+		{
+		}
+
 		public partial class Reminders : BasePlatformPermission
 		{
 		}
@@ -189,6 +203,7 @@ namespace Microsoft.Maui.Essentials
 		{
 			static readonly Guid activitySensorClassId = new Guid("9D9E0118-1807-4F2E-96E4-2CE57142E196");
 
+			/// <inheritdoc/>
 			public override Task<PermissionStatus> CheckStatusAsync()
 			{
 				// Determine if the user has allowed access to activity sensors

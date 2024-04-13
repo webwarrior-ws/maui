@@ -1,39 +1,72 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Android.Graphics.Drawables;
 using Android.Views;
-using Android.Widget;
-using AndroidX.AppCompat.Widget;
+using Google.Android.Material.ImageView;
 
 namespace Microsoft.Maui.Handlers
 {
-	public partial class ImageButtonHandler : ViewHandler<IImageButton, AppCompatImageButton>
+	public partial class ImageButtonHandler : ViewHandler<IImageButton, ShapeableImageView>
 	{
-		protected override AppCompatImageButton CreateNativeView()
+		protected override ShapeableImageView CreatePlatformView()
 		{
-			return new AppCompatImageButton(Context);
+			var platformView = new ShapeableImageView(Context);
+
+			// These set the defaults so visually it matches up with other platforms
+			platformView.SetPadding(0, 0, 0, 0);
+			platformView.SoundEffectsEnabled = false;
+
+			return platformView;
 		}
 
-		void OnSetImageSource(Drawable? obj)
+		protected override void DisconnectHandler(ShapeableImageView platformView)
 		{
-			NativeView.SetImageDrawable(obj);
-		}
+			platformView.FocusChange -= OnFocusChange;
+			platformView.Click -= OnClick;
+			platformView.Touch -= OnTouch;
 
-		protected override void DisconnectHandler(AppCompatImageButton nativeView)
-		{
-			nativeView.Click -= OnClick;
-			nativeView.Touch -= OnTouch;
-			base.DisconnectHandler(nativeView);
+			base.DisconnectHandler(platformView);
 
 			SourceLoader.Reset();
 		}
 
-		protected override void ConnectHandler(AppCompatImageButton nativeView)
+		protected override void ConnectHandler(ShapeableImageView platformView)
 		{
-			nativeView.Click += OnClick;
-			nativeView.Touch += OnTouch;
-			base.ConnectHandler(nativeView);
+			platformView.FocusChange += OnFocusChange;
+			platformView.Click += OnClick;
+			platformView.Touch += OnTouch;
+
+			base.ConnectHandler(platformView);
+		}
+
+		public static void MapBackground(IImageButtonHandler handler, IImageButton imageButton)
+		{
+			(handler.PlatformView as ShapeableImageView)?.UpdateBackground(imageButton);
+		}
+
+		public static void MapStrokeColor(IImageButtonHandler handler, IButtonStroke buttonStroke)
+		{
+			(handler.PlatformView as ShapeableImageView)?.UpdateStrokeColor(buttonStroke);
+		}
+
+		public static void MapStrokeThickness(IImageButtonHandler handler, IButtonStroke buttonStroke)
+		{
+			(handler.PlatformView as ShapeableImageView)?.UpdateStrokeThickness(buttonStroke);
+		}
+
+		public static void MapCornerRadius(IImageButtonHandler handler, IButtonStroke buttonStroke)
+		{
+			(handler.PlatformView as ShapeableImageView)?.UpdateCornerRadius(buttonStroke);
+		}
+
+		public static void MapPadding(IImageButtonHandler handler, IImageButton imageButton)
+		{
+			(handler.PlatformView as ShapeableImageView)?.UpdatePadding(imageButton);
+		}
+
+		void OnFocusChange(object? sender, View.FocusChangeEventArgs e)
+		{
+			if (VirtualView != null)
+				VirtualView.IsFocused = e.HasFocus;
 		}
 
 		void OnTouch(object? sender, View.TouchEventArgs e)
@@ -55,6 +88,17 @@ namespace Microsoft.Maui.Handlers
 		void OnClick(object? sender, EventArgs e)
 		{
 			VirtualView?.Clicked();
+		}
+
+		partial class ImageButtonImageSourcePartSetter
+		{
+			public override void SetImageSource(Drawable? platformImage)
+			{
+				if (Handler?.PlatformView is not ShapeableImageView button)
+					return;
+
+				button.SetImageDrawable(platformImage);
+			}
 		}
 	}
 }

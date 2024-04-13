@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Maui.Graphics;
 using AbsoluteLayoutFlags = Microsoft.Maui.Layouts.AbsoluteLayoutFlags;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
+namespace Microsoft.Maui.Controls.ControlGallery
 {
 	public class ClipToBoundsGallery : ContentPage
 	{
@@ -17,12 +17,12 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
 			var button = new Button { Text = "Clip", BackgroundColor = Colors.Green };
 
 			Padding = new Thickness(55);
-			var layout = new AbsoluteLayout
+			var layout = new Compatibility.AbsoluteLayout
 			{
 				Children = {
-					{child1, new Rectangle (-50, 0, 100, 100)},
-					{child2, new Rectangle (0, -50, 100, 100)},
-					{button, new Rectangle (1.0, 0.5, 100, 100), AbsoluteLayoutFlags.PositionProportional}
+					{child1, new Rect (-50, 0, 100, 100)},
+					{child2, new Rect (0, -50, 100, 100)},
+					{button, new Rect (1.0, 0.5, 100, 100), AbsoluteLayoutFlags.PositionProportional}
 				}
 			};
 

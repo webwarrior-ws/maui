@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -5,18 +6,21 @@ using Microsoft.Maui.Controls.Internals;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../../docs/Microsoft.Maui.Controls/TriggerBase.xml" path="Type[@FullName='Microsoft.Maui.Controls.TriggerBase']/Docs/*" />
 	public abstract class TriggerBase : BindableObject, IAttachedObject
 	{
 		bool _isSealed;
 
+		//each trigger is different
+		static int count = 1;
+
 		internal TriggerBase(Type targetType)
 		{
-			if (targetType == null)
-				throw new ArgumentNullException("targetType");
-			TargetType = targetType;
+			TargetType = targetType ?? throw new ArgumentNullException(nameof(targetType));
 
 			EnterActions = new SealedList<TriggerAction>();
 			ExitActions = new SealedList<TriggerAction>();
+			Specificity = new SetterSpecificity(0, 100 + (count++), 0, 0, 0, 0, 0, 0);
 		}
 
 		internal TriggerBase(Condition condition, Type targetType) : this(targetType)
@@ -26,10 +30,13 @@ namespace Microsoft.Maui.Controls
 			Condition.ConditionChanged = OnConditionChanged;
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/TriggerBase.xml" path="//Member[@MemberName='EnterActions']/Docs/*" />
 		public IList<TriggerAction> EnterActions { get; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/TriggerBase.xml" path="//Member[@MemberName='ExitActions']/Docs/*" />
 		public IList<TriggerAction> ExitActions { get; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/TriggerBase.xml" path="//Member[@MemberName='IsSealed']/Docs/*" />
 		public bool IsSealed
 		{
 			get { return _isSealed; }
@@ -44,12 +51,16 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/TriggerBase.xml" path="//Member[@MemberName='TargetType']/Docs/*" />
 		public Type TargetType { get; }
 
 		internal Condition Condition { get; }
 
 		//Setters and Condition are used by Trigger, DataTrigger and MultiTrigger
 		internal IList<Setter> Setters { get; }
+
+		//FIXME: add specificity as ctor argument
+		internal SetterSpecificity Specificity { get; }
 
 		void IAttachedObject.AttachTo(BindableObject bindable)
 		{
@@ -98,12 +109,12 @@ namespace Microsoft.Maui.Controls
 				foreach (TriggerAction action in EnterActions)
 					action.DoInvoke(bindable);
 				foreach (Setter setter in Setters)
-					setter.Apply(bindable);
+					setter.Apply(bindable, Specificity);
 			}
 			else
 			{
 				foreach (Setter setter in Setters)
-					setter.UnApply(bindable);
+					setter.UnApply(bindable, Specificity);
 				foreach (TriggerAction action in ExitActions)
 					action.DoInvoke(bindable);
 			}

@@ -2,7 +2,7 @@
 {
 	public partial class WindowOverlay
 	{
-		object? _graphicsView = null;
+		object? _graphicsView = new();
 
 		/// <inheritdoc/>
 		public void Invalidate()
@@ -12,15 +12,15 @@
 		/// <inheritdoc/>
 		public virtual bool Initialize()
 		{
-			return IsNativeViewInitialized = true;
+			return IsPlatformViewInitialized = true;
 		}
 
 		/// <summary>
 		/// Deinitializes the native event hooks and handlers used to drive the overlay.
 		/// </summary>
-		void DeinitializeNativeDependencies()
+		void DeinitializePlatformDependencies()
 		{
-			IsNativeViewInitialized = false;
+			IsPlatformViewInitialized = false;
 		}
 	}
 }

@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Maui.Devices;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
+namespace Microsoft.Maui.Controls.ControlGallery
 {
 	public class StackLayoutGallery : ContentPage
 	{
 		public StackLayoutGallery()
 		{
-			if (Device.RuntimePlatform == Device.iOS && Device.Idiom == TargetIdiom.Tablet)
+			if (DeviceInfo.Platform == DevicePlatform.iOS && DeviceInfo.Idiom == DeviceIdiom.Tablet)
 				Padding = new Thickness(0, 0, 0, 60);
 
 			var stack = new StackLayout { Orientation = StackOrientation.Vertical };

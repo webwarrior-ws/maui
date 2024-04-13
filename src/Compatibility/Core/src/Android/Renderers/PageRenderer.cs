@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using Android.Content;
@@ -12,6 +13,7 @@ using AView = Android.Views.View;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class PageRenderer : VisualElementRenderer<Page>
 	{
 		public PageRenderer(Context context) : base(context)
@@ -141,7 +143,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 
 						if (isInShell && isDefaultBackgroundColor)
 						{
-							var color = Forms.IsMarshmallowOrNewer ?
+							var color = OperatingSystem.IsAndroidVersionAtLeast(23) ?
 								Context.Resources.GetColor(AColorRes.BackgroundLight, Context.Theme) :
 								new AColor(ContextCompat.GetColor(Context, AColorRes.BackgroundLight));
 							SetBackgroundColor(color);
@@ -162,7 +164,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			var deviceIndependentRight = Context.FromPixels(r);
 			var deviceIndependentBottom = Context.FromPixels(b);
 
-			var destination = Rectangle.FromLTRB(deviceIndependentLeft, deviceIndependentTop,
+			var destination = Rect.FromLTRB(deviceIndependentLeft, deviceIndependentTop,
 				deviceIndependentRight, deviceIndependentBottom);
 
 			(Element as IView)?.Arrange(destination);

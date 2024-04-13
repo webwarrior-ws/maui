@@ -1,6 +1,6 @@
 ﻿using Microsoft.Maui.Graphics;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.GalleryPages.AppThemeGalleries
+namespace Microsoft.Maui.Controls.ControlGallery.GalleryPages.AppThemeGalleries
 {
 	public class AppThemeGallery : ContentPage
 	{
@@ -30,8 +30,6 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.GalleryPages.AppT
 							new AppThemeCodeGallery(), Navigation),
 						GalleryBuilder.NavButton("AppTheme XAML", () =>
 							new AppThemeXamlGallery(), Navigation),
-						GalleryBuilder.NavButton("GetNamedColor", () =>
-							new NamedPlatformColorGallery(), Navigation)
 					}
 				}
 			};

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Maui.Controls.Internals;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.GalleryPages.SwipeViewGalleries
+namespace Microsoft.Maui.Controls.ControlGallery.GalleryPages.SwipeViewGalleries
 {
 	[Preserve(AllMembers = true)]
 	public class CustomSwipeItemGallery : ContentPage
@@ -17,7 +17,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.GalleryPages.Swip
 				}
 			};
 
-			if (Device.RuntimePlatform != Device.UWP)
+			if (Device.RuntimePlatform != Device.WinUI)
 			{
 				layout.Children.Add(GalleryBuilder.NavButton("SwipeItemView Gallery", () => new CustomSwipeItemViewGallery(), Navigation));
 				layout.Children.Add(GalleryBuilder.NavButton("CustomSwipeItem Size Gallery", () => new CustomSizeSwipeViewGallery(), Navigation));

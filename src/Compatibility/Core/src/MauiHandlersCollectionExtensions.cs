@@ -2,16 +2,20 @@ using System;
 using Microsoft.Maui.Controls.Hosting;
 using Microsoft.Maui.Hosting;
 
-namespace Microsoft.Maui.Controls.Compatibility
+namespace Microsoft.Maui.Controls.Compatibility.Hosting
 {
 	public static class MauiHandlersCollectionExtensions
 	{
 		public static IMauiHandlersCollection TryAddCompatibilityRenderer(this IMauiHandlersCollection handlersCollection, Type controlType, Type rendererType)
 		{
+			Internals.Registrar.CheckIfRendererIsCompatibilityRenderer(rendererType);
+			Hosting.MauiAppBuilderExtensions.CheckForCompatibility();
 			Internals.Registrar.Registered.Register(controlType, rendererType);
 
-#if __ANDROID__ || __IOS__ || WINDOWS || MACCATALYST
+#if PLATFORM
+#pragma warning disable CS0612 // Type or member is obsolete
 			handlersCollection.TryAddHandler(controlType, typeof(RendererToHandlerShim));
+#pragma warning restore CS0612 // Type or member is obsolete
 #endif
 
 			return handlersCollection;
@@ -19,10 +23,14 @@ namespace Microsoft.Maui.Controls.Compatibility
 
 		public static IMauiHandlersCollection AddCompatibilityRenderer(this IMauiHandlersCollection handlersCollection, Type controlType, Type rendererType)
 		{
+			Internals.Registrar.CheckIfRendererIsCompatibilityRenderer(rendererType);
+			Hosting.MauiAppBuilderExtensions.CheckForCompatibility();
 			Internals.Registrar.Registered.Register(controlType, rendererType);
 
-#if __ANDROID__ || __IOS__ || WINDOWS || MACCATALYST
+#if PLATFORM
+#pragma warning disable CS0612 // Type or member is obsolete
 			handlersCollection.AddHandler(controlType, typeof(RendererToHandlerShim));
+#pragma warning restore CS0612 // Type or member is obsolete
 #endif
 
 			return handlersCollection;
@@ -31,10 +39,14 @@ namespace Microsoft.Maui.Controls.Compatibility
 		public static IMauiHandlersCollection AddCompatibilityRenderer<TControlType, TMauiType, TRenderer>(this IMauiHandlersCollection handlersCollection)
 			where TMauiType : IView
 		{
+			Internals.Registrar.CheckIfRendererIsCompatibilityRenderer(typeof(TRenderer));
+			Hosting.MauiAppBuilderExtensions.CheckForCompatibility();
 			Internals.Registrar.Registered.Register(typeof(TControlType), typeof(TRenderer));
 
-#if __ANDROID__ || __IOS__ || WINDOWS || MACCATALYST
+#if PLATFORM
+#pragma warning disable CS0612 // Type or member is obsolete
 			handlersCollection.AddHandler<TMauiType, RendererToHandlerShim>();
+#pragma warning restore CS0612 // Type or member is obsolete
 #endif
 			return handlersCollection;
 		}
@@ -42,6 +54,8 @@ namespace Microsoft.Maui.Controls.Compatibility
 		public static IMauiHandlersCollection AddCompatibilityRenderer<TControlType, TRenderer>(this IMauiHandlersCollection handlersCollection)
 			where TControlType : IView
 		{
+			Internals.Registrar.CheckIfRendererIsCompatibilityRenderer(typeof(TRenderer));
+			Hosting.MauiAppBuilderExtensions.CheckForCompatibility();
 			handlersCollection.AddCompatibilityRenderer<TControlType, TControlType, TRenderer>();
 
 			return handlersCollection;
@@ -49,8 +63,8 @@ namespace Microsoft.Maui.Controls.Compatibility
 
 		public static IMauiHandlersCollection AddCompatibilityRenderers(this IMauiHandlersCollection handlersCollection, params global::System.Reflection.Assembly[] assemblies)
 		{
-
-#if __ANDROID__ || __IOS__ || WINDOWS || MACCATALYST
+			Hosting.MauiAppBuilderExtensions.CheckForCompatibility();
+#if PLATFORM
 
 			Internals.Registrar.RegisterAll(
 				assemblies,
@@ -62,7 +76,9 @@ namespace Microsoft.Maui.Controls.Compatibility
 				}, default(InitializationFlags),
 				(result) =>
 				{
+#pragma warning disable CS0612 // Type or member is obsolete
 					handlersCollection?.TryAddHandler(result.target, typeof(RendererToHandlerShim));
+#pragma warning restore CS0612 // Type or member is obsolete
 				});
 #endif
 
@@ -70,8 +86,9 @@ namespace Microsoft.Maui.Controls.Compatibility
 			return handlersCollection;
 		}
 
-		public static IFontCollection AddCompatibilityFonts(this IFontCollection fontCollection, params global::System.Reflection.Assembly[] assemblies)
+		public static IFontCollection AddCompatibilityFonts(this IFontCollection fontCollection, IFontRegistrar fontRegistrar, params global::System.Reflection.Assembly[] assemblies)
 		{
+			Hosting.MauiAppBuilderExtensions.CheckForCompatibility();
 			Internals.Registrar.RegisterAll(
 				assemblies,
 				null,
@@ -79,14 +96,15 @@ namespace Microsoft.Maui.Controls.Compatibility
 				{
 					typeof(ExportFontAttribute)
 				}, default(InitializationFlags),
-				null);
+				null,
+				fontRegistrar);
 			return fontCollection;
 		}
 
 		public static IImageSourceServiceCollection AddCompatibilityServices(this IImageSourceServiceCollection services, params global::System.Reflection.Assembly[] assemblies)
 		{
-
-#if __ANDROID__ || __IOS__ || WINDOWS || MACCATALYST
+			Hosting.MauiAppBuilderExtensions.CheckForCompatibility();
+#if PLATFORM
 			Internals.Registrar.RegisterAll(
 				assemblies,
 				null,
@@ -107,6 +125,7 @@ namespace Microsoft.Maui.Controls.Compatibility
 
 		public static IEffectsBuilder AddCompatibilityEffects(this IEffectsBuilder effectsBuilder, params global::System.Reflection.Assembly[] assemblies)
 		{
+			Hosting.MauiAppBuilderExtensions.CheckForCompatibility();
 			Internals.Registrar.RegisterEffects(assemblies);
 			return effectsBuilder;
 		}

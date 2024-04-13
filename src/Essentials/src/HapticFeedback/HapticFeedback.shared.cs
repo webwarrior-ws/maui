@@ -1,14 +1,45 @@
-using System;
+﻿#nullable enable
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.Devices
 {
-	public static partial class HapticFeedback
+	/// <summary>
+	/// The HapticFeedback API lets you control haptic feedback on the device.
+	/// </summary>
+	public interface IHapticFeedback
 	{
-		public static void Perform(HapticFeedbackType type = HapticFeedbackType.Click)
-		{
-			if (!IsSupported)
-				throw new FeatureNotSupportedException();
-			PlatformPerform(type);
-		}
+		/// <summary>
+		/// Gets a value indicating whether haptic feedback is supported on this device.
+		/// </summary>
+		bool IsSupported { get; }
+
+		/// <summary>
+		/// Perform a type of haptic feedback on the device.
+		/// </summary>
+		/// <param name="type">The haptic feedback type to perform.</param>
+		void Perform(HapticFeedbackType type);
+	}
+
+	/// <summary>
+	/// The HapticFeedback API lets you control haptic feedback on the device.
+	/// </summary>
+	public static class HapticFeedback
+	{
+		/// <summary>
+		/// Perform a type of haptic feedback on the device.
+		/// </summary>
+		/// <param name="type">The haptic feedback type to perform.</param>
+		public static void Perform(HapticFeedbackType type = HapticFeedbackType.Click) =>
+			Default.Perform(type);
+
+		static IHapticFeedback? defaultImplementation;
+
+		/// <summary>
+		/// Provides the default implementation for static usage of this API.
+		/// </summary>
+		public static IHapticFeedback Default =>
+			defaultImplementation ??= new HapticFeedbackImplementation();
+
+		internal static void SetDefault(IHapticFeedback? implementation) =>
+			defaultImplementation = implementation;
 	}
 }

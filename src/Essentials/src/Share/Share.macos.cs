@@ -2,13 +2,13 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AppKit;
 using Foundation;
-using Microsoft.Maui.Graphics.Native;
+using Microsoft.Maui.Graphics.Platform;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.ApplicationModel.DataTransfer
 {
-	public static partial class Share
+	partial class ShareImplementation : IShare
 	{
-		static Task PlatformRequestAsync(ShareTextRequest request)
+		Task PlatformRequestAsync(ShareTextRequest request)
 		{
 			var items = new List<NSObject>();
 			if (!string.IsNullOrWhiteSpace(request.Title))
@@ -21,7 +21,10 @@ namespace Microsoft.Maui.Essentials
 			return PlatformShowRequestAsync(request, items);
 		}
 
-		static Task PlatformRequestAsync(ShareMultipleFilesRequest request)
+		Task PlatformRequestAsync(ShareFileRequest request) =>
+			PlatformRequestAsync((ShareMultipleFilesRequest)request);
+
+		Task PlatformRequestAsync(ShareMultipleFilesRequest request)
 		{
 			var items = new List<NSObject>();
 

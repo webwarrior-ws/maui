@@ -1,18 +1,21 @@
 using Windows.ApplicationModel.Calls;
 using Windows.Foundation.Metadata;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.ApplicationModel.Communication
 {
-	public static partial class PhoneDialer
+	partial class PhoneDialerImplementation : IPhoneDialer
 	{
-		internal static bool IsSupported =>
-			 ApiInformation.IsTypePresent("Windows.ApplicationModel.Calls.PhoneCallManager");
+		public bool IsSupported =>
+			true;
 
-		static void PlatformOpen(string number)
+		public async void Open(string number)
 		{
 			ValidateOpen(number);
 
-			PhoneCallManager.ShowPhoneCallUI(number, string.Empty);
+			if (ApiInformation.IsTypePresent("Windows.ApplicationModel.Calls.PhoneCallManager"))
+				PhoneCallManager.ShowPhoneCallUI(number, string.Empty);
+			else
+				await Launcher.OpenAsync($"tel:{number}");
 		}
 	}
 }

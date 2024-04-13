@@ -4,7 +4,7 @@ using NUnit.Framework.Api;
 using NUnit.Framework.Interfaces;
 using NUnit.Framework.Internal;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Tests
+namespace Microsoft.Maui.Controls.ControlGallery.Tests
 {
 	public class PlatformTestRunner
 	{
@@ -15,11 +15,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Tests
 			testFilter = testFilter ?? TestFilter.Empty;
 
 			// "controls" is the cross-platform test assembly
-#if NETSTANDARD2_0
 			var controls = Assembly.GetExecutingAssembly();
-#else
-			var controls = typeof(PlatformTestRunner).GetTypeInfo().Assembly;
-#endif
 
 			var platformTestSettings = DependencyService.Resolve<IPlatformTestSettings>();
 

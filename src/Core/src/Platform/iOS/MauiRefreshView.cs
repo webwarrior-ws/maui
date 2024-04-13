@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using CoreGraphics;
 using Microsoft.Maui.Graphics;
 using ObjCRuntime;
 using UIKit;
@@ -8,13 +10,16 @@ using WebKit;
 
 namespace Microsoft.Maui.Platform
 {
-	public class MauiRefreshView : UIView
+	public class MauiRefreshView : UIView, IUIViewLifeCycleEvents
 	{
 		bool _isRefreshing;
 		nfloat _originalY;
 		nfloat _refreshControlHeight;
+		[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "Proven safe in test: MemoryTests.HandlerDoesNotLeak")]
 		UIView _refreshControlParent;
+		[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "Proven safe in test: MemoryTests.HandlerDoesNotLeak")]
 		UIView? _contentView;
+		[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "Proven safe in test: MemoryTests.HandlerDoesNotLeak")]
 		UIRefreshControl _refreshControl;
 		public UIRefreshControl RefreshControl => _refreshControl;
 
@@ -56,8 +61,8 @@ namespace Microsoft.Maui.Platform
 
 			if (content != null && mauiContext != null)
 			{
-				_contentView = content.ToNative(mauiContext);
-				this.AddSubview(_contentView);
+				_contentView = content.ToPlatform(mauiContext);
+				AddSubview(_contentView);
 				TryInsertRefresh(_contentView);
 			}
 		}
@@ -161,6 +166,17 @@ namespace Microsoft.Maui.Platform
 			return false;
 		}
 
+		public override CGRect Bounds
+		{
+			get => base.Bounds;
+			set
+			{
+				base.Bounds = value;
+				if (_contentView != null)
+					_contentView.Frame = value;
+			}
+		}
+
 		public void UpdateIsEnabled(bool isRefreshViewEnabled)
 		{
 			_refreshControl.Enabled = isRefreshViewEnabled;
@@ -178,7 +194,23 @@ namespace Microsoft.Maui.Platform
 			UserInteractionEnabled = true;
 		}
 
+#pragma warning disable CA1416 // TODO: 'UINavigationBar.PrefersLargeTitles' is only supported on: 'ios' 11.0 and later
 		bool CanUseRefreshControlProperty() =>
 			this.GetNavigationController()?.NavigationBar?.PrefersLargeTitles ?? true;
+#pragma warning restore CA1416
+
+		[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = IUIViewLifeCycleEvents.UnconditionalSuppressMessage)]
+		EventHandler? _movedToWindow;
+		event EventHandler IUIViewLifeCycleEvents.MovedToWindow
+		{
+			add => _movedToWindow += value;
+			remove => _movedToWindow -= value;
+		}
+
+		public override void MovedToWindow()
+		{
+			base.MovedToWindow();
+			_movedToWindow?.Invoke(this, EventArgs.Empty);
+		}
 	}
 }

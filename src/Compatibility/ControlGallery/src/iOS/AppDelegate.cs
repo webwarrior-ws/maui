@@ -8,10 +8,10 @@ using Foundation;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Compatibility;
-using Microsoft.Maui.Controls.Compatibility.ControlGallery;
-using Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS;
-using Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues;
 using Microsoft.Maui.Controls.Compatibility.Platform.iOS;
+using Microsoft.Maui.Controls.ControlGallery;
+using Microsoft.Maui.Controls.ControlGallery.iOS;
+using Microsoft.Maui.Controls.ControlGallery.Issues;
 using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Hosting;
 using Microsoft.Maui.Platform;
@@ -22,10 +22,8 @@ using Size = Microsoft.Maui.Graphics.Size;
 
 [assembly: Dependency(typeof(TestCloudService))]
 [assembly: Dependency(typeof(CacheService))]
-[assembly: ExportRenderer(typeof(DisposePage), typeof(DisposePageRenderer))]
-[assembly: ExportRenderer(typeof(DisposeLabel), typeof(DisposeLabelRenderer))]
 [assembly: ExportEffect(typeof(BorderEffect), nameof(BorderEffect))]
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
+namespace Microsoft.Maui.Controls.ControlGallery.iOS
 {
 	public class BorderEffect : PlatformEffect
 	{
@@ -57,39 +55,13 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 		}
 	}
 
-	public class DisposePageRenderer : PageRenderer
-	{
-		protected override void Dispose(bool disposing)
-		{
-			if (disposing)
-			{
-				((DisposePage)Element).SendRendererDisposed();
-			}
-			base.Dispose(disposing);
-
-		}
-	}
-
-	public class DisposeLabelRenderer : LabelRenderer
-	{
-		protected override void Dispose(bool disposing)
-		{
-
-			if (disposing)
-			{
-				((DisposeLabel)Element).SendRendererDisposed();
-			}
-			base.Dispose(disposing);
-		}
-	}
-
 	public class TestCloudService : ITestCloudService
 	{
 		public bool IsOnTestCloud()
 		{
 			var isInTestCloud = Environment.GetEnvironmentVariable("XAMARIN_TEST_CLOUD");
 
-			return isInTestCloud != null && isInTestCloud.Equals("1");
+			return isInTestCloud != null && isInTestCloud.Equals("1", StringComparison.Ordinal);
 		}
 
 		public string GetTestCloudDeviceName()
@@ -122,14 +94,13 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 			//FormsMaps.Init();
 			//FormsMaterial.Init();
 
-			Forms.ViewInitialized += (object sender, ViewInitializedEventArgs e) =>
-			{
-				// http://developer.xamarin.com/recipes/testcloud/set-accessibilityidentifier-ios/
-				if (null != e.View.AutomationId && null != e.NativeView)
-				{
-					//	e.NativeView.AccessibilityIdentifier = e.View.StyleId;
-				}
-			};
+			//Forms.ViewInitialized += (object sender, ViewInitializedEventArgs e) =>
+			//{
+			//	if (null != e.View.AutomationId && null != e.NativeView)
+			//	{
+			//		//	e.NativeView.AccessibilityIdentifier = e.View.StyleId;
+			//	}
+			//};
 
 			if (App.IOSVersion == 11)
 			{
@@ -142,169 +113,30 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 			}
 
 			// When the native control gallery loads up, it'll let us know so we can add the nested native controls
-			MessagingCenter.Subscribe<NestedNativeControlGalleryPage>(this, NestedNativeControlGalleryPage.ReadyForNativeControlsMessage, AddNativeControls);
+#pragma warning disable CS0618 // Type or member is obsolete
+			//MessagingCenter.Subscribe<NestedNativeControlGalleryPage>(this, NestedNativeControlGalleryPage.ReadyForNativeControlsMessage, AddNativeControls);
+#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning disable CS0618 // Type or member is obsolete
 			MessagingCenter.Subscribe<Bugzilla40911>(this, Bugzilla40911.ReadyToSetUp40911Test, SetUp40911Test);
+#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning disable CS0618 // Type or member is obsolete
 			MessagingCenter.Subscribe<Issue5503>(this, Issue5503.ChangeUITableViewAppearanceBgColor, (s) =>
 			{
 				UITableView.Appearance.BackgroundColor = UITableView.Appearance.BackgroundColor == null ? UIColor.Red : null;
 			});
+#pragma warning restore CS0618 // Type or member is obsolete
 
 			// When the native binding gallery loads up, it'll let us know so we can set up the native bindings
-			MessagingCenter.Subscribe<NativeBindingGalleryPage>(this, NativeBindingGalleryPage.ReadyForNativeBindingsMessage, AddNativeBindings);
+#pragma warning disable CS0618 // Type or member is obsolete
+			//MessagingCenter.Subscribe<NativeBindingGalleryPage>(this, NativeBindingGalleryPage.ReadyForNativeBindingsMessage, AddNativeBindings);
+#pragma warning restore CS0618 // Type or member is obsolete
 
 			return base.FinishedLaunching(uiApplication, launchOptions);
 		}
 
-		void AddNativeControls(NestedNativeControlGalleryPage page)
-		{
-			if (page.NativeControlsAdded)
-			{
-				return;
-			}
-
-			StackLayout sl = page.Layout;
-
-			// Create and add a native UILabel
-			var originalText = "I am a native UILabel";
-			var longerText =
-				"I am a native UILabel with considerably more text. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
-
-			var uilabel = new UILabel
-			{
-				MinimumFontSize = 14f,
-				Text = originalText,
-				Lines = 0,
-				LineBreakMode = UILineBreakMode.WordWrap,
-				Font = UIFont.FromName("Helvetica", 24f)
-			};
-
-			sl?.Children.Add(uilabel);
-
-			// Create and add a native Button 
-			var uibutton = new UIButton(UIButtonType.System);
-			uibutton.SetTitle("Toggle Text Amount", UIControlState.Normal);
-			uibutton.TitleLabel.Font = UIFont.FromName("Helvetica", 14f);
 
 
-			uibutton.TouchUpInside += (sender, args) =>
-			{
-				uilabel.Text = uilabel.Text == originalText ? longerText : originalText;
-				uilabel.SizeToFit();
-			};
 
-			sl?.Children.Add(uibutton.ToView());
-
-			// Create some control which we know don't behave correctly with regard to measurement
-			var difficultControl0 = new BrokenNativeControl
-			{
-				MinimumFontSize = 14f,
-				Font = UIFont.FromName("Helvetica", 14f),
-				Lines = 0,
-				LineBreakMode = UILineBreakMode.WordWrap,
-				Text = "Doesn't play nice with sizing. That's why there's a big gap around it."
-			};
-
-			var difficultControl1 = new BrokenNativeControl
-			{
-				MinimumFontSize = 14f,
-				Font = UIFont.FromName("Helvetica", 14f),
-				Lines = 0,
-				LineBreakMode = UILineBreakMode.WordWrap,
-				Text = "Custom size fix specified. No gaps."
-			};
-
-			var explanation0 = new UILabel
-			{
-				MinimumFontSize = 14f,
-				Text = "The next control is a customized label with a bad SizeThatFits implementation.",
-				Lines = 0,
-				LineBreakMode = UILineBreakMode.WordWrap,
-				Font = UIFont.FromName("Helvetica", 24f)
-			};
-
-			var explanation1 = new UILabel
-			{
-				MinimumFontSize = 14f,
-				Text = "The next control is the same broken class as above, but we pass in an override to the GetDesiredSize method.",
-				Lines = 0,
-				LineBreakMode = UILineBreakMode.WordWrap,
-				Font = UIFont.FromName("Helvetica", 24f)
-			};
-
-			// Add a misbehaving control
-			sl?.Children.Add(explanation0);
-			sl?.Children.Add(difficultControl0);
-
-			// Add the misbehaving control with a custom delegate for FixSize
-			sl?.Children.Add(explanation1);
-			sl?.Children.Add(difficultControl1, FixSize);
-
-			page.NativeControlsAdded = true;
-		}
-
-		SizeRequest? FixSize(NativeViewWrapperRenderer renderer, double width, double height)
-		{
-			var uiView = renderer.Control;
-			var view = renderer.Element;
-
-			if (uiView == null || view == null)
-			{
-				return null;
-			}
-
-			var constraint = new CGSize(width, height);
-
-			// Let the BrokenNativeControl determine its size (which we know will be wrong)
-			var badRect = uiView.SizeThatFits(constraint);
-
-			// And we'll use the width (which is fine) and substitute our own height
-			return new SizeRequest(new Size(badRect.Width, 20));
-		}
-
-		void AddNativeBindings(NativeBindingGalleryPage page)
-		{
-			if (page.NativeControlsAdded)
-				return;
-
-			StackLayout sl = page.Layout;
-
-			int width = (int)sl.Width;
-			int heightCustomLabelView = 100;
-
-			var uilabel = new UILabel(new CGRect(0, 0, width, heightCustomLabelView))
-			{
-				MinimumFontSize = 14f,
-				Lines = 0,
-				LineBreakMode = UILineBreakMode.WordWrap,
-				Font = UIFont.FromName("Helvetica", 24f),
-				Text = "DefaultText"
-			};
-
-			var uibuttonColor = new UIButton(UIButtonType.System);
-			uibuttonColor.SetTitle("Toggle Text Color Binding", UIControlState.Normal);
-			uibuttonColor.TitleLabel.Font = UIFont.FromName("Helvetica", 14f);
-			uibuttonColor.TouchUpInside += (sender, args) => uilabel.TextColor = UIColor.Blue;
-
-			var nativeColorConverter = new ColorConverter();
-
-			uilabel.SetBinding("Text", new Binding("NativeLabel"));
-			uilabel.SetBinding(nameof(uilabel.TextColor), new Binding("NativeLabelColor", converter: nativeColorConverter));
-
-			var kvoSlider = new KVOUISlider();
-			kvoSlider.MaxValue = 100;
-			kvoSlider.MinValue = 0;
-			kvoSlider.SetBinding(nameof(kvoSlider.KVOValue), new Binding("Age", BindingMode.TwoWay));
-			sl?.Children.Add(kvoSlider);
-
-			var uiView = new UIView(new CGRect(0, 0, width, heightCustomLabelView));
-			uiView.Add(uilabel);
-			sl?.Children.Add(uiView);
-			sl?.Children.Add(uibuttonColor.ToView());
-			var colorPicker = new AdvancedColorPicker.ColorPickerView(new CGRect(0, 0, width, 300));
-			colorPicker.SetBinding("SelectedColor", new Binding("NativeLabelColor", BindingMode.TwoWay, nativeColorConverter), "ColorPicked");
-			sl?.Children.Add(colorPicker);
-			page.NativeControlsAdded = true;
-		}
 
 		#region Stuff for repro of Bugzilla case 40911
 
@@ -334,7 +166,11 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 				loginViewController.DismissViewController(true, null);
 			};
 
+#pragma warning disable CA1416 // TODO: 'UIApplication.KeyWindow' is unsupported on: 'ios' 13.0 and later
+#pragma warning disable CA1422 // Validate platform compatibility
 			var window = UIApplication.SharedApplication.KeyWindow;
+#pragma warning restore CA1422 // Validate platform compatibility
+#pragma warning restore CA1416
 			var vc = window.RootViewController;
 			while (vc.PresentedViewController != null)
 			{
@@ -349,8 +185,6 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 		[Export("navigateToTest:")]
 		public string NavigateToTest(string test)
 		{
-			// According to https://developer.xamarin.com/guides/testcloud/uitest/working-with/backdoors/
-			// this method has to return a string
 			return (Microsoft.Maui.Controls.Application.Current as App).NavigateToTestPage(test).ToString();
 		}
 
@@ -410,9 +244,9 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 			set
 			{
 
-				WillChangeValue(nameof(KVOValue).ToLower());
+				WillChangeValue(nameof(KVOValue).ToLowerInvariant());
 				_kVOValue = Value = value;
-				DidChangeValue(nameof(KVOValue).ToLower());
+				DidChangeValue(nameof(KVOValue).ToLowerInvariant());
 			}
 		}
 	}
@@ -422,7 +256,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.iOS
 		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
 		{
 			if (value is Graphics.Color)
-				return ((Graphics.Color)value).ToUIColor();
+				return ((Graphics.Color)value).ToPlatform();
 			return value;
 		}
 

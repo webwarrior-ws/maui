@@ -2,17 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.ApplicationModel
 {
-	public static partial class AppActions
+	partial class AppActionsImplementation : IAppActions
 	{
-		internal static bool PlatformIsSupported
-			=> throw ExceptionUtils.NotSupportedOrImplementedException;
-
-		static Task<IEnumerable<AppAction>> PlatformGetAsync() =>
+		public bool IsSupported =>
 			throw ExceptionUtils.NotSupportedOrImplementedException;
 
-		static Task PlatformSetAsync(IEnumerable<AppAction> actions) =>
+		public Task<IEnumerable<AppAction>> GetAsync() =>
 			throw ExceptionUtils.NotSupportedOrImplementedException;
+
+		public Task SetAsync(IEnumerable<AppAction> actions) =>
+			throw ExceptionUtils.NotSupportedOrImplementedException;
+
+#pragma warning disable CS0067 // The event is never used
+		public event EventHandler<AppActionEventArgs> AppActionActivated;
+#pragma warning restore CS0067 // The event is never used
 	}
 }

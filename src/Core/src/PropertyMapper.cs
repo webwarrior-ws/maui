@@ -1,12 +1,21 @@
 using System;
 using System.Collections.Generic;
-using Microsoft.Maui.Handlers;
+
+#if IOS || MACCATALYST
+using PlatformView = UIKit.UIView;
+#elif ANDROID
+using PlatformView = Android.Views.View;
+#elif WINDOWS
+using PlatformView = Microsoft.UI.Xaml.FrameworkElement;
+#elif (NETSTANDARD || !PLATFORM) || (NET6_0_OR_GREATER && !IOS && !ANDROID)
+using PlatformView = System.Object;
+#endif
 
 namespace Microsoft.Maui
 {
 	public abstract class PropertyMapper : IPropertyMapper
 	{
-		protected readonly Dictionary<string, Action<IElementHandler, IElement>> _mapper = new();
+		protected readonly Dictionary<string, Action<IElementHandler, IElement>> _mapper = new(StringComparer.Ordinal);
 
 		IPropertyMapper[]? _chained;
 
@@ -31,6 +40,9 @@ namespace Microsoft.Maui
 
 		protected virtual void UpdatePropertyCore(string key, IElementHandler viewHandler, IElement virtualView)
 		{
+			if (!viewHandler.CanInvokeMappers())
+				return;
+
 			var action = GetProperty(key);
 			action?.Invoke(viewHandler, virtualView);
 		}

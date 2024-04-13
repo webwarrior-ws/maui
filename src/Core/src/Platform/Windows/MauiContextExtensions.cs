@@ -6,29 +6,18 @@ namespace Microsoft.Maui.Platform
 {
 	internal static partial class MauiContextExtensions
 	{
-		public static FlowDirection GetFlowDirection(this IMauiContext mauiContext)
-		{
-			string resourceFlowDirection = ResourceManager.Current.DefaultContext.QualifierValues["LayoutDirection"];
-			if (resourceFlowDirection == "LTR")
-				return FlowDirection.LeftToRight;
-			else if (resourceFlowDirection == "RTL")
-				return FlowDirection.RightToLeft;
-
-			return FlowDirection.MatchParent;
-		}
-
 		public static NavigationRootManager GetNavigationRootManager(this IMauiContext mauiContext) =>
 			mauiContext.Services.GetRequiredService<NavigationRootManager>();
 
-		public static UI.Xaml.Window GetNativeWindow(this IMauiContext mauiContext) =>
+		public static UI.Xaml.Window GetPlatformWindow(this IMauiContext mauiContext) =>
 			mauiContext.Services.GetRequiredService<UI.Xaml.Window>();
 
-		public static UI.Xaml.Window? GetOptionalNativeWindow(this IMauiContext mauiContext) =>
+		public static UI.Xaml.Window? GetOptionalPlatformWindow(this IMauiContext mauiContext) =>
 			mauiContext.Services.GetService<UI.Xaml.Window>();
 
 		public static IServiceProvider GetApplicationServices(this IMauiContext mauiContext)
 		{
-			return MauiWinUIApplication.Current.Services
+			return IPlatformApplication.Current?.Services
 				?? throw new InvalidOperationException("Unable to find Application Services");
 		}
 
@@ -39,7 +28,7 @@ namespace Microsoft.Maui.Platform
 
 			if (registerNewNavigationRoot)
 			{
-				scopedContext.AddWeakSpecific(new NavigationRootManager(scopedContext));
+				scopedContext.AddSpecific(new NavigationRootManager(scopedContext.GetPlatformWindow()));
 			}
 
 			return scopedContext;

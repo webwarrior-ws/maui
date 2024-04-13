@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 
 #if UITEST
 using Microsoft.Maui.Controls.Compatibility.UITests;
@@ -10,7 +11,7 @@ using Xamarin.UITest;
 using NUnit.Framework;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if UITEST
 	[Category(UITestCategories.AppLinks)]
@@ -22,7 +23,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 		protected override void Init()
 		{
 			// android needs firebase for this to work, so skip it unless iOS
-			if (Device.RuntimePlatform == Device.iOS)
+			if (DeviceInfo.Platform == DevicePlatform.iOS)
 				Application.Current.AppLinks.RegisterLink(GetEntry());
 
 			// Initialize ui here instead of ctor
@@ -57,6 +58,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 
 #if UITEST && __IOS__
 		[Test]
+		[Compatibility.UITests.FailsOnMauiIOS]
 		public void Issue5470Test() 
 		{
 			Thread.Sleep(500); // give it time to crash

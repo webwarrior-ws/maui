@@ -1,7 +1,9 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Foundation;
+using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 using ObjCRuntime;
 using UIKit;
@@ -12,35 +14,35 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 	{
 		ItemsViewLayout _layout;
 
-		protected override void DisconnectHandler(UIView nativeView)
+		protected override void DisconnectHandler(UIView platformView)
 		{
 			ItemsView.ScrollToRequested -= ScrollToRequested;
-			base.DisconnectHandler(nativeView);
+			base.DisconnectHandler(platformView);
 		}
 
-		protected override void ConnectHandler(UIView nativeView)
+		protected override void ConnectHandler(UIView platformView)
 		{
-			base.ConnectHandler(nativeView);
+			base.ConnectHandler(platformView);
 			Controller.CollectionView.BackgroundColor = UIColor.Clear;
 			ItemsView.ScrollToRequested += ScrollToRequested;
 		}
 
-		private protected override UIView OnCreateNativeView()
+		private protected override UIView OnCreatePlatformView()
 		{
 			UpdateLayout();
 			Controller = CreateController(ItemsView, _layout);
-			return base.OnCreateNativeView();
+			return base.OnCreatePlatformView();
 		}
 
 		protected TItemsView ItemsView => VirtualView;
 
-		protected ItemsViewController<TItemsView> Controller { get; private set; }
+		protected internal ItemsViewController<TItemsView> Controller { get; private set; }
 
 		protected abstract ItemsViewLayout SelectLayout();
 
 		protected abstract ItemsViewController<TItemsView> CreateController(TItemsView newElement, ItemsViewLayout layout);
 
-		protected override UIView CreateNativeView() => Controller?.View;
+		protected override UIView CreatePlatformView() => Controller?.View;
 
 		public static void MapItemsSource(ItemsViewHandler<TItemsView> handler, ItemsView itemsView)
 		{
@@ -143,6 +145,35 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			}
 
 			return true;
+		}
+
+		public override Size GetDesiredSize(double widthConstraint, double heightConstraint)
+		{
+			var size = base.GetDesiredSize(widthConstraint, heightConstraint);
+
+			var potentialContentSize = Controller.GetSize();
+
+			// If contentSize comes back null, it means none of the content has been realized yet;
+			// we need to return the expansive size the collection view wants by default to get
+			// it to start measuring its content
+			if (potentialContentSize == null)
+			{
+				return size;
+			}
+
+			var contentSize = potentialContentSize.Value;
+
+			// If contentSize does have a value, our target size is the smaller of it and the constraints
+
+			size.Width = contentSize.Width <= widthConstraint ? contentSize.Width : widthConstraint;
+			size.Height = contentSize.Height <= heightConstraint ? contentSize.Height : heightConstraint;
+
+			var virtualView = this.VirtualView as IView;
+
+			size.Width = ViewHandlerExtensions.ResolveConstraints(size.Width, virtualView.Width, virtualView.MinimumWidth, virtualView.MaximumWidth);
+			size.Height = ViewHandlerExtensions.ResolveConstraints(size.Height, virtualView.Height, virtualView.MinimumHeight, virtualView.MaximumHeight);
+
+			return size;
 		}
 	}
 }

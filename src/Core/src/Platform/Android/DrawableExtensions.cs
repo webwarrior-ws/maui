@@ -9,6 +9,7 @@ namespace Microsoft.Maui.Platform
 {
 	public static class DrawableExtensions
 	{
+		[System.Runtime.Versioning.SupportedOSPlatform("android29.0")]
 		public static BlendMode? GetFilterMode(FilterMode mode)
 		{
 			switch (mode)
@@ -19,22 +20,6 @@ namespace Microsoft.Maui.Platform
 					return BlendMode.Multiply;
 				case FilterMode.SrcAtop:
 					return BlendMode.SrcAtop;
-			}
-
-			throw new Exception("Invalid Mode");
-		}
-
-		[Obsolete]
-		static PorterDuff.Mode? GetFilterModePre29(FilterMode mode)
-		{
-			switch (mode)
-			{
-				case FilterMode.SrcIn:
-					return PorterDuff.Mode.SrcIn;
-				case FilterMode.Multiply:
-					return PorterDuff.Mode.Multiply;
-				case FilterMode.SrcAtop:
-					return PorterDuff.Mode.SrcAtop;
 			}
 
 			throw new Exception("Invalid Mode");
@@ -59,49 +44,19 @@ namespace Microsoft.Maui.Platform
 				drawable.SetColorFilter(colorFilter);
 		}
 
-
-		public static void SetColorFilter(this ADrawable drawable, Graphics.Color color, FilterMode mode, AColorFilter? defaultColorFilter)
-		{
-			if (drawable == null)
-				return;
-
-			if (color == null)
-				SetColorFilter(drawable, defaultColorFilter);
-			else
-				drawable.SetColorFilter(color.ToNative(), mode);
-		}
-
 		public static void SetColorFilter(this ADrawable drawable, Graphics.Color color, FilterMode mode)
 		{
 			if (drawable == null)
 				return;
 
-			drawable.SetColorFilter(color.ToNative(), mode);
+			if (color != null)
+				drawable.SetColorFilter(color.ToPlatform(), mode);
 		}
 
 		public static void SetColorFilter(this ADrawable drawable, AColor color, FilterMode mode)
 		{
-			if (drawable == null)
-				return;
-
-			if (NativeVersion.Supports(NativeApis.BlendModeColorFilter))
-			{
-				BlendMode? filterMode29 = GetFilterMode(mode);
-
-				if (filterMode29 != null)
-					drawable.SetColorFilter(new BlendModeColorFilter(color, filterMode29));
-			}
-			else
-			{
-#pragma warning disable CS0612 // Type or member is obsolete
-				PorterDuff.Mode? filterModePre29 = GetFilterModePre29(mode);
-#pragma warning restore CS0612 // Type or member is obsolete
-
-				if (filterModePre29 != null)
-#pragma warning disable CS0618 // Type or member is obsolete
-					drawable.SetColorFilter(color, filterModePre29);
-#pragma warning restore CS0618 // Type or member is obsolete
-			}
+			if (drawable is not null)
+				PlatformInterop.SetColorFilter(drawable, color, (int)mode);
 		}
 	}
 }

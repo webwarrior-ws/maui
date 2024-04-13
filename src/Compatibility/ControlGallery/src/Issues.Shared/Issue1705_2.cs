@@ -6,6 +6,7 @@ using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.PlatformConfiguration;
 using Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 using WindowsOS = Microsoft.Maui.Controls.PlatformConfiguration.Windows;
 
@@ -14,7 +15,7 @@ using Xamarin.UITest;
 using NUnit.Framework;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if UITEST
 	[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.Github5000)]
@@ -42,7 +43,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 			Children.Add(_page2);
 			Children.Add(_page3);
 
-			if (Device.RuntimePlatform == Device.UWP)
+			if (DeviceInfo.Platform == DevicePlatform.WinUI)
 				Children.Add(new HeaderIconsControlPage(this) { Title = "UWPSpecifics" });
 		}
 	}

@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
 using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if UITEST
 	[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.Bugzilla)]
@@ -37,7 +38,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 				IsGroupingEnabled = true,
 				GroupDisplayBinding = new Binding("GroupName"),
 				GroupShortNameBinding = new Binding("GroupName"),
-				HasUnevenRows = Device.RuntimePlatform == Device.Android,
+				HasUnevenRows = DeviceInfo.Platform == DevicePlatform.Android,
 
 				ItemTemplate = itemTemplate,
 				GroupHeaderTemplate = groupHeaderTemplate,

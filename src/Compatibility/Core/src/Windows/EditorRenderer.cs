@@ -1,17 +1,18 @@
 using System;
 using System.ComponentModel;
-using Windows.UI.Text;
+using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Controls.Platform;
+using Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific;
+using Microsoft.Maui.Graphics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.Maui.Controls.Internals;
-using Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific;
-using WBrush = Microsoft.UI.Xaml.Media.Brush;
+using Windows.UI.Text;
 using Specifics = Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific.InputView;
-using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Controls.Platform;
+using WBrush = Microsoft.UI.Xaml.Media.Brush;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class EditorRenderer : ViewRenderer<Editor, FormsTextBox>
 	{
 		bool _fontApplied;
@@ -224,7 +225,9 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				return;
 
 			bool editorIsDefault = editor.FontFamily == null &&
+#pragma warning disable CS0612 // Type or member is obsolete
 								   editor.FontSize == Device.GetNamedSize(NamedSize.Default, typeof(Editor), true) &&
+#pragma warning restore CS0612 // Type or member is obsolete
 								   editor.FontAttributes == FontAttributes.None;
 
 			if (editorIsDefault && !_fontApplied)
@@ -278,7 +281,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		{
 			Control.CharacterSpacing = Element.CharacterSpacing.ToEm();
 		}
-	
+
 		[PortHandler]
 		void UpdateText()
 		{
@@ -320,6 +323,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				Control.Text = currentControlText.Substring(0, Element.MaxLength);
 		}
 
+		[PortHandler]
 		void UpdateDetectReadingOrderFromContent()
 		{
 			if (Element.IsSet(Specifics.DetectReadingOrderFromContentProperty))

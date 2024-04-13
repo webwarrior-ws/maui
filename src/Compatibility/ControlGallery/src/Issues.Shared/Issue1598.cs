@@ -1,7 +1,7 @@
 using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	public class FlyoutPageToolbarBug : FlyoutPage
 	{
@@ -24,6 +24,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 	}
 #if UITEST
 	[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.Github5000)]
+	[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.TableView)]
 #endif
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.Github, 1598, "FlyoutPageContainer does not handle adding of views which are already its children", PlatformAffected.Android)]

@@ -1,15 +1,18 @@
 #nullable enable
+using System;
+#if __ANDROID__
 using System.IO;
-using Microsoft.Extensions.Logging;
+#endif
 
 namespace Microsoft.Maui
 {
+	/// <inheritdoc/>
 	public partial class EmbeddedFontLoader : IEmbeddedFontLoader
 	{
-		readonly ILogger<EmbeddedFontLoader>? _logger;
+		readonly IServiceProvider? _serviceProvider;
 
-#if !NET6_0
-		// The NET6_0 linker won't need this
+#if !NET6_0_OR_GREATER
+		// The .NET 6+ linker won't need this
 		// Make sure to test with full linking on before removing
 #if __ANDROID__
 		[Android.Runtime.Preserve]
@@ -17,25 +20,25 @@ namespace Microsoft.Maui
 		[Foundation.Preserve]
 #endif
 #endif
+		/// <summary>
+		/// Creates a new <see cref="EmbeddedFontLoader"/> instance.
+		/// </summary>
 		public EmbeddedFontLoader()
 			: this(null)
 		{
 		}
 
-		public EmbeddedFontLoader(ILogger<EmbeddedFontLoader>? logger = null)
+		/// <summary>
+		/// Creates a new <see cref="EmbeddedFontLoader"/> instance.
+		/// </summary>
+		/// <param name="serviceProvider">The applications <see cref="IServiceProvider"/>.
+		/// Typically this is provided through dependency injection.</param>
+		public EmbeddedFontLoader(IServiceProvider? serviceProvider = null)
 #if __ANDROID__
-			: base(GetTempPath(), logger)
+			: base(Path.GetTempPath, serviceProvider)
 #endif
 		{
-			_logger = logger;
+			_serviceProvider = serviceProvider;
 		}
-
-#if __ANDROID__
-		static string GetTempPath()
-		{
-			var ctx = Android.App.Application.Context;
-			return ctx.CacheDir?.AbsolutePath ?? Path.GetTempPath();
-		}
-#endif
 	}
 }

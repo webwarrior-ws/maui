@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -5,14 +6,19 @@ using System.Globalization;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/FontAttributes.xml" path="Type[@FullName='Microsoft.Maui.Controls.FontAttributes']/Docs/*" />
 	[Flags]
 	public enum FontAttributes
 	{
+		/// <include file="../../docs/Microsoft.Maui.Controls/FontAttributes.xml" path="//Member[@MemberName='None']/Docs/*" />
 		None = 0,
+		/// <include file="../../docs/Microsoft.Maui.Controls/FontAttributes.xml" path="//Member[@MemberName='Bold']/Docs/*" />
 		Bold = 1 << 0,
+		/// <include file="../../docs/Microsoft.Maui.Controls/FontAttributes.xml" path="//Member[@MemberName='Italic']/Docs/*" />
 		Italic = 1 << 1
 	}
 
+	/// <include file="../../docs/Microsoft.Maui.Controls/FontAttributesConverter.xml" path="Type[@FullName='Microsoft.Maui.Controls.FontAttributesConverter']/Docs/*" />
 	public sealed class FontAttributesConverter : TypeConverter
 	{
 		public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
@@ -30,7 +36,7 @@ namespace Microsoft.Maui.Controls
 
 			FontAttributes attributes = FontAttributes.None;
 			strValue = strValue.Trim();
-			if (strValue.Contains(","))
+			if (strValue.IndexOf(",", StringComparison.Ordinal) != -1)
 			{ //Xaml
 				foreach (var part in strValue.Split(','))
 					attributes |= ParseSingleAttribute(part, strValue);

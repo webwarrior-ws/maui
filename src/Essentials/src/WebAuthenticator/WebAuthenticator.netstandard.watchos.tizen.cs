@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Maui.ApplicationModel;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.Authentication
 {
-	public static partial class WebAuthenticator
+	partial class WebAuthenticatorImplementation : IWebAuthenticator
 	{
-		static Task<WebAuthenticatorResult> PlatformAuthenticateAsync(WebAuthenticatorOptions webAuthenticatorOptions)
+		public Task<WebAuthenticatorResult> AuthenticateAsync(WebAuthenticatorOptions webAuthenticatorOptions)
 			=> throw ExceptionUtils.NotSupportedOrImplementedException;
 	}
 }

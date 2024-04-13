@@ -1,4 +1,5 @@
-﻿namespace Microsoft.Maui.Controls.Handlers.Items
+﻿#nullable disable
+namespace Microsoft.Maui.Controls.Handlers.Items
 {
 	public interface IMauiRecyclerView<TItemsView> where TItemsView : ItemsView
 	{
@@ -23,5 +24,11 @@
 		public void UpdateLayoutManager();
 
 		public void UpdateAdapter();
+
+		public void ScrollTo(ScrollToRequestEventArgs args);
+
+		public IItemsLayout ItemsLayout { get; }
+
+		public void UpdateCanReorderItems();
 	}
 }

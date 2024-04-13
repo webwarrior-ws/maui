@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using UIKit;
 
 namespace Microsoft.Maui.Controls.Handlers.Items
 {
-	internal class ObservableGroupedSource : IItemsViewSource
+	internal class ObservableGroupedSource : IObservableItemsViewSource
 	{
 		readonly UICollectionView _collectionView;
 		readonly UICollectionViewController _collectionViewController;
@@ -55,6 +56,8 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			}
 		}
 
+		public bool ObserveChanges { get; set; } = true;
+
 		public NSIndexPath GetIndexForItem(object item)
 		{
 			for (int i = 0; i < _groupSource.Count; i++)
@@ -75,6 +78,11 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 		public object Group(NSIndexPath indexPath)
 		{
 			return _groupSource[indexPath.Section];
+		}
+
+		public IItemsViewSource GroupItemsViewSource(NSIndexPath indexPath)
+		{
+			return _groups[indexPath.Section];
 		}
 
 		public int ItemCountInGroup(nint group)
@@ -130,9 +138,14 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 		void CollectionChanged(object sender, NotifyCollectionChangedEventArgs args)
 		{
-			if (Device.IsInvokeRequired)
+			if (!ObserveChanges)
 			{
-				Device.BeginInvokeOnMainThread(() => CollectionChanged(args));
+				return;
+			}
+
+			if (!ApplicationModel.MainThread.IsMainThread)
+			{
+				ApplicationModel.MainThread.BeginInvokeOnMainThread(() => CollectionChanged(args));
 			}
 			else
 			{
@@ -157,18 +170,23 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 					Move(args);
 					break;
 				case NotifyCollectionChangedAction.Reset:
-					Reload();
+					Reload(true);
 					break;
 				default:
 					throw new ArgumentOutOfRangeException();
 			}
 		}
 
-		void Reload()
+		void Reload(bool collectionWasReset = false)
 		{
 			ResetGroupTracking();
 
 			_collectionView.ReloadData();
+			if (collectionWasReset)
+			{
+				_collectionView.LayoutIfNeeded();
+			}
+
 			_collectionView.CollectionViewLayout.InvalidateLayout();
 		}
 
@@ -324,7 +342,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 					var index = 0;
 					while (enumerator.MoveNext())
 					{
-						if (enumerator.Current == item)
+						if (Equals(enumerator.Current, item))
 						{
 							return index;
 						}

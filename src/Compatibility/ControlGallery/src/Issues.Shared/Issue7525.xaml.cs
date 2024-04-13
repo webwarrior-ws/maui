@@ -11,7 +11,7 @@ using Xamarin.UITest;
 using Microsoft.Maui.Controls.Compatibility.UITests;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if APP
 	[Preserve(AllMembers = true)]
@@ -79,8 +79,6 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 
 		protected override void Init()
 		{
-			Device.SetFlags(new List<string>(Device.Flags ?? new List<string>()) { "CollectionView_Experimental" });
-
 			AvailableViews = new List<Type>() { typeof(Test1View), typeof(Test2View), typeof(Test3View) };
 
 			BindingContext = this;

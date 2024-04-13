@@ -14,7 +14,7 @@ namespace Maui.Controls.Sample.Pages
 
 		}
 
-		public View Content
+		public View? Content
 		{
 			get => Children.OfType<View>().LastOrDefault();
 			set
@@ -40,7 +40,7 @@ namespace Maui.Controls.Sample.Pages
 
 				if (e.Status == GestureStatus.Started)
 				{
-					startScale = Content.Scale;
+					startScale = Content!.Scale;
 					Content.AnchorX = Content.AnchorY = 0;
 				}
 				if (e.Status == GestureStatus.Running)
@@ -49,7 +49,7 @@ namespace Maui.Controls.Sample.Pages
 					_currentScale += (e.Scale - 1) * startScale;
 					_currentScale = Math.Max(1, _currentScale);
 
-					var renderedX = Content.X + xOffset;
+					var renderedX = Content!.X + xOffset;
 					var deltaX = renderedX / Width;
 					var deltaWidth = Width / (Content.Width * startScale);
 					var originX = (e.ScaleOrigin.X - deltaX) * deltaWidth;
@@ -62,15 +62,15 @@ namespace Maui.Controls.Sample.Pages
 					double targetX = xOffset - (originX * Content.Width) * (_currentScale - startScale);
 					double targetY = yOffset - (originY * Content.Height) * (_currentScale - startScale);
 
-					Content.TranslationX = targetX.Clamp(-Content.Width * (_currentScale - 1), 0);
-					Content.TranslationY = targetY.Clamp(-Content.Height * (_currentScale - 1), 0);
+					Content.TranslationX = Math.Clamp(targetX, -Content.Width * (_currentScale - 1), 0);
+					Content.TranslationY = Math.Clamp(targetY, -Content.Height * (_currentScale - 1), 0);
 
 					Content.Scale = _currentScale;
 				}
 				if (e.Status == GestureStatus.Completed)
 				{
-					xOffset = Content.TranslationX;
-					yOffset = Content.TranslationY;
+					xOffset = Content!.TranslationX;
+					yOffset = Content!.TranslationY;
 				}
 			};
 

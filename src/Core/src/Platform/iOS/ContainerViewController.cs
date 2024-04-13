@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Maui.HotReload;
 using ObjCRuntime;
 using UIKit;
@@ -7,12 +8,15 @@ namespace Microsoft.Maui.Platform
 {
 	public class ContainerViewController : UIViewController, IReloadHandler
 	{
+		[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "Proven safe in test: NavigationPageTests.DoesNotLeak")]
 		IElement? _view;
-		UIView? currentNativeView;
+		[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "Proven safe in test: NavigationPageTests.DoesNotLeak")]
+		UIView? currentPlatformView;
 
 		// The handler needs this view before LoadView is called on the controller
 		// So this is used to create the first view that the handler will use
 		// without forcing the VC to call LoadView
+		[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "Proven safe in test: NavigationPageTests.DoesNotLeak")]
 		UIView? _pendingLoadedView;
 
 		public IElement? CurrentView
@@ -21,9 +25,10 @@ namespace Microsoft.Maui.Platform
 			set => SetView(value);
 		}
 
-		public UIView? CurrentNativeView
-			=> _pendingLoadedView ?? currentNativeView;
+		public UIView? CurrentPlatformView
+			=> _pendingLoadedView ?? currentPlatformView;
 
+		[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "IMauiContext is a non-NSObject in MAUI.")]
 		public IMauiContext? Context { get; set; }
 
 		void SetView(IElement? view, bool forceRefresh = false)
@@ -42,16 +47,16 @@ namespace Microsoft.Maui.Platform
 				MauiHotReloadHelper.AddActiveView(ihr);
 			}
 
-			currentNativeView?.RemoveFromSuperview();
-			currentNativeView = null;
+			currentPlatformView?.RemoveFromSuperview();
+			currentPlatformView = null;
 
 			if (IsViewLoaded && _view != null)
-				LoadNativeView(_view);
+				LoadPlatformView(_view);
 		}
 
 		internal UIView LoadFirstView(IElement view)
 		{
-			_pendingLoadedView = CreateNativeView(view);
+			_pendingLoadedView = CreatePlatformView(view);
 			return _pendingLoadedView;
 		}
 
@@ -59,34 +64,34 @@ namespace Microsoft.Maui.Platform
 		{
 			base.LoadView();
 			if (_view != null && Context != null)
-				LoadNativeView(_view);
+				LoadPlatformView(_view);
 		}
 
-		void LoadNativeView(IElement view)
+		void LoadPlatformView(IElement view)
 		{
-			currentNativeView = _pendingLoadedView ?? CreateNativeView(view);
+			currentPlatformView = _pendingLoadedView ?? CreatePlatformView(view);
 			_pendingLoadedView = null;
 
-			View!.AddSubview(currentNativeView);
+			View!.AddSubview(currentPlatformView);
 
 			if (view is IView v && v.Background == null)
-				View.BackgroundColor = UIColor.SystemBackgroundColor;
+				View.BackgroundColor = ColorExtensions.BackgroundColor;
 		}
 
-		protected virtual UIView CreateNativeView(IElement view)
+		protected virtual UIView CreatePlatformView(IElement view)
 		{
 			_ = Context ?? throw new ArgumentNullException(nameof(Context));
 			_ = _view ?? throw new ArgumentNullException(nameof(view));
 
-			return _view.ToNative(Context);
+			return _view.ToPlatform(Context);
 		}
 
 		public override void ViewDidLayoutSubviews()
 		{
 			base.ViewDidLayoutSubviews();
-			if (currentNativeView == null)
+			if (currentPlatformView == null)
 				return;
-			currentNativeView.Frame = View!.Bounds;
+			currentPlatformView.Frame = View!.Bounds;
 		}
 
 		public void Reload() => SetView(CurrentView, true);

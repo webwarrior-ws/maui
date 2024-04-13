@@ -1,5 +1,6 @@
 ﻿using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 
 #if UITEST
@@ -9,7 +10,7 @@ using Xamarin.UITest.Queries;
 #endif
 
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.Github, 773, "Horizontal ScrollView locks after rotation", PlatformAffected.iOS)]
@@ -21,9 +22,11 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 		}
 
 #if UITEST
+		[Compatibility.UITests.MovedToAppium]
 		[Test]
 		[Issue (IssueTracker.Github, 773, "Horizontal ScrollView locks after rotation - relayout correctly after rotation", PlatformAffected.iOS)]
 		[UiTest (typeof(ScrollView))]
+		[Compatibility.UITests.FailsOnMauiAndroid]
 		public void Issue773TestsRotationRelayoutIssue ()
 		{
 			RunningApp.SetOrientationLandscape ();
@@ -118,7 +121,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 			{
 				BackgroundColor = Colors.Aqua,
 				Orientation = ScrollOrientation.Horizontal,
-				HeightRequest = Device.RuntimePlatform == Device.UWP ? 80 : 44,
+				HeightRequest = DeviceInfo.Platform == DevicePlatform.WinUI ? 80 : 44,
 				Content = buttonStack
 			});
 

@@ -1,59 +1,86 @@
 ﻿#nullable enable
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Android.Content;
 using Android.Graphics.Drawables;
-using Bumptech.Glide;
 using Microsoft.Extensions.Logging;
-using Microsoft.Maui.BumptechGlide;
 
 namespace Microsoft.Maui
 {
 	public partial class FileImageSourceService
 	{
-		public override Task<IImageSourceServiceResult<Drawable>?> GetDrawableAsync(IImageSource imageSource, Context context, CancellationToken cancellationToken = default) =>
-			GetDrawableAsync((IFileImageSource)imageSource, context, cancellationToken);
-
-		public async Task<IImageSourceServiceResult<Drawable>?> GetDrawableAsync(IFileImageSource imageSource, Context context, CancellationToken cancellationToken = default)
+		public override Task<IImageSourceServiceResult?> LoadDrawableAsync(IImageSource imageSource, Android.Widget.ImageView imageView, CancellationToken cancellationToken = default)
 		{
-			if (imageSource.IsEmpty)
-				return null;
+			var fileImageSource = (IFileImageSource)imageSource;
 
-			var filename = imageSource.File;
-
-			try
+			if (!fileImageSource.IsEmpty)
 			{
-				ImageSourceServiceResult? result = null;
-				var id = context.GetDrawableId(filename);
-				if (id > 0)
+				var file = fileImageSource.File;
+
+				try
 				{
-					var drawable = context.GetDrawable(id);
-					if (drawable != null)
+					if (!Path.IsPathRooted(file) || !File.Exists(file))
 					{
-						result = new ImageSourceServiceResult(drawable);
+						var id = imageView.Context?.GetDrawableId(file) ?? -1;
+						if (id > 0)
+						{
+							imageView.SetImageResource(id);
+							return Task.FromResult<IImageSourceServiceResult?>(new ImageSourceServiceLoadResult());
+						}
 					}
-				}
 
-				if (result == null)
+					var callback = new ImageLoaderCallback();
+
+					PlatformInterop.LoadImageFromFile(imageView, file, callback);
+
+					return callback.Result;
+				}
+				catch (Exception ex)
 				{
-					result = await Glide
-						.With(context)
-						.Load(filename, context)
-						.SubmitAsync(context, cancellationToken)
-						.ConfigureAwait(false);
+					Logger?.LogWarning(ex, "Unable to load image file '{File}'.", file);
+					throw;
 				}
-
-				if (result == null)
-					throw new InvalidOperationException("Unable to load image file.");
-
-				return result;
 			}
-			catch (Exception ex)
+
+			return Task.FromResult<IImageSourceServiceResult?>(null);
+		}
+
+		public override Task<IImageSourceServiceResult<Drawable>?> GetDrawableAsync(IImageSource imageSource, Context context, CancellationToken cancellationToken = default)
+		{
+			var fileImageSource = (IFileImageSource)imageSource;
+			if (!fileImageSource.IsEmpty)
 			{
-				Logger?.LogWarning(ex, "Unable to load image file '{File}'.", filename);
-				throw;
+				var file = fileImageSource.File;
+
+				try
+				{
+					if (!Path.IsPathRooted(file) || !File.Exists(file))
+					{
+						var id = context?.GetDrawableId(file) ?? -1;
+						if (id > 0)
+						{
+							var d = context?.GetDrawable(id);
+							if (d is not null)
+								return Task.FromResult<IImageSourceServiceResult<Drawable>?>(new ImageSourceServiceResult(d));
+						}
+					}
+
+					var callback = new ImageLoaderResultCallback();
+
+					PlatformInterop.LoadImageFromFile(context, file, callback);
+
+					return callback.Result;
+				}
+				catch (Exception ex)
+				{
+					Logger?.LogWarning(ex, "Unable to load image file '{File}'.", file);
+					throw;
+				}
 			}
+
+			return Task.FromResult<IImageSourceServiceResult<Drawable>?>(null);
 		}
 	}
 }

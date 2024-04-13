@@ -9,17 +9,28 @@ namespace Microsoft.Maui.Hosting
 {
 	public static class FontsMauiAppBuilderExtensions
 	{
+		/// <summary>
+		/// Configures the <see cref="MauiAppBuilder"/> with fonts.
+		/// </summary>
+		/// <param name="builder">The <see cref="MauiAppBuilder"/> to configure.</param>
+		/// <returns>The configured <see cref="MauiAppBuilder"/>.</returns>
 		public static MauiAppBuilder ConfigureFonts(this MauiAppBuilder builder)
 		{
 			builder.ConfigureFonts(configureDelegate: null);
 			return builder;
 		}
 
+		/// <summary>
+		/// Configures the <see cref="MauiAppBuilder"/> with a specified delegate <paramref name="configureDelegate"/> to register fonts in the application.
+		/// </summary>
+		/// <param name="builder">The <see cref="MauiAppBuilder"/> to configure.</param>
+		/// <param name="configureDelegate">A configuration delegate that can register fonts in the provided <see cref="IFontCollection"/>.</param>
+		/// <returns>The configured <see cref="MauiAppBuilder"/>.</returns>
 		public static MauiAppBuilder ConfigureFonts(this MauiAppBuilder builder, Action<IFontCollection>? configureDelegate)
 		{
-			builder.Services.TryAddSingleton<IEmbeddedFontLoader>(svc => new EmbeddedFontLoader(svc.CreateLogger<EmbeddedFontLoader>()));
-			builder.Services.TryAddSingleton<IFontRegistrar>(svc => new FontRegistrar(svc.GetRequiredService<IEmbeddedFontLoader>(), svc.CreateLogger<FontRegistrar>()));
-			builder.Services.TryAddSingleton<IFontManager>(svc => new FontManager(svc.GetRequiredService<IFontRegistrar>(), svc.CreateLogger<FontManager>()));
+			builder.Services.TryAddSingleton<IEmbeddedFontLoader>(svc => new EmbeddedFontLoader(svc));
+			builder.Services.TryAddSingleton<IFontRegistrar>(svc => new FontRegistrar(svc.GetRequiredService<IEmbeddedFontLoader>(), svc));
+			builder.Services.TryAddSingleton<IFontManager>(svc => new FontManager(svc.GetRequiredService<IFontRegistrar>(), svc));
 			if (configureDelegate != null)
 			{
 				builder.Services.AddSingleton<FontsRegistration>(new FontsRegistration(configureDelegate));

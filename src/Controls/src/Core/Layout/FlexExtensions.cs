@@ -6,29 +6,9 @@ namespace Microsoft.Maui.Controls
 {
 	static class FlexExtensions
 	{
-		public static int IndexOf(this Flex.Item parent, Flex.Item child)
+		public static Rect GetFrame(this Flex.Item item)
 		{
-			var index = -1;
-			foreach (var it in parent)
-			{
-				index++;
-				if (it == child)
-					return index;
-			}
-			return -1;
-		}
-
-		public static void Remove(this Flex.Item parent, Flex.Item child)
-		{
-			var index = parent.IndexOf(child);
-			if (index < 0)
-				return;
-			parent.RemoveAt((uint)index);
-		}
-
-		public static Rectangle GetFrame(this Flex.Item item)
-		{
-			return new Rectangle(item.Frame[0], item.Frame[1], item.Frame[2], item.Frame[3]);
+			return new Rect(item.Frame[0], item.Frame[1], item.Frame[2], item.Frame[3]);
 		}
 
 		public static Size GetConstraints(this Flex.Item item)

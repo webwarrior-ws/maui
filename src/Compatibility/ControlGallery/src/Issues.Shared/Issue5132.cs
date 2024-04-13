@@ -7,7 +7,7 @@ using Xamarin.UITest;
 using NUnit.Framework;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if UITEST
 	[Category(UITestCategories.Shell)]
@@ -51,7 +51,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 				case Device.iOS:
 					fontFamily = "Ionicons";
 					break;
-				case Device.UWP:
+				case Device.WinUI:
 					fontFamily = "Assets/Fonts/ionicons.ttf#ionicons";
 					break;
 				case Device.Android:

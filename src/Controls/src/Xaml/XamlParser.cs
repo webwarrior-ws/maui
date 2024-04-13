@@ -5,7 +5,7 @@
 //       Stephane Delcroix <stephane@mi8.be>
 //
 // Copyright (c) 2013 Mobile Inception
-// Copyright (c) 2013-2014 Microsoft.Maui.Controls, Inc
+// Copyright (c) 2013-2014 Xamarin, Inc
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,8 +30,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Xml;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 
 namespace Microsoft.Maui.Controls.Xaml
 {
@@ -65,7 +67,7 @@ namespace Microsoft.Maui.Controls.Xaml
 						return;
 					case XmlNodeType.Element:
 						// 1. Property Element.
-						if (reader.Name.Contains("."))
+						if (reader.Name.IndexOf(".", StringComparison.Ordinal) != -1)
 						{
 							XmlName name;
 							if (reader.Name.StartsWith(elementName + ".", StringComparison.Ordinal))
@@ -215,7 +217,7 @@ namespace Microsoft.Maui.Controls.Xaml
 				}
 
 				var namespaceUri = reader.NamespaceURI;
-				if (reader.LocalName.Contains(".") && namespaceUri == "")
+				if (reader.LocalName.IndexOf(".", StringComparison.Ordinal) != -1 && namespaceUri == "")
 					namespaceUri = ((IXmlNamespaceResolver)reader).LookupNamespace("");
 				var propertyName = ParsePropertyName(new XmlName(namespaceUri, reader.LocalName));
 
@@ -288,16 +290,16 @@ namespace Microsoft.Maui.Controls.Xaml
 			{
 				var prefix = kvp.Key;
 
-				string typeName = null, ns = null, asm = null, targetPlatform = null;
-				XmlnsHelper.ParseXmlns(kvp.Value, out typeName, out ns, out asm, out targetPlatform);
+				XmlnsHelper.ParseXmlns(kvp.Value, out _, out _, out _, out var targetPlatform);
 				if (targetPlatform == null)
 					continue;
+
 				try
 				{
-					if (targetPlatform != Device.RuntimePlatform)
+					if (targetPlatform != DeviceInfo.Platform.ToString())
 					{
 						// Special case for Windows backward compatibility
-						if (targetPlatform == "Windows" && Device.RuntimePlatform == Device.UWP)
+						if (targetPlatform == "Windows" && DeviceInfo.Platform == DevicePlatform.WinUI)
 							continue;
 
 						prefixes.Add(prefix);
@@ -367,7 +369,12 @@ namespace Microsoft.Maui.Controls.Xaml
 				s_xmlnsDefinitions,
 				currentAssembly?.FullName,
 				(typeInfo) =>
-					Type.GetType($"{typeInfo.clrNamespace}.{typeInfo.typeName}, {typeInfo.assemblyName}"));
+				{
+					var t = Type.GetType($"{typeInfo.clrNamespace}.{typeInfo.typeName}, {typeInfo.assemblyName}");
+					if (t is not null && t.IsPublicOrVisibleInternal(currentAssembly))
+						return t;
+					return null;
+				});
 
 			var typeArguments = xmlType.TypeArguments;
 			exception = null;
@@ -420,5 +427,20 @@ namespace Microsoft.Maui.Controls.Xaml
 
 			return type;
 		}
+
+		public static bool IsPublicOrVisibleInternal(this Type type, Assembly assembly)
+		{
+			if (type.IsPublic || type.IsNestedPublic)
+				return true;
+			if (type.Assembly == assembly)
+				return true;
+			if (type.Assembly.IsVisibleInternal(assembly))
+				return true;
+			return false;
+		}
+
+		public static bool IsVisibleInternal(this Assembly from, Assembly to) =>
+			from.GetCustomAttributes<InternalsVisibleToAttribute>().Any(ca =>
+				ca.AssemblyName.StartsWith(to.GetName().Name, StringComparison.InvariantCulture));
 	}
 }

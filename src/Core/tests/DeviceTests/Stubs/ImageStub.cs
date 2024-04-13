@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using static Microsoft.Maui.DeviceTests.AssertHelpers;
 
 namespace Microsoft.Maui.DeviceTests.Stubs
 {
@@ -22,29 +23,55 @@ namespace Microsoft.Maui.DeviceTests.Stubs
 		public void UpdateIsLoading(bool isLoading) =>
 			IsLoading = isLoading;
 
-		void IImageSourcePartEvents.LoadingCompleted(bool successful) =>
+		void IImageSourcePartEvents.LoadingCompleted(bool successful)
+		{
+			IsLoading = false;
 			LoadingCompleted?.Invoke(successful);
+		}
 
-		void IImageSourcePartEvents.LoadingFailed(Exception exception) =>
+		void IImageSourcePartEvents.LoadingFailed(Exception exception)
+		{
+			IsLoading = false;
 			LoadingFailed?.Invoke(exception);
+		}
 
-		void IImageSourcePartEvents.LoadingStarted() =>
+		void IImageSourcePartEvents.LoadingStarted()
+		{
+			IsLoading = true;
 			LoadingStarted?.Invoke();
+		}
 	}
 
 	public static class ImageStubExtensions
 	{
-		static readonly Random rnd = new Random();
+		public static Task WaitUntilLoaded(this IImageStub image, int timeout = 1000) =>
+			AssertEventually(() => !image.IsLoading, timeout: timeout, message: $"Image {image} did not load before timeout");
 
-		public static async Task Wait(this IImageStub image, int timeout = 1000)
+		public static async Task WaitUntilDecoded(this IImageStub image, int timeout = 1000)
 		{
-			while ((timeout -= 100) > 0)
+			await WaitUntilLoaded(image, timeout);
+
+#if WINDOWS
+			if (image.Handler.PlatformView is Microsoft.UI.Xaml.Controls.Image wimage)
 			{
-				if (image.IsLoading)
-					await Task.Delay(rnd.Next(100, 200));
-				else
-					break;
+				var imageOpened = false;
+
+				wimage.ImageOpened += OnOpened;
+				wimage.ImageFailed += OnFailed;
+
+				await AssertEventually(() => imageOpened, timeout: timeout, message: $"Image {image} did not decode before timeout");
+
+				void OnOpened(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+				{
+					imageOpened = true;
+				}
+
+				void OnFailed(object sender, Microsoft.UI.Xaml.ExceptionRoutedEventArgs e)
+				{
+					imageOpened = true;
+				}
 			}
+#endif
 		}
 	}
 }

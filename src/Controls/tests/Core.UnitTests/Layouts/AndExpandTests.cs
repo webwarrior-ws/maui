@@ -1,11 +1,12 @@
 ﻿#nullable enable
 using System.Collections;
+using System.Collections.Generic;
 using Microsoft.Maui.Graphics;
-using NUnit.Framework;
+using Xunit;
 
 namespace Microsoft.Maui.Controls.Core.UnitTests.Layouts
 {
-	[TestFixture, Category("Layout")]
+	[Category("Layout")]
 	public class AndExpandTests : BaseTestFixture
 	{
 		const double TestAreaWidth = 640;
@@ -33,16 +34,21 @@ namespace Microsoft.Maui.Controls.Core.UnitTests.Layouts
 				layout.Add(view);
 			}
 
-			var layoutSize = new Size(TestAreaWidth, TestAreaHeight);
-			var rect = new Rectangle(Point.Zero, layoutSize);
-
-			(layout as Maui.ILayout).CrossPlatformMeasure(layoutSize.Width, layoutSize.Height);
-			(layout as Maui.ILayout).CrossPlatformArrange(rect);
+			MeasureAndArrange(layout as Maui.ILayout);
 
 			return layout;
 		}
 
-		[Test]
+		static void MeasureAndArrange(Maui.ILayout layout)
+		{
+			var layoutSize = new Size(TestAreaWidth, TestAreaHeight);
+			var rect = new Rect(Point.Zero, layoutSize);
+
+			(layout as Maui.ILayout).CrossPlatformMeasure(layoutSize.Width, layoutSize.Height);
+			(layout as Maui.ILayout).CrossPlatformArrange(rect);
+		}
+
+		[Fact]
 		public void SingleChildExpandsToFillVertical()
 		{
 			var view0 = new TestView
@@ -53,13 +59,13 @@ namespace Microsoft.Maui.Controls.Core.UnitTests.Layouts
 
 			var layout = SetUpTestLayout(StackOrientation.Vertical, view0);
 
-			Assert.AreEqual(TestAreaWidth, view0.Bounds.Width);
-			Assert.AreEqual(TestAreaHeight, view0.Bounds.Height);
-			Assert.AreEqual(0, view0.Bounds.X);
-			Assert.AreEqual(0, view0.Bounds.Y);
+			Assert.Equal(TestAreaWidth, view0.Bounds.Width);
+			Assert.Equal(TestAreaHeight, view0.Bounds.Height);
+			Assert.Equal(0, view0.Bounds.X);
+			Assert.Equal(0, view0.Bounds.Y);
 		}
 
-		[Test]
+		[Fact]
 		public void SingleChildExpandsToFillHorizontal()
 		{
 			var view0 = new TestView
@@ -70,13 +76,13 @@ namespace Microsoft.Maui.Controls.Core.UnitTests.Layouts
 
 			var layout = SetUpTestLayout(StackOrientation.Horizontal, view0);
 
-			Assert.AreEqual(TestAreaWidth, view0.Bounds.Width);
-			Assert.AreEqual(TestAreaHeight, view0.Bounds.Height);
-			Assert.AreEqual(0, view0.Bounds.X);
-			Assert.AreEqual(0, view0.Bounds.Y);
+			Assert.Equal(TestAreaWidth, view0.Bounds.Width);
+			Assert.Equal(TestAreaHeight, view0.Bounds.Height);
+			Assert.Equal(0, view0.Bounds.X);
+			Assert.Equal(0, view0.Bounds.Y);
 		}
 
-		[Test]
+		[Fact]
 		public void TwoChildrenSplit5050Vertical()
 		{
 			var view0 = new TestView
@@ -95,14 +101,14 @@ namespace Microsoft.Maui.Controls.Core.UnitTests.Layouts
 
 			var expectedHeight = TestAreaHeight / 2;
 
-			Assert.AreEqual(expectedHeight, view0.Bounds.Height);
-			Assert.AreEqual(expectedHeight, view1.Bounds.Height);
+			Assert.Equal(expectedHeight, view0.Bounds.Height);
+			Assert.Equal(expectedHeight, view1.Bounds.Height);
 
-			Assert.AreEqual(0, view0.Bounds.Y);
-			Assert.AreEqual(expectedHeight, view1.Bounds.Y);
+			Assert.Equal(0, view0.Bounds.Y);
+			Assert.Equal(expectedHeight, view1.Bounds.Y);
 		}
 
-		[Test]
+		[Fact]
 		public void TwoChildrenSplit5050Horizontal()
 		{
 			var view0 = new TestView
@@ -121,36 +127,30 @@ namespace Microsoft.Maui.Controls.Core.UnitTests.Layouts
 
 			var expectedWidth = TestAreaWidth / 2;
 
-			Assert.AreEqual(expectedWidth, view0.Bounds.Width);
-			Assert.AreEqual(expectedWidth, view1.Bounds.Width);
+			Assert.Equal(expectedWidth, view0.Bounds.Width);
+			Assert.Equal(expectedWidth, view1.Bounds.Width);
 
-			Assert.AreEqual(0, view0.Bounds.X);
-			Assert.AreEqual(expectedWidth, view1.Bounds.X);
+			Assert.Equal(0, view0.Bounds.X);
+			Assert.Equal(expectedWidth, view1.Bounds.X);
 		}
 
-		static IEnumerable ExpansionYCases
+		public static IEnumerable<object[]> ExpansionYCases()
 		{
-			get
-			{
-				yield return new object[] { LayoutOptions.StartAndExpand, 0 };
-				yield return new object[] { LayoutOptions.EndAndExpand, (TestAreaHeight / 2) - TestViewHeight };
-				yield return new object[] { LayoutOptions.CenterAndExpand, (TestAreaHeight / 4) - (TestViewHeight / 2) };
-				yield return new object[] { LayoutOptions.FillAndExpand, 0 };
-			}
+			yield return new object[] { LayoutOptions.StartAndExpand, 0 };
+			yield return new object[] { LayoutOptions.EndAndExpand, (TestAreaHeight / 2) - TestViewHeight };
+			yield return new object[] { LayoutOptions.CenterAndExpand, (TestAreaHeight / 4) - (TestViewHeight / 2) };
+			yield return new object[] { LayoutOptions.FillAndExpand, 0 };
 		}
 
-		static IEnumerable ExpansionXCases
+		public static IEnumerable<object[]> ExpansionXCases()
 		{
-			get
-			{
-				yield return new object[] { LayoutOptions.StartAndExpand, 0 };
-				yield return new object[] { LayoutOptions.EndAndExpand, (TestViewWidth / 2) - TestViewWidth };
-				yield return new object[] { LayoutOptions.CenterAndExpand, (TestViewWidth / 4) - (TestViewWidth / 2) };
-				yield return new object[] { LayoutOptions.FillAndExpand, 0 };
-			}
+			yield return new object[] { LayoutOptions.StartAndExpand, 0 };
+			yield return new object[] { LayoutOptions.EndAndExpand, (TestAreaWidth / 2) - TestViewWidth };
+			yield return new object[] { LayoutOptions.CenterAndExpand, (TestAreaWidth / 4) - (TestViewWidth / 2) };
+			yield return new object[] { LayoutOptions.FillAndExpand, 0 };
 		}
 
-		[Test, TestCaseSource(nameof(ExpansionYCases))]
+		[Theory, MemberData(nameof(ExpansionYCases))]
 		public void AlignmentRespectedWithinVerticalSegment(LayoutOptions layoutOptions, double expectedY)
 		{
 			var view0 = new TestView
@@ -167,10 +167,10 @@ namespace Microsoft.Maui.Controls.Core.UnitTests.Layouts
 
 			SetUpTestLayout(StackOrientation.Vertical, view0, view1);
 
-			Assert.AreEqual(expectedY, view0.Bounds.Y);
+			Assert.Equal(expectedY, view0.Bounds.Y);
 		}
 
-		[Test, TestCaseSource(nameof(ExpansionYCases))]
+		[Theory, MemberData(nameof(ExpansionXCases))]
 		public void AlignmentRespectedWithinHorizontalSegment(LayoutOptions layoutOptions, double expectedX)
 		{
 			var view0 = new TestView
@@ -187,10 +187,10 @@ namespace Microsoft.Maui.Controls.Core.UnitTests.Layouts
 
 			SetUpTestLayout(StackOrientation.Horizontal, view0, view1);
 
-			Assert.AreEqual(expectedX, view0.Bounds.X);
+			Assert.Equal(expectedX, view0.Bounds.X);
 		}
 
-		[Test]
+		[Fact]
 		public void StackLayoutWithNoExpansionDoesNotExpand()
 		{
 			var view0 = new TestView
@@ -207,14 +207,14 @@ namespace Microsoft.Maui.Controls.Core.UnitTests.Layouts
 
 			SetUpTestLayout(StackOrientation.Vertical, view0, view1);
 
-			Assert.AreEqual(0, view0.Bounds.X);
-			Assert.AreEqual(0, view0.Bounds.Y);
+			Assert.Equal(0, view0.Bounds.X);
+			Assert.Equal(0, view0.Bounds.Y);
 
-			Assert.AreEqual(0, view1.Bounds.X);
-			Assert.AreEqual(TestViewHeight, view1.Bounds.Y);
+			Assert.Equal(0, view1.Bounds.X);
+			Assert.Equal(TestViewHeight, view1.Bounds.Y);
 		}
 
-		[Test]
+		[Fact]
 		public void StackLayoutWithPointlessExpansionDoesNotExpand()
 		{
 			var view0 = new TestView
@@ -231,14 +231,14 @@ namespace Microsoft.Maui.Controls.Core.UnitTests.Layouts
 
 			SetUpTestLayout(StackOrientation.Vertical, view0, view1);
 
-			Assert.AreEqual(0, view0.Bounds.X);
-			Assert.AreEqual(0, view0.Bounds.Y);
+			Assert.Equal(0, view0.Bounds.X);
+			Assert.Equal(0, view0.Bounds.Y);
 
-			Assert.AreEqual(0, view1.Bounds.X);
-			Assert.AreEqual(TestViewHeight, view1.Bounds.Y);
+			Assert.Equal(0, view1.Bounds.X);
+			Assert.Equal(TestViewHeight, view1.Bounds.Y);
 		}
 
-		[Test]
+		[Fact]
 		public void UpdatedStackLayoutExpandsCorrectly()
 		{
 			var view0 = new TestView
@@ -255,11 +255,11 @@ namespace Microsoft.Maui.Controls.Core.UnitTests.Layouts
 
 			var stackLayout = SetUpTestLayout(StackOrientation.Vertical, view0, view1);
 
-			Assert.AreEqual(0, view0.Bounds.X);
-			Assert.AreEqual(0, view0.Bounds.Y);
+			Assert.Equal(0, view0.Bounds.X);
+			Assert.Equal(0, view0.Bounds.Y);
 
-			Assert.AreEqual(0, view1.Bounds.X);
-			Assert.AreEqual(TestAreaHeight / 2, view1.Bounds.Y);
+			Assert.Equal(0, view1.Bounds.X);
+			Assert.Equal(TestAreaHeight / 2, view1.Bounds.Y);
 
 			var view2 = new TestView
 			{
@@ -270,16 +270,159 @@ namespace Microsoft.Maui.Controls.Core.UnitTests.Layouts
 			stackLayout.Add(view2);
 
 			(stackLayout as Maui.ILayout).CrossPlatformMeasure(TestAreaWidth, TestAreaHeight);
-			(stackLayout as Maui.ILayout).CrossPlatformArrange(new Rectangle(0, 0, TestAreaWidth, TestAreaHeight));
+			(stackLayout as Maui.ILayout).CrossPlatformArrange(new Rect(0, 0, TestAreaWidth, TestAreaHeight));
 
-			Assert.AreEqual(0, view0.Bounds.X);
-			Assert.AreEqual(0, view0.Bounds.Y);
+			Assert.Equal(0, view0.Bounds.X);
+			Assert.Equal(0, view0.Bounds.Y);
 
-			Assert.AreEqual(0, view1.Bounds.X);
-			Assert.AreEqual(TestAreaHeight / 3, view1.Bounds.Y);
+			Assert.Equal(0, view1.Bounds.X);
+			Assert.Equal(TestAreaHeight / 3, view1.Bounds.Y);
 
-			Assert.AreEqual(0, view2.Bounds.X);
-			Assert.AreEqual(2 * (TestAreaHeight / 3), view2.Bounds.Y);
+			Assert.Equal(0, view2.Bounds.X);
+			Assert.Equal(2 * (TestAreaHeight / 3), view2.Bounds.Y);
+		}
+
+		class ViewModel
+		{
+			public string Text { get; }
+
+			public ViewModel(string text)
+			{
+				Text = text;
+			}
+		}
+
+		[Fact]
+		public void AndExpandDoesNotInterfereWithBindingContext()
+		{
+			const string testText = "test text";
+
+			var vm = new ViewModel(testText);
+
+			var view0 = new TestView
+			{
+				VerticalOptions = LayoutOptions.FillAndExpand
+			};
+
+			view0.SetBinding(Button.TextProperty, new Binding(nameof(ViewModel.Text)));
+
+			var stackLayout = SetUpTestLayout(StackOrientation.Vertical, view0);
+			stackLayout.BindingContext = vm;
+
+			Assert.Equal(testText, view0.Text);
+			Assert.Equal(vm, view0.BindingContext);
+
+			MeasureAndArrange(stackLayout as Maui.ILayout);
+
+			Assert.Equal(testText, view0.Text);
+			Assert.Equal(vm, view0.BindingContext);
+		}
+
+		[Fact]
+		public void EnsuresMeasure()
+		{
+			var view0 = new TestView
+			{
+				Text = "Hello",
+				VerticalOptions = LayoutOptions.FillAndExpand
+			};
+
+			var layout = new StackLayout();
+			layout.Add(view0);
+
+			(layout as Maui.ILayout).CrossPlatformArrange(new Rect(0, 0, 100, 100));
+		}
+
+		[Fact]
+		public void InvisibleViewsDoNotCreateColumns()
+		{
+			var view0 = new TestView
+			{
+				Text = "Hello",
+				HorizontalOptions = LayoutOptions.FillAndExpand,
+				IsVisible = false
+			};
+
+			var view1 = new TestView
+			{
+				Text = "Hello",
+				HorizontalOptions = LayoutOptions.FillAndExpand,
+				IsVisible = true
+			};
+
+			var layout = SetUpTestLayout(StackOrientation.Horizontal, view0, view1);
+
+			Assert.Equal(0, view1.Bounds.Left);
+		}
+
+		[Fact]
+		public void InvisibleViewsDoNotCreateRows()
+		{
+			var view0 = new TestView
+			{
+				Text = "Hello",
+				VerticalOptions = LayoutOptions.FillAndExpand,
+				IsVisible = false
+			};
+
+			var view1 = new TestView
+			{
+				Text = "Hello",
+				VerticalOptions = LayoutOptions.FillAndExpand,
+				IsVisible = true
+			};
+
+			var layout = SetUpTestLayout(StackOrientation.Vertical, view0, view1);
+
+			Assert.Equal(0, view1.Bounds.Top);
+		}
+
+		[Fact]
+		public void RevisibleViewsDoCreateColumns()
+		{
+			var view0 = new TestView
+			{
+				Text = "Hello",
+				HorizontalOptions = LayoutOptions.FillAndExpand,
+				IsVisible = false
+			};
+
+			var view1 = new TestView
+			{
+				Text = "Hello",
+				HorizontalOptions = LayoutOptions.FillAndExpand,
+				IsVisible = true
+			};
+
+			var layout = SetUpTestLayout(StackOrientation.Horizontal, view0, view1);
+
+			view0.IsVisible = true;
+			MeasureAndArrange(layout);
+			Assert.Equal(TestAreaWidth / 2, view1.Bounds.Left);
+		}
+
+		[Fact]
+		public void RevisibleViewsDoCreateRows()
+		{
+			var view0 = new TestView
+			{
+				Text = "Hello",
+				VerticalOptions = LayoutOptions.FillAndExpand,
+				IsVisible = false
+			};
+
+			var view1 = new TestView
+			{
+				Text = "Hello",
+				VerticalOptions = LayoutOptions.FillAndExpand,
+				IsVisible = true
+			};
+
+			var layout = SetUpTestLayout(StackOrientation.Vertical, view0, view1);
+
+			view0.IsVisible = true;
+			MeasureAndArrange(layout);
+			Assert.Equal(TestAreaHeight / 2, view1.Bounds.Top);
 		}
 	}
 }

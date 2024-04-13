@@ -1,95 +1,250 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.LifecycleEvents;
-using WinRT;
+using Microsoft.UI;
+using Microsoft.UI.Composition.SystemBackdrops;
+using Microsoft.UI.Windowing;
+using Microsoft.UI.Xaml.Media;
+using Windows.Graphics;
+using ViewManagement = Windows.UI.ViewManagement;
 
 namespace Microsoft.Maui
 {
-	public class MauiWinUIWindow : UI.Xaml.Window
+	public class MauiWinUIWindow : UI.Xaml.Window, IPlatformSizeRestrictedWindow
 	{
+		static readonly SizeInt32 DefaultMinimumSize = new SizeInt32(0, 0);
+		static readonly SizeInt32 DefaultMaximumSize = new SizeInt32(int.MaxValue, int.MaxValue);
+
+		readonly WindowMessageManager _windowManager;
+
+		IntPtr _windowIcon;
 		bool _enableResumeEvent;
+		bool _isActivated;
+		ViewManagement.UISettings _viewSettings;
+
 		public MauiWinUIWindow()
 		{
-			NativeMessage += OnNativeMessage;
+			_windowManager = WindowMessageManager.Get(this);
+			_viewSettings = new ViewManagement.UISettings();
+
 			Activated += OnActivated;
-			Closed += OnClosed;
+			Closed += OnClosedPrivate;
 			VisibilityChanged += OnVisibilityChanged;
 
+			// We set this to true by default so later on if it's
+			// set to false we know the user toggled this to false 
+			// and then we can react accordingly
+			if (AppWindowTitleBar.IsCustomizationSupported())
+			{
+				var titleBar = this.GetAppWindow()?.TitleBar;
+
+				if (titleBar is not null)
+				{
+					titleBar.ExtendsContentIntoTitleBar = true;
+				}
+
+				_viewSettings.ColorValuesChanged += _viewSettings_ColorValuesChanged;
+				SetTileBarButtonColors();
+			}
+
+			if (MicaController.IsSupported())
+			{
+				base.SystemBackdrop = new MicaBackdrop() { Kind = MicaKind.BaseAlt };
+			}
+
 			SubClassingWin32();
-		}
-
-		protected virtual void OnNativeMessage(object? sender, WindowsNativeMessageEventArgs args)
-		{
-			if (args.MessageId == WindowsNativeMessageIds.WM_SETTINGCHANGE || args.MessageId == WindowsNativeMessageIds.WM_THEMECHANGE)
-				MauiWinUIApplication.Current.Application?.ThemeChanged();
-
-			MauiWinUIApplication.Current.Services?.InvokeLifecycleEvents<WindowsLifecycle.OnNativeMessage>(m => m(this, args));
+			SetIcon();
 		}
 
 		protected virtual void OnActivated(object sender, UI.Xaml.WindowActivatedEventArgs args)
 		{
 			if (args.WindowActivationState != UI.Xaml.WindowActivationState.Deactivated)
 			{
+				// We have to track isActivated calls because WinUI will call OnActivated Twice
+				// when maximizing a window
+				// https://github.com/microsoft/microsoft-ui-xaml/issues/7343
+				if (_isActivated)
+					return;
+
+				_isActivated = true;
+
 				if (_enableResumeEvent)
-					MauiWinUIApplication.Current.Services?.InvokeLifecycleEvents<WindowsLifecycle.OnResumed>(del => del(this));
+					Services?.InvokeLifecycleEvents<WindowsLifecycle.OnResumed>(del => del(this));
 				else
 					_enableResumeEvent = true;
 			}
+			else
+			{
+				_isActivated = false;
+			}
 
-			MauiWinUIApplication.Current.Services?.InvokeLifecycleEvents<WindowsLifecycle.OnActivated>(del => del(this, args));
+			Services?.InvokeLifecycleEvents<WindowsLifecycle.OnActivated>(del => del(this, args));
+		}
+
+		private void OnClosedPrivate(object sender, UI.Xaml.WindowEventArgs args)
+		{
+			OnClosed(sender, args);
+
+			_viewSettings.ColorValuesChanged -= _viewSettings_ColorValuesChanged;
+
+			if (_windowIcon != IntPtr.Zero)
+			{
+				_ = DestroyIcon(_windowIcon);
+				_windowIcon = IntPtr.Zero;
+			}
+
+			Window = null;
 		}
 
 		protected virtual void OnClosed(object sender, UI.Xaml.WindowEventArgs args)
 		{
-			MauiWinUIApplication.Current.Services?.InvokeLifecycleEvents<WindowsLifecycle.OnClosed>(del => del(this, args));
+			Services?.InvokeLifecycleEvents<WindowsLifecycle.OnClosed>(del => del(this, args));
 		}
 
 		protected virtual void OnVisibilityChanged(object sender, UI.Xaml.WindowVisibilityChangedEventArgs args)
 		{
-			MauiWinUIApplication.Current.Services?.InvokeLifecycleEvents<WindowsLifecycle.OnVisibilityChanged>(del => del(this, args));
+			Services?.InvokeLifecycleEvents<WindowsLifecycle.OnVisibilityChanged>(del => del(this, args));
 		}
 
-		public event EventHandler<WindowsNativeMessageEventArgs> NativeMessage;
-
-		#region Native Window
-
-		IntPtr _hwnd = IntPtr.Zero;
-		
-		/// <summary>
-		/// Returns a pointer to the underlying platform window handle (hWnd).
-		/// </summary>
-		public IntPtr WindowHandle => _hwnd;
-		
-		delegate IntPtr WinProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
-		WinProc? newWndProc = null;
-		IntPtr oldWndProc = IntPtr.Zero;
-
-		[DllImport("user32")]
-		static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, WinProc newProc);
-		[DllImport("user32.dll")]
-		static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+		public IntPtr WindowHandle => _windowManager.WindowHandle;
 
 		void SubClassingWin32()
 		{
-			//Get the Window's HWND
-			_hwnd = this.As<IWindowNative>().WindowHandle;
-			if (_hwnd == IntPtr.Zero)
-				throw new NullReferenceException("The Window Handle is null.");
+			Services?.InvokeLifecycleEvents<WindowsLifecycle.OnPlatformWindowSubclassed>(
+				del => del(this, new WindowsPlatformWindowSubclassedEventArgs(WindowHandle)));
 
-			newWndProc = new WinProc(NewWindowProc);
-			oldWndProc = SetWindowLongPtr(_hwnd, /* GWL_WNDPROC */ -4, newWndProc);
+			_windowManager.WindowMessage += OnWindowMessage;
+
+			void OnWindowMessage(object? sender, WindowMessageEventArgs e)
+			{
+				if (e.MessageId == PlatformMethods.MessageIds.WM_GETMINMAXINFO)
+				{
+					var win = this as IPlatformSizeRestrictedWindow;
+					var minSize = win.MinimumSize;
+					var maxSize = win.MaximumSize;
+
+					var changedMinSize = minSize != DefaultMinimumSize;
+					var changedMaxSize = maxSize != DefaultMaximumSize;
+
+					if (changedMinSize || changedMaxSize)
+					{
+						var rect = Marshal.PtrToStructure<PlatformMethods.MinMaxInfo>(e.LParam);
+
+						if (changedMinSize)
+						{
+							var newMinSize = new PlatformMethods.POINT
+							{
+								X = Math.Max(minSize.Width, rect.MinTrackSize.X),
+								Y = Math.Max(minSize.Height, rect.MinTrackSize.Y)
+							};
+							rect.MinTrackSize = newMinSize;
+						}
+
+						if (changedMaxSize)
+						{
+							var newMaxSize = new PlatformMethods.POINT
+							{
+								X = Math.Min(maxSize.Width, rect.MaxTrackSize.X),
+								Y = Math.Min(maxSize.Height, rect.MaxTrackSize.Y)
+							};
+							rect.MaxTrackSize = newMaxSize;
+						}
+
+						Marshal.StructureToPtr(rect, e.LParam, true);
+					}
+				}
+				else if (e.MessageId == PlatformMethods.MessageIds.WM_STYLECHANGING)
+				{
+					var styleChange = Marshal.PtrToStructure<PlatformMethods.STYLESTRUCT>(e.LParam);
+					if (e.WParam == (int)PlatformMethods.WindowLongFlags.GWL_STYLE)
+					{
+						bool hasTitleBar = (styleChange.StyleNew & (uint)PlatformMethods.WindowStyles.WS_CAPTION) != 0;
+
+						var rootManager = Window?.Handler?.MauiContext?.GetNavigationRootManager();
+						if (rootManager != null)
+						{
+							rootManager?.SetTitleBarVisibility(hasTitleBar);
+						}
+					}
+				}
+
+				Services?.InvokeLifecycleEvents<WindowsLifecycle.OnPlatformMessage>(
+					m => m.Invoke(this, new WindowsPlatformMessageEventArgs(e.Hwnd, e.MessageId, e.WParam, e.LParam)));
+			}
 		}
 
-		IntPtr NewWindowProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+		/// <summary>
+		/// Default the Window Icon to the icon stored in the .exe, if any.
+		/// 
+		/// The Icon can be overriden by callers by calling SetIcon themselves.
+		/// </summary>
+		void SetIcon()
 		{
-			var args = new WindowsNativeMessageEventArgs(hWnd, msg, wParam, lParam);
-
-			NativeMessage?.Invoke(this, args);
-
-			Essentials.Platform.NewWindowProc(hWnd, msg, wParam, lParam);
-			return CallWindowProc(oldWndProc, hWnd, msg, wParam, lParam);
+			var processPath = Environment.ProcessPath;
+			if (!string.IsNullOrEmpty(processPath))
+			{
+				var index = IntPtr.Zero; // 0 = first icon in resources
+				_windowIcon = ExtractAssociatedIcon(IntPtr.Zero, processPath, ref index);
+				if (_windowIcon != IntPtr.Zero)
+				{
+					var appWindow = AppWindow.GetFromWindowId(Win32Interop.GetWindowIdFromWindow(WindowHandle));
+					if (appWindow is not null)
+					{
+						var iconId = Win32Interop.GetIconIdFromIcon(_windowIcon);
+						appWindow.SetIcon(iconId);
+					}
+				}
+			}
 		}
 
-		#endregion
+		private void _viewSettings_ColorValuesChanged(ViewManagement.UISettings sender, object args)
+		{
+			DispatcherQueue.TryEnqueue(SetTileBarButtonColors);
+		}
+
+		private void SetTileBarButtonColors()
+		{
+			if (AppWindowTitleBar.IsCustomizationSupported())
+			{
+				var titleBar = this.GetAppWindow()?.TitleBar;
+
+				if (titleBar is null)
+					return;
+
+				titleBar.ButtonBackgroundColor = Colors.Transparent;
+				titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+				titleBar.ButtonForegroundColor = _viewSettings.GetColorValue(ViewManagement.UIColorType.Foreground);
+			}
+		}
+
+		SizeInt32 IPlatformSizeRestrictedWindow.MinimumSize { get; set; } = DefaultMinimumSize;
+
+		SizeInt32 IPlatformSizeRestrictedWindow.MaximumSize { get; set; } = DefaultMaximumSize;
+
+		internal IWindow? Window { get; private set; }
+
+		internal IServiceProvider? Services =>
+			Window?.Handler?.GetServiceProvider() ??
+			IPlatformApplication.Current?.Services;
+
+		[DllImport("shell32.dll", CharSet = CharSet.Auto)]
+		static extern IntPtr ExtractAssociatedIcon(IntPtr hInst, string iconPath, ref IntPtr index);
+
+		[DllImport("user32.dll", SetLastError = true)]
+		static extern int DestroyIcon(IntPtr hIcon);
+
+		internal void SetWindow(IWindow window)
+		{
+			Window = window;
+		}
+	}
+
+	interface IPlatformSizeRestrictedWindow
+	{
+		SizeInt32 MinimumSize { get; set; }
+
+		SizeInt32 MaximumSize { get; set; }
 	}
 }

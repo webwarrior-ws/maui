@@ -4,10 +4,10 @@ namespace Microsoft.Maui.Handlers
 {
 	public partial class ApplicationHandler : ElementHandler<IApplication, object>
 	{
-		protected override object CreateNativeElement() => throw new NotImplementedException();
+		protected override object CreatePlatformElement() => throw new NotImplementedException();
 
-		public static void MapTerminate(ApplicationHandler handler, IApplication application, object? args) { }
-		public static void MapOpenWindow(ApplicationHandler handler, IApplication application, object? args) { }
-		public static void MapCloseWindow(ApplicationHandler handler, IApplication application, object? args) { }
+		public static partial void MapTerminate(ApplicationHandler handler, IApplication application, object? args) { }
+		public static partial void MapOpenWindow(ApplicationHandler handler, IApplication application, object? args) { }
+		public static partial void MapCloseWindow(ApplicationHandler handler, IApplication application, object? args) { }
 	}
 }

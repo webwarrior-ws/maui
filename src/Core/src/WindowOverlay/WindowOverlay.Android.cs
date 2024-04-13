@@ -3,7 +3,7 @@ using Android.App;
 using Android.Views;
 using AndroidX.CoordinatorLayout.Widget;
 using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Graphics.Native;
+using Microsoft.Maui.Graphics.Platform;
 using Microsoft.Maui.Handlers;
 
 namespace Microsoft.Maui
@@ -11,34 +11,40 @@ namespace Microsoft.Maui
 	public partial class WindowOverlay
 	{
 		Activity? _nativeActivity;
-		NativeGraphicsView? _graphicsView;
+		PlatformGraphicsView? _graphicsView;
 		ViewGroup? _nativeLayer;
 
 		public virtual bool Initialize()
 		{
-			if (IsNativeViewInitialized)
+			if (IsPlatformViewInitialized)
 				return true;
 
-			if (Window == null)
+			if (Window?.Content?.Handler == null)
 				return false;
 
-			var nativeWindow = Window?.Content?.ToNative();
-			if (nativeWindow == null)
+			var platformWindow = Window?.Content?.ToPlatform();
+
+			if (platformWindow == null)
 				return false;
 
 			var handler = Window?.Handler as WindowHandler;
 			if (handler?.MauiContext == null)
 				return false;
+
 			var rootManager = handler.MauiContext.GetNavigationRootManager();
 			if (rootManager == null)
 				return false;
 
 
-			if (handler.NativeView is not Activity activity)
+			if (handler.PlatformView is not Activity activity)
 				return false;
 
 			_nativeActivity = activity;
 			_nativeLayer = rootManager.RootView as ViewGroup;
+			_nativeLayer = _nativeLayer?.GetFirstChildOfType<CoordinatorLayout>() ?? _nativeLayer;
+
+			if (_nativeLayer is ContainerView containerView)
+				_nativeLayer = containerView.MainView as ViewGroup;
 
 			if (_nativeLayer?.Context == null)
 				return false;
@@ -51,10 +57,7 @@ namespace Microsoft.Maui
 			if (_nativeActivity.Window != null)
 				_nativeActivity.Window.DecorView.LayoutChange += DecorViewLayoutChange;
 
-			if (_nativeActivity?.Resources?.DisplayMetrics != null)
-				Density = _nativeActivity.Resources.DisplayMetrics.Density;
-
-			_graphicsView = new NativeGraphicsView(_nativeLayer.Context, this);
+			_graphicsView = new PlatformGraphicsView(_nativeLayer.Context, this);
 			if (_graphicsView == null)
 				return false;
 
@@ -62,8 +65,8 @@ namespace Microsoft.Maui
 			_nativeLayer.AddView(_graphicsView, 0, new CoordinatorLayout.LayoutParams(CoordinatorLayout.LayoutParams.MatchParent, CoordinatorLayout.LayoutParams.MatchParent));
 			_graphicsView.BringToFront();
 
-			IsNativeViewInitialized = true;
-			return IsNativeViewInitialized;
+			IsPlatformViewInitialized = true;
+			return IsPlatformViewInitialized;
 		}
 
 		/// <inheritdoc/>
@@ -75,7 +78,7 @@ namespace Microsoft.Maui
 		/// <summary>
 		/// Deinitializes the native event hooks and handlers used to drive the overlay.
 		/// </summary>
-		void DeinitializeNativeDependencies()
+		void DeinitializePlatformDependencies()
 		{
 			if (_nativeActivity?.Window != null)
 				_nativeActivity.Window.DecorView.LayoutChange -= DecorViewLayoutChange;
@@ -83,7 +86,7 @@ namespace Microsoft.Maui
 			_nativeLayer?.RemoveView(_graphicsView);
 
 			_graphicsView = null;
-			IsNativeViewInitialized = false;
+			IsPlatformViewInitialized = false;
 		}
 
 		void TouchLayerTouch(object? sender, View.TouchEventArgs e)
@@ -94,7 +97,10 @@ namespace Microsoft.Maui
 			if (e.Event.Action != MotionEventActions.Down && e.Event.ButtonState != MotionEventButtonState.Primary)
 				return;
 
-			var point = new Point(e.Event.RawX, e.Event.RawY);
+			var x = this._nativeLayer?.Context.FromPixels(e.Event.RawX) ?? 0;
+			var y = this._nativeLayer?.Context.FromPixels(e.Event.RawY) ?? 0;
+
+			var point = new Point(x, y);
 
 			e.Handled = false;
 			if (DisableUITouchEventPassthrough)

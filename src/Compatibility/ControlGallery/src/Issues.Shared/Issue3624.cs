@@ -5,7 +5,7 @@ using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Graphics;
 using AbsoluteLayoutFlags = Microsoft.Maui.Layouts.AbsoluteLayoutFlags;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.Github, 3624, "Layout Compression causes the app to crash when scrolling a ListView with ListViewCachingStrategy.RetainElement")]
@@ -132,7 +132,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 				};
 				Microsoft.Maui.Controls.CompressedLayout.SetIsHeadless(stack, true);
 				grid.AddChild(stack, 0, 0);
-				layout.Children.Add(grid, new Rectangle(0, 0, 1, 1), AbsoluteLayoutFlags.All);
+				layout.Children.Add(grid, new Rect(0, 0, 1, 1), AbsoluteLayoutFlags.All);
 
 				View = layout;
 				Microsoft.Maui.Controls.CompressedLayout.SetIsHeadless(stack, TestPage.ShouldUseCompressedLayout);

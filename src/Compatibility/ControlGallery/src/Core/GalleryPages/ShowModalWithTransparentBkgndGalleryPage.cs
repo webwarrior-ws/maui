@@ -2,9 +2,10 @@
 using System.Linq;
 using Microsoft.Maui.Controls.PlatformConfiguration;
 using Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.GalleryPages
+namespace Microsoft.Maui.Controls.ControlGallery.GalleryPages
 {
 	class ShowModalWithTransparentBkgndGalleryPage : ContentPage
 	{
@@ -55,7 +56,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.GalleryPages
 				}
 			};
 
-			if (Device.RuntimePlatform == Device.iOS)
+			if (DeviceInfo.Platform == DevicePlatform.iOS)
 			{
 				layout.Children.Add(_modalPresentationStylesPicker);
 			}

@@ -8,6 +8,7 @@ using WView = Android.Webkit.WebView;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 {
+	[System.Obsolete]
 	public class FormsWebViewClient : WebViewClient
 	{
 		WebNavigationResult _navigationResult = WebNavigationResult.Success;
@@ -26,13 +27,16 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		[Obsolete("ShouldOverrideUrlLoading(view,url) is obsolete as of version 4.0.0. This method was deprecated in API level 24.")]
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		// api 19-23
-		public override bool ShouldOverrideUrlLoading(WView view, string url)
-			=> SendNavigatingCanceled(url);
+#pragma warning disable 809
+		public override bool ShouldOverrideUrlLoading(WView view, string url) => SendNavigatingCanceled(url);
+#pragma warning restore 809
 
+		[PortHandler]
 		// api 24+
 		public override bool ShouldOverrideUrlLoading(WView view, IWebResourceRequest request)
 			=> SendNavigatingCanceled(request?.Url?.ToString());
 
+		[PortHandler]
 		public override void OnPageStarted(WView view, string url, Bitmap favicon)
 		{
 			if (_renderer?.Element == null || string.IsNullOrWhiteSpace(url) || url == WebViewRenderer.AssetBaseUrl)
@@ -56,6 +60,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			}
 		}
 
+		[PortHandler("Partially ported")]
 		public override void OnPageFinished(WView view, string url)
 		{
 			if (_renderer?.Element == null || url == WebViewRenderer.AssetBaseUrl)
@@ -83,7 +88,9 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 
 		[Obsolete("OnReceivedError is obsolete as of version 2.3.0. This method was deprecated in API level 23.")]
 		[EditorBrowsable(EditorBrowsableState.Never)]
+#pragma warning disable 809
 		public override void OnReceivedError(WView view, ClientError errorCode, string description, string failingUrl)
+#pragma warning restore 809
 		{
 			if (failingUrl == _renderer?.Control.Url)
 			{
@@ -92,10 +99,14 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 					_navigationResult = WebNavigationResult.Timeout;
 			}
 #pragma warning disable 618
+#pragma warning disable CA1416, CA1422 // Validate platform compatibility
 			base.OnReceivedError(view, errorCode, description, failingUrl);
+#pragma warning restore CA1416, CA1422 // Validate platform compatibility
 #pragma warning restore 618
 		}
 
+		[PortHandler]
+		[System.Runtime.Versioning.SupportedOSPlatform("android23.0")]
 		public override void OnReceivedError(WView view, IWebResourceRequest request, WebResourceError error)
 		{
 			if (request.Url.ToString() == _renderer?.Control.Url)
@@ -107,6 +118,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			base.OnReceivedError(view, request, error);
 		}
 
+		[PortHandler]
 		protected override void Dispose(bool disposing)
 		{
 			base.Dispose(disposing);

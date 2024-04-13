@@ -1,13 +1,14 @@
 using System;
+using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Graphics;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using WItemsControl = Microsoft.UI.Xaml.Controls.ItemsControl;
 using WSelectionChangedEventArgs = Microsoft.UI.Xaml.Controls.SelectionChangedEventArgs;
-using Microsoft.Maui.Controls.Platform;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[Obsolete("Use Microsoft.Maui.Controls.Handlers.Compatibility.TableViewRenderer instead")]
 	public class TableViewRenderer : ViewRenderer<TableView, Microsoft.UI.Xaml.Controls.ListView>
 	{
 		bool _ignoreSelectionEvent;
@@ -55,12 +56,12 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 		protected override void Dispose(bool disposing)
 		{
-			if(disposing && !_disposed)
+			if (disposing && !_disposed)
 			{
 				_disposed = true;
-				if(Control != null)
+				if (Control != null)
 				{
-					Control.SelectionChanged -= OnSelectionChanged;				
+					Control.SelectionChanged -= OnSelectionChanged;
 				}
 			}
 			base.Dispose(disposing);

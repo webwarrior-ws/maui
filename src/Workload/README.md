@@ -16,20 +16,13 @@ The idea, is a project to be able to set `$(UseMaui)`:
 
 `$(UseMaui)` automatically brings in the following workload packs:
 
-* `Microsoft.NET.Sdk.Maui`
-* `Microsoft.Maui.Sdk`
-* `Microsoft.Maui.Resizetizer.Sdk`
-* `Microsoft.Maui.Core.Ref.[platform]`
-* `Microsoft.Maui.Core.Runtime.[platform]`
-* `Microsoft.Maui.Controls.Ref.[platform]`
-* `Microsoft.Maui.Controls.Runtime.[platform]`
-* `Microsoft.Maui.Dependencies`
-* `Microsoft.Maui.Essentials.Ref.[platform]`
-* `Microsoft.Maui.Essentials.Runtime.[platform]`
-* `Microsoft.Maui.Extensions`
-* `Microsoft.Maui.Templates`
+* `Microsoft.NET.Sdk.Maui` - workload manifest
+* `Microsoft.Maui.Sdk` - workload SDK
+* `Microsoft.Maui.Controls` - nuget
+* `Microsoft.Maui.Controls.Compatibility` - nuget
+* `Microsoft.Maui.Templates` - nuget
 
-BlazorWebView is an addition to MAUI, project can currently opt into
+`BlazorWebView` is an addition to MAUI, project can currently opt into
 it by adding `.Razor` to the `Sdk` attribute.
 
 `<Project Sdk="Microsoft.NET.Sdk.Razor">` sets
@@ -50,17 +43,17 @@ This will automatically add these dependencies:
 If you are a .NET 6 project, but don't want to use
 Microsoft.Maui.Controls you could bring in partial parts of MAUI.
 
-`$(UseMauiAssets)` brings in `Microsoft.Maui.Resizetizer.Sdk`.
+`$(UseMauiAssets)` brings in:
+
+* `Microsoft.Maui.Resizetizer`
 
 `$(UseMauiCore)` brings in:
 
-* `Microsoft.Maui.Core.Ref.[platform]`
-* `Microsoft.Maui.Core.Runtime.[platform]`
+* `Microsoft.Maui.Core`
 
 `$(UseMauiEssentials)` brings in:
 
-* `Microsoft.Maui.Essentials.Ref.[platform]`
-* `Microsoft.Maui.Essentials.Runtime.[platform]`
+* `Microsoft.Maui.Essentials`
 
 Special files:
 
@@ -71,6 +64,8 @@ Special files:
 * `WorkloadManifest.targets` - imports `Microsoft.Maui.Sdk` when
   `$(UseMaui)` is `true`. Note that this is imported by *all* .NET 6
   project types -- *even non-mobile ones*.
+
+More detailed docs on how the workload and NuGet packages are constructed, see the [NuGet docs](/docs/design/NuGets.md).
 
 For further details about .NET Workloads, see these .NET design docs:
 
@@ -93,9 +88,10 @@ installed:
 * `maui-maccatalyst`
 * `maui-macos`
 * `maui-windows`
+* `maui-tizen`
 
-Android has an `android` workload id that excludes AOT compilers, so
-`maui-android` will extend this. `android-aot` includes AOT support.
+`maui-android` simply extends the `android` workload, adding the
+Android-specific platform implementation for MAUI.
 
 These ids will not map exactly to the Visual Studio Installer's
 concept of a "workload". Consider the following diagram for what .NET
@@ -114,26 +110,12 @@ SDK band such as:
 To give greater flexibility, you can specify in your `.csproj`:
 
 ```xml
-<MauiVersion>6.0.100-rc.2.2000</MauiVersion>
+<MauiVersion>8.0.100-preview.1.2345</MauiVersion>
 ```
 
-Even if you have `6.0.100-rc.2.1000` installed system-wide, placing
-this in your `.csproj` enables it to build with a newer version of
-.NET MAUI. This will mostly continue working until there is a major
-change in `Microsoft.Maui.Sdk`. We have a new
-`$(_MinimumMauiWorkloadVersion)` property to fall back on if there is
-a breaking change that requires a newer .NET MAUI system-wide install.
-
-    error MAUI004: At least version '6.0.100-preview.7' of the .NET MAUI workload is required to use <MauiVersion>6.0.100-preview.8</MauiVersion>.
-
-To achieve this, we've moved MSBuild tasks to `library-packs`:
-
-* `Microsoft.Maui.Controls.Build.Tasks`
-* `Microsoft.Maui.Resizetizer.Sdk`
-
-This means these two packs are regular NuGet packages, that are
-restores and used during .NET MAUI builds. `dotnet/library-packs` is
-simply an implicit NuGet feed.
+Even if you do not have `8.0.100-preview.1.2345` installed system-wide, placing
+this in your `.csproj` enables it to build against newer .NET MAUI
+assemblies at build & runtime.
 
 ## Using the .NET MAUI Workload
 
@@ -152,7 +134,7 @@ declared:
 
 ```dotnetcli
 $ git clean -dxf src/Controls/samples/
-$ ./bin/dotnet/dotnet build Microsoft.Maui.Samples-net6.slnf -p:UseWorkload=true
+$ ./bin/dotnet/dotnet build Microsoft.Maui.Samples.slnf -p:UseWorkload=true
 ```
 
 ### Install System-Wide
@@ -195,7 +177,7 @@ $ ./bin/dotnet/dotnet build src/DotNet/DotNet.csproj -t:Install
 Then we can build samples with `-p:UseWorkload=true`:
 
 ```dotnetcli
-$ ./bin/dotnet/dotnet build Microsoft.Maui.Samples-net6.slnf -p:UseWorkload=true
+$ ./bin/dotnet/dotnet build Microsoft.Maui.Samples.slnf -p:UseWorkload=true
 ```
 
 ## Cleanup .NET 6 installs & workloads
@@ -232,3 +214,57 @@ These folders are all .NET 6 specific, so they won't affect .NET 5 or
 older versions.
 
 After this you can install .NET 6 with a fresh install of your choice.
+
+## NuGet Central Package Management
+
+You can leverage [NuGet's central package management (CPM)][cpm] to manage all
+of your dependencies from a single location.
+
+To do this, you will need a `Directory.Packages.props` file with:
+
+```xml
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <MauiVersion>8.0.3</MauiVersion>
+    <MicrosoftExtensionsVersion>8.0.0</MicrosoftExtensionsVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Maui.Core" Version="$(MauiVersion)" />
+    <PackageVersion Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+    <PackageVersion Include="Microsoft.Maui.Controls.Core" Version="$(MauiVersion)" />
+    <PackageVersion Include="Microsoft.Maui.Controls.Build.Tasks" Version="$(MauiVersion)" />
+    <PackageVersion Include="Microsoft.Maui.Controls.Xaml" Version="$(MauiVersion)" />
+    <PackageVersion Include="Microsoft.Maui.Essentials" Version="$(MauiVersion)" />
+    <PackageVersion Include="Microsoft.Maui.Resizetizer" Version="$(MauiVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="$(MicrosoftExtensionsVersion)" />
+  </ItemGroup>
+</Project>
+```
+
+For the correct value for `$(MauiVersion)` and `$(MicrosoftExtensionsVersion)`
+you will need to find a valid version number from one of:
+
+* NuGet, such as: https://www.nuget.org/packages/Microsoft.Maui.Sdk
+
+* GitHub releases, such as: https://github.com/dotnet/maui/releases
+
+Using properties like `$(MauiVersion)` and `$(MicrosoftExtensionsVersion)` are
+also completely optional, you can put the version numbers directly in the
+`%(PackageVersion.Version)` item metadata.
+
+Then in your .NET MAUI application's `.csproj` file:
+
+```xml
+<PackageReference Include="Microsoft.Maui.Core" />
+<PackageReference Include="Microsoft.Maui.Controls" />
+<PackageReference Include="Microsoft.Maui.Essentials" />
+<PackageReference Include="Microsoft.Maui.Resizetizer" />
+<PackageReference Include="Microsoft.Extensions.Logging.Debug" />
+```
+
+Note that `%(PackageReference.Version)` is intentionally left blank. See the
+documentation on [NuGet Central Package Management][cpm] for more information
+about this feature.
+
+[cpm]: https://learn.microsoft.com/nuget/consume-packages/Central-Package-Management

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -10,6 +11,11 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 		public ListSource()
 		{
+		}
+
+		public ListSource(IList list)
+		{
+			_itemsSource = list;
 		}
 
 		public ListSource(IEnumerable<object> enumerable)

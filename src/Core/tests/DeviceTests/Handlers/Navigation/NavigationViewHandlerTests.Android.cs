@@ -6,6 +6,9 @@ using Android.Views;
 using AndroidX.AppCompat.App;
 using AndroidX.AppCompat.Widget;
 using AndroidX.Fragment.App;
+using AndroidX.Navigation;
+using AndroidX.Navigation.Fragment;
+using Java.Lang;
 using Microsoft.Maui.DeviceTests.Stubs;
 using Microsoft.Maui.Handlers;
 using Xunit;
@@ -15,15 +18,23 @@ namespace Microsoft.Maui.DeviceTests
 {
 	public partial class NavigationViewHandlerTests
 	{
-		int GetNativeNavigationStackCount(NavigationViewHandler navigationViewHandler) =>
-			navigationViewHandler.StackNavigationManager.NavHost.NavController.BackStack.Size() - 1;
+		int GetNativeNavigationStackCount(NavigationViewHandler navigationViewHandler)
+		{
+			int i = 0;
+			var navController = navigationViewHandler.StackNavigationManager.NavHost.NavController;
+			navController.IterateBackStack(_ => i++);
 
-		Task CreateNavigationViewHandlerAsync(INavigationView navigationView, Func<NavigationViewHandler, Task> action)
+			return i;
+		}
+
+		Task CreateNavigationViewHandlerAsync(IStackNavigationView navigationView, Func<NavigationViewHandler, Task> action)
 		{
 			return InvokeOnMainThreadAsync(async () =>
 			{
-				ViewGroup rootView = (DefaultContext as AppCompatActivity).Window.DecorView as ViewGroup;
-				var linearLayoutCompat = new LinearLayoutCompat(DefaultContext);
+				var context = MauiProgram.DefaultContext;
+
+				var rootView = (context as AppCompatActivity).Window.DecorView as ViewGroup;
+				var linearLayoutCompat = new LinearLayoutCompat(context);
 				var fragmentManager = MauiContext.GetFragmentManager();
 				var viewFragment = new NavViewFragment(MauiContext);
 
@@ -33,12 +44,13 @@ namespace Microsoft.Maui.DeviceTests
 
 					fragmentManager
 						.BeginTransaction()
+
 						.Add(linearLayoutCompat.Id, viewFragment)
 						.Commit();
 
 					rootView.AddView(linearLayoutCompat);
 					await viewFragment.FinishedLoading;
-					var handler = CreateHandler(navigationView, viewFragment.ScopedMauiContext);
+					var handler = CreateHandler<NavigationViewHandler>(navigationView, viewFragment.ScopedMauiContext);
 
 					if (navigationView is NavigationViewStub nvs && nvs.NavigationStack?.Count > 0)
 					{

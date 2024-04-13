@@ -5,13 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Maui.Graphics;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
+namespace Microsoft.Maui.Controls.ControlGallery
 {
 	public class RelativeLayoutGallery : ContentPage
 	{
 		public RelativeLayoutGallery()
 		{
-			var layout = new RelativeLayout();
+			var layout = new Compatibility.RelativeLayout();
 
 			var box1 = new ContentView
 			{
@@ -23,7 +23,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
 			};
 
 			double padding = 10;
-			layout.Children.Add(box1, () => new Rectangle(((layout.Width + padding) % 60) / 2, padding, 50, 50));
+			layout.Children.Add(box1, () => new Rect(((layout.Width + padding) % 60) / 2, padding, 50, 50));
 
 			var last = box1;
 			for (int i = 0; i < 200; i++)
@@ -39,7 +39,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
 				};
 
 				Func<View, bool> pastBounds = view => relativeTo.Bounds.Right + padding + relativeTo.Width > layout.Width;
-				layout.Children.Add(box, () => new Rectangle(pastBounds(relativeTo) ? box1.X : relativeTo.Bounds.Right + padding,
+				layout.Children.Add(box, () => new Rect(pastBounds(relativeTo) ? box1.X : relativeTo.Bounds.Right + padding,
 													 pastBounds(relativeTo) ? relativeTo.Bounds.Bottom + padding : relativeTo.Y,
 													 relativeTo.Width,
 													 relativeTo.Height));

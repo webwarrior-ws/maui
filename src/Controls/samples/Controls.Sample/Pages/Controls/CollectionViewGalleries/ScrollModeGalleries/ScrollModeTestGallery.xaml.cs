@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Xaml;
 
@@ -15,7 +10,7 @@ namespace Maui.Controls.Sample.Pages.CollectionViewGalleries.ScrollModeGalleries
 		readonly DemoFilteredItemSource _demoFilteredItemSource = new DemoFilteredItemSource(20);
 		CollectionView _collectionView;
 
-		public ScrollModeTestGallery(IItemsLayout itemsLayout = null, Func<DataTemplate> dataTemplate = null, Func<CollectionView> createCollectionView = null)
+		public ScrollModeTestGallery(IItemsLayout? itemsLayout = null, Func<DataTemplate>? dataTemplate = null, Func<CollectionView>? createCollectionView = null)
 		{
 			InitializeComponent();
 
@@ -29,7 +24,7 @@ namespace Maui.Controls.Sample.Pages.CollectionViewGalleries.ScrollModeGalleries
 
 
 			Grid.Children.Add(_collectionView);
-			GridLayout.SetRow(_collectionView, 5);
+			Grid.SetRow((BindableObject)_collectionView, 5);
 
 			_collectionView.ItemTemplate = dataTemplate == null ? ExampleTemplates.PhotoTemplate() : dataTemplate();
 			_collectionView.ItemsSource = _demoFilteredItemSource.Items;

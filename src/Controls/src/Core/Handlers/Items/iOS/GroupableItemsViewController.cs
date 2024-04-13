@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using CoreGraphics;
 using Foundation;
@@ -172,7 +173,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 				return CGSize.Empty;
 			}
 
-			if (!NativeVersion.IsAtLeast(11))
+			if (!(OperatingSystem.IsIOSVersionAtLeast(11) || OperatingSystem.IsTvOSVersionAtLeast(11)))
 			{
 				// iOS 10 crashes if we try to dequeue a cell for measurement
 				// so we'll use an alternate method
@@ -211,7 +212,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 		internal UIEdgeInsets GetInsetForSection(ItemsViewLayout itemsViewLayout,
 			UICollectionView collectionView, nint section)
 		{
-			var uIEdgeInsets = ItemsViewLayout.GetInsetForSection(collectionView, itemsViewLayout, section);
+			var uIEdgeInsets = itemsViewLayout.GetInsetForSection(collectionView, itemsViewLayout, section);
 
 			if (!ItemsView.IsGrouped)
 			{

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.Maui.DeviceTests.Stubs;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Hosting;
 using ObjCRuntime;
 using UIKit;
 using Xunit;
@@ -11,6 +12,49 @@ namespace Microsoft.Maui.DeviceTests
 {
 	public partial class SearchBarHandlerTests
 	{
+		[Theory(DisplayName = "Gradient Background Initializes Correctly")]
+		[InlineData(0xFFFF0000, 0xFFFE2500)]
+		[InlineData(0xFF00FF00, 0xFF04F800)]
+		[InlineData(0xFF0000FF, 0xFF0432FE)]
+		public async Task GradientBackgroundInitializesCorrectly(uint colorToSet, uint expectedColor)
+		{
+			var color = Color.FromUint(colorToSet);
+			var expected = Color.FromUint(expectedColor);
+
+			var brush = new LinearGradientPaintStub(Colors.Black, color);
+
+			var searchBar = new SearchBarStub
+			{
+				Background = brush,
+				Height = 71,
+				Width = 256,
+				Text = "Background"
+			};
+
+			await ValidateHasColor(searchBar, expected, tolerance: .05);
+		}
+
+		[Fact]
+		public async Task ShouldShowCancelButtonToggles()
+		{
+			var searchBarStub = new SearchBarStub();
+
+			await InvokeOnMainThreadAsync(() =>
+			{
+				var searchBar = CreateHandler(searchBarStub).PlatformView;
+
+				Assert.False(searchBar.ShowsCancelButton);
+
+				searchBarStub.Text = "additional text";
+				searchBarStub.Handler.UpdateValue(nameof(ISearchBar.Text));
+				Assert.True(searchBar.ShowsCancelButton);
+
+				searchBarStub.Text = "";
+				searchBarStub.Handler.UpdateValue(nameof(ISearchBar.Text));
+				Assert.False(searchBar.ShowsCancelButton);
+			});
+		}
+
 		[Fact(DisplayName = "Horizontal TextAlignment Updates Correctly")]
 		public async Task HorizontalTextAlignmentInitializesCorrectly()
 		{
@@ -29,12 +73,12 @@ namespace Microsoft.Maui.DeviceTests
 				return new
 				{
 					ViewValue = searchBarStub.HorizontalTextAlignment,
-					NativeViewValue = GetNativeHorizontalTextAlignment(handler)
+					PlatformViewValue = GetNativeHorizontalTextAlignment(handler)
 				};
 			});
 
 			Assert.Equal(xplatHorizontalTextAlignment, values.ViewValue);
-			values.NativeViewValue.AssertHasFlag(expectedValue);
+			values.PlatformViewValue.AssertHasFlag(expectedValue);
 		}
 
 		[Fact(DisplayName = "Horizontal TextAlignment Updates Correctly")]
@@ -55,12 +99,12 @@ namespace Microsoft.Maui.DeviceTests
 				return new
 				{
 					ViewValue = searchBarStub.VerticalTextAlignment,
-					NativeViewValue = GetNativeVerticalTextAlignment(handler)
+					PlatformViewValue = GetNativeVerticalTextAlignment(handler)
 				};
 			});
 
 			Assert.Equal(xplatVerticalTextAlignment, values.ViewValue);
-			values.NativeViewValue.AssertHasFlag(expectedValue);
+			values.PlatformViewValue.AssertHasFlag(expectedValue);
 		}
 
 		[Fact(DisplayName = "CharacterSpacing Initializes Correctly")]
@@ -69,27 +113,35 @@ namespace Microsoft.Maui.DeviceTests
 			string originalText = "Test";
 			var xplatCharacterSpacing = 4;
 
-			var slider = new SearchBarStub()
+			var searchBar = new SearchBarStub()
 			{
 				CharacterSpacing = xplatCharacterSpacing,
 				Text = originalText
 			};
 
-			var values = await GetValueAsync(slider, (handler) =>
+			var values = await GetValueAsync(searchBar, (handler) =>
 			{
 				return new
 				{
-					ViewValue = slider.CharacterSpacing,
-					NativeViewValue = GetNativeCharacterSpacing(handler)
+					ViewValue = searchBar.CharacterSpacing,
+					PlatformViewValue = GetNativeCharacterSpacing(handler)
 				};
 			});
 
 			Assert.Equal(xplatCharacterSpacing, values.ViewValue);
-			Assert.Equal(xplatCharacterSpacing, values.NativeViewValue);
+			Assert.Equal(xplatCharacterSpacing, values.PlatformViewValue);
+		}
+
+		double GetInputFieldHeight(SearchBarHandler searchBarHandler)
+		{
+			return GetNativeSearchBar(searchBarHandler).Bounds.Height;
 		}
 
 		static UISearchBar GetNativeSearchBar(SearchBarHandler searchBarHandler) =>
-			(UISearchBar)searchBarHandler.NativeView;
+			(UISearchBar)searchBarHandler.PlatformView;
+
+		Color GetNativeBackgroundColor(SearchBarHandler searchBarHandler) =>
+			GetNativeSearchBar(searchBarHandler).BarTintColor.ToColor();
 
 		string GetNativeText(SearchBarHandler searchBarHandler) =>
 			GetNativeSearchBar(searchBarHandler).Text;
@@ -115,7 +167,7 @@ namespace Microsoft.Maui.DeviceTests
 			var uiSearchBar = GetNativeSearchBar(searchBarHandler);
 			var textField = uiSearchBar.FindDescendantView<UITextField>();
 
-			if (textField == null)
+			if (textField is null)
 				return Colors.Transparent;
 
 			return textField.TextColor.ToColor();
@@ -129,7 +181,7 @@ namespace Microsoft.Maui.DeviceTests
 			var uiSearchBar = GetNativeSearchBar(searchBarHandler);
 			var textField = uiSearchBar.FindDescendantView<UITextField>();
 
-			if (textField == null)
+			if (textField is null)
 				return UITextAlignment.Left;
 
 			return textField.TextAlignment;
@@ -140,7 +192,7 @@ namespace Microsoft.Maui.DeviceTests
 			var uiSearchBar = GetNativeSearchBar(searchBarHandler);
 			var textField = uiSearchBar.FindDescendantView<UITextField>();
 
-			if (textField == null)
+			if (textField is null)
 				return UIControlContentVerticalAlignment.Center;
 
 			return textField.VerticalAlignment;
@@ -159,20 +211,108 @@ namespace Microsoft.Maui.DeviceTests
 			var uiSearchBar = GetNativeSearchBar(searchBarHandler);
 			var textField = uiSearchBar.FindDescendantView<UITextField>();
 
-			if (textField == null)
+			if (textField is null)
 				return -1;
 
 			return textField.Font.PointSize;
 		}
 
-		Task ValidateHasColor(ISearchBar searchBar, Color color, Action action = null)
+		bool GetNativeIsReadOnly(SearchBarHandler searchBarHandler)
 		{
-			return InvokeOnMainThreadAsync(() =>
-			{
-				var nativeSearchBar = GetNativeSearchBar(CreateHandler(searchBar));
-				action?.Invoke();
-				nativeSearchBar.AssertContainsColor(color);
-			});
+			var uiSearchBar = GetNativeSearchBar(searchBarHandler);
+
+			return !uiSearchBar.UserInteractionEnabled;
+		}
+
+		bool GetNativeIsNumericKeyboard(SearchBarHandler searchBarHandler)
+		{
+			var uiSearchBar = GetNativeSearchBar(searchBarHandler);
+			var textField = uiSearchBar.FindDescendantView<UITextField>();
+
+			if (textField is null)
+				return false;
+
+			return textField.KeyboardType == UIKeyboardType.DecimalPad;
+		}
+
+		bool GetNativeIsEmailKeyboard(SearchBarHandler searchBarHandler)
+		{
+			var uiSearchBar = GetNativeSearchBar(searchBarHandler);
+			var textField = uiSearchBar.FindDescendantView<UITextField>();
+
+			if (textField is null)
+				return false;
+
+			return textField.KeyboardType == UIKeyboardType.EmailAddress;
+		}
+
+		bool GetNativeIsTelephoneKeyboard(SearchBarHandler searchBarHandler)
+		{
+			var uiSearchBar = GetNativeSearchBar(searchBarHandler);
+			var textField = uiSearchBar.FindDescendantView<UITextField>();
+
+			if (textField is null)
+				return false;
+
+			return textField.KeyboardType == UIKeyboardType.PhonePad;
+		}
+
+		bool GetNativeIsUrlKeyboard(SearchBarHandler searchBarHandler)
+		{
+			var uiSearchBar = GetNativeSearchBar(searchBarHandler);
+			var textField = uiSearchBar.FindDescendantView<UITextField>();
+
+			if (textField is null)
+				return false;
+
+			return textField.KeyboardType == UIKeyboardType.Url;
+		}
+
+		bool GetNativeIsTextKeyboard(SearchBarHandler searchBarHandler)
+		{
+			var uiSearchBar = GetNativeSearchBar(searchBarHandler);
+			var textField = uiSearchBar.FindDescendantView<UITextField>();
+
+			if (textField is null)
+				return false;
+
+			return textField.AutocapitalizationType == UITextAutocapitalizationType.Sentences &&
+				textField.AutocorrectionType == UITextAutocorrectionType.Yes &&
+				textField.SpellCheckingType == UITextSpellCheckingType.Yes;
+		}
+
+		bool GetNativeIsChatKeyboard(SearchBarHandler searchBarHandler)
+		{
+			var uiSearchBar = GetNativeSearchBar(searchBarHandler);
+			var textField = uiSearchBar.FindDescendantView<UITextField>();
+
+			if (textField is null)
+				return false;
+
+			return textField.AutocapitalizationType == UITextAutocapitalizationType.Sentences &&
+				textField.AutocorrectionType == UITextAutocorrectionType.Yes &&
+				textField.SpellCheckingType == UITextSpellCheckingType.Yes;
+		}
+		bool GetNativeIsTextPredictionEnabled(SearchBarHandler searchBarHandler)
+		{
+			var searchView = GetNativeSearchBar(searchBarHandler);
+			var textField = searchView.GetSearchTextField();
+
+			if (textField is null)
+				return false;
+
+			return textField.AutocorrectionType == UITextAutocorrectionType.Yes;
+		}
+
+		bool GetNativeIsSpellCheckEnabled(SearchBarHandler searchBarHandler)
+		{
+			var searchView = GetNativeSearchBar(searchBarHandler);
+			var textField = searchView.GetSearchTextField();
+
+			if (textField is null)
+				return false;
+
+			return textField.SpellCheckingType == UITextSpellCheckingType.Yes;
 		}
 	}
 }

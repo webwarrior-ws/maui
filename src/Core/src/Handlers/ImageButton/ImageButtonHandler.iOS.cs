@@ -1,56 +1,116 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Handlers
 {
 	public partial class ImageButtonHandler : ViewHandler<IImageButton, UIButton>
 	{
-		protected override UIButton CreateNativeView()
+		readonly ImageButtonProxy _proxy = new();
+
+		protected override UIButton CreatePlatformView()
 		{
-			return new UIButton(UIButtonType.System);
+			var platformView = new UIButton(UIButtonType.System)
+			{
+				ClipsToBounds = true
+			};
+
+			return platformView;
 		}
 
-		void OnSetImageSource(UIImage? obj)
+		protected override void ConnectHandler(UIButton platformView)
 		{
-			NativeView.SetImage(obj?.ImageWithRenderingMode(UIImageRenderingMode.AlwaysOriginal), UIControlState.Normal);
-			NativeView.HorizontalAlignment = UIControlContentHorizontalAlignment.Fill;
-			NativeView.VerticalAlignment = UIControlContentVerticalAlignment.Fill;
+			_proxy.Connect(VirtualView, platformView);
+
+			base.ConnectHandler(platformView);
 		}
 
-		protected override void ConnectHandler(UIButton nativeView)
+		protected override void DisconnectHandler(UIButton platformView)
 		{
-			nativeView.TouchUpInside += OnButtonTouchUpInside;
-			nativeView.TouchUpOutside += OnButtonTouchUpOutside;
-			nativeView.TouchDown += OnButtonTouchDown;
-			base.ConnectHandler(nativeView);
-		}
+			_proxy.Disconnect(platformView);
 
-		protected override void DisconnectHandler(UIButton nativeView)
-		{
-			nativeView.TouchUpInside -= OnButtonTouchUpInside;
-			nativeView.TouchUpOutside -= OnButtonTouchUpOutside;
-			nativeView.TouchDown -= OnButtonTouchDown;
-			base.DisconnectHandler(nativeView);
+			base.DisconnectHandler(platformView);
+
 			SourceLoader.Reset();
 		}
 
-		void OnButtonTouchUpInside(object? sender, EventArgs e)
+		public static void MapStrokeColor(IImageButtonHandler handler, IButtonStroke buttonStroke)
 		{
-			VirtualView?.Released();
-			VirtualView?.Clicked();
+			handler.PlatformView?.UpdateStrokeColor(buttonStroke);
 		}
 
-		void OnButtonTouchUpOutside(object? sender, EventArgs e)
+		public static void MapStrokeThickness(IImageButtonHandler handler, IButtonStroke buttonStroke)
 		{
-			VirtualView?.Released();
+			handler.PlatformView?.UpdateStrokeThickness(buttonStroke);
 		}
 
-		void OnButtonTouchDown(object? sender, EventArgs e)
+		public static void MapCornerRadius(IImageButtonHandler handler, IButtonStroke buttonStroke)
 		{
-			VirtualView?.Pressed();
+			handler.PlatformView?.UpdateCornerRadius(buttonStroke);
+		}
+
+		public static void MapPadding(IImageButtonHandler handler, IImageButton imageButton)
+		{
+			(handler.PlatformView as UIButton)?.UpdatePadding(imageButton);
+		}
+
+		partial class ImageButtonImageSourcePartSetter
+		{
+			public override void SetImageSource(UIImage? platformImage)
+			{
+				if (Handler?.PlatformView is not UIButton button)
+					return;
+
+				if (platformImage?.Images is not null && platformImage.Images.Length > 0)
+					platformImage = platformImage.Images[0];
+
+				platformImage = platformImage?.ImageWithRenderingMode(UIImageRenderingMode.AlwaysOriginal);
+
+				button.SetImage(platformImage, UIControlState.Normal);
+				button.HorizontalAlignment = UIControlContentHorizontalAlignment.Fill;
+				button.VerticalAlignment = UIControlContentVerticalAlignment.Fill;
+			}
+		}
+
+		class ImageButtonProxy
+		{
+			WeakReference<IImageButton>? _virtualView;
+
+			IImageButton? VirtualView => _virtualView is not null && _virtualView.TryGetTarget(out var v) ? v : null;
+
+			public void Connect(IImageButton virtualView, UIButton platformView)
+			{
+				_virtualView = new(virtualView);
+
+				platformView.TouchUpInside += OnButtonTouchUpInside;
+				platformView.TouchUpOutside += OnButtonTouchUpOutside;
+				platformView.TouchDown += OnButtonTouchDown;
+			}
+
+			public void Disconnect(UIButton platformView)
+			{
+				platformView.TouchUpInside -= OnButtonTouchUpInside;
+				platformView.TouchUpOutside -= OnButtonTouchUpOutside;
+				platformView.TouchDown -= OnButtonTouchDown;
+			}
+
+			void OnButtonTouchUpInside(object? sender, EventArgs e)
+			{
+				if (VirtualView is IImageButton imageButton)
+				{
+					imageButton.Released();
+					imageButton.Clicked();
+				}
+			}
+
+			void OnButtonTouchUpOutside(object? sender, EventArgs e)
+			{
+				VirtualView?.Released();
+			}
+
+			void OnButtonTouchDown(object? sender, EventArgs e)
+			{
+				VirtualView?.Pressed();
+			}
 		}
 	}
 }

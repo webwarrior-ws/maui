@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -6,6 +7,7 @@ using System.Linq;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/ListStringTypeConverter.xml" path="Type[@FullName='Microsoft.Maui.Controls.ListStringTypeConverter']/Docs/*" />
 	[Xaml.ProvideCompiled("Microsoft.Maui.Controls.XamlC.ListStringTypeConverter")]
 	public class ListStringTypeConverter : TypeConverter
 	{

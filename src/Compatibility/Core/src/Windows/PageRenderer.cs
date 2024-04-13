@@ -1,15 +1,16 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Windows.UI.ViewManagement;
+using Microsoft.Maui.Controls.Platform;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
-using System;
-using Microsoft.Maui.Controls.Platform;
+using Windows.UI.ViewManagement;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
-	public class PageRenderer : 
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
+	public class PageRenderer :
 		//Microsoft.UI.Xaml.Controls.Grid, IVisualElementRenderer 
 		VisualElementRenderer<Page, FrameworkElement>
 	{

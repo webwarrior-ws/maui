@@ -7,12 +7,13 @@ using Android.Text.Method;
 using Android.Util;
 using Android.Views;
 using Android.Views.InputMethods;
-using Android.Widget;
+using AndroidX.AppCompat.Widget;
 using Java.Lang;
 using Microsoft.Maui.Controls.Platform;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class EditorRenderer : EditorRendererBase<FormsEditText>
 	{
 		TextColorSwitcher _hintColorSwitcher;
@@ -31,7 +32,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			};
 		}
 
-		protected override EditText EditText => Control;
+		protected override AppCompatEditText EditText => Control;
 
 		[PortHandler]
 		protected override void UpdatePlaceholderColor()
@@ -47,6 +48,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 			_textColorSwitcher.UpdateTextColor(EditText, Element.TextColor);
 		}
 
+		[PortHandler]
 		protected override void OnAttachedToWindow()
 		{
 			base.OnAttachedToWindow();
@@ -60,11 +62,12 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		}
 	}
 
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public abstract class EditorRendererBase<TControl> : ViewRenderer<Editor, TControl>, ITextWatcher
 		where TControl : global::Android.Views.View
 	{
 		bool _disposed;
-		protected abstract EditText EditText { get; }
+		protected abstract AppCompatEditText EditText { get; }
 
 		public EditorRendererBase(Context context) : base(context)
 		{
@@ -90,7 +93,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		{
 			if (!e.Focus)
 			{
-				EditText.HideKeyboard();
+				EditText.HideSoftInput();
 			}
 
 			base.OnFocusChangeRequested(sender, e);
@@ -100,7 +103,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 				// Post this to the main looper queue so it doesn't happen until the other focus stuff has resolved
 				// Otherwise, ShowKeyboard will be called before this control is truly focused, and we will potentially
 				// be displaying the wrong keyboard
-				EditText?.PostShowKeyboard();
+				EditText?.PostShowSoftInput();
 			}
 		}
 
@@ -280,6 +283,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		[PortHandler]
 		abstract protected void UpdatePlaceholderColor();
 
+		[PortHandler]
 		void OnKeyboardBackPressed(object sender, EventArgs eventArgs)
 		{
 			ElementController?.SendCompleted();
@@ -289,7 +293,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		[PortHandler]
 		void UpdateMaxLength()
 		{
-			var currentFilters = new List<IInputFilter>(EditText?.GetFilters() ?? new IInputFilter[0]);
+			var currentFilters = new List<IInputFilter>(EditText?.GetFilters() ?? Array.Empty<IInputFilter>());
 
 			for (var i = 0; i < currentFilters.Count; i++)
 			{

@@ -1,12 +1,12 @@
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
+using Microsoft.Maui.ApplicationModel;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.Storage
 {
-	public static partial class FilePicker
+	partial class FilePickerImplementation : IFilePicker
 	{
-		static Task<IEnumerable<FileResult>> PlatformPickAsync(PickOptions options, bool allowMultiple = false)
+		Task<IEnumerable<FileResult>> PlatformPickAsync(PickOptions options, bool allowMultiple = false)
 			=> throw new NotImplementedInReferenceAssemblyException();
 	}
 

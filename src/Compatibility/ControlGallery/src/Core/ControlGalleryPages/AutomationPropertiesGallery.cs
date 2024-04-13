@@ -1,15 +1,15 @@
 ﻿
 using Microsoft.Maui.Graphics;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
+namespace Microsoft.Maui.Controls.ControlGallery
 {
 	public class AutomationPropertiesGallery : ContentPage
 	{
 		public AutomationPropertiesGallery()
 		{
-			// https://developer.xamarin.com/guides/android/advanced_topics/accessibility/
-			// https://developer.xamarin.com/guides/ios/advanced_topics/accessibility/
-			// https://msdn.microsoft.com/en-us/windows/uwp/accessibility/basic-accessibility-information
+			// https://learn.microsoft.com/xamarin/android/app-fundamentals/accessibility
+			// https://learn.microsoft.com/xamarin/ios/app-fundamentals/accessibility
+			// https://learn.microsoft.com/windows/apps/design/accessibility/basic-accessibility-information
 
 			const string EntryPlaceholder = "Your name.";
 			const string EntryHelpText = "Type your name.";

@@ -1,78 +1,143 @@
 ﻿using System;
 using Android.Content;
+using Android.Graphics;
 using Android.Runtime;
 using Android.Util;
 using Android.Views;
 using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Graphics.Platform;
 
 namespace Microsoft.Maui.Platform
 {
-	// TODO ezhart At this point, this is almost exactly a clone of LayoutViewGroup; we may be able to drop this class entirely
-	public class ContentViewGroup : ViewGroup
+	public class ContentViewGroup : PlatformContentViewGroup, ICrossPlatformLayoutBacking, IVisualTreeElementProvidable
 	{
+		IBorderStroke? _clip;
+		readonly Context _context;
+
 		public ContentViewGroup(Context context) : base(context)
 		{
+			_context = context;
 		}
 
 		public ContentViewGroup(IntPtr javaReference, JniHandleOwnership transfer) : base(javaReference, transfer)
 		{
+			var context = Context;
+			ArgumentNullException.ThrowIfNull(context);
+			_context = context;
 		}
 
 		public ContentViewGroup(Context context, IAttributeSet attrs) : base(context, attrs)
 		{
+			_context = context;
 		}
 
 		public ContentViewGroup(Context context, IAttributeSet attrs, int defStyleAttr) : base(context, attrs, defStyleAttr)
 		{
+			_context = context;
 		}
 
 		public ContentViewGroup(Context context, IAttributeSet attrs, int defStyleAttr, int defStyleRes) : base(context, attrs, defStyleAttr, defStyleRes)
 		{
+			_context = context;
+		}
+
+		public ICrossPlatformLayout? CrossPlatformLayout
+		{
+			get; set;
+		}
+
+		Graphics.Size CrossPlatformMeasure(double widthConstraint, double heightConstraint)
+		{
+			return CrossPlatformLayout?.CrossPlatformMeasure(widthConstraint, heightConstraint) ?? Graphics.Size.Zero;
+		}
+
+		Graphics.Size CrossPlatformArrange(Graphics.Rect bounds)
+		{
+			return CrossPlatformLayout?.CrossPlatformArrange(bounds) ?? Graphics.Size.Zero;
 		}
 
 		protected override void OnMeasure(int widthMeasureSpec, int heightMeasureSpec)
 		{
-			if (Context == null)
-			{
-				return;
-			}
-
 			if (CrossPlatformMeasure == null)
 			{
 				base.OnMeasure(widthMeasureSpec, heightMeasureSpec);
 				return;
 			}
 
-			var deviceIndependentWidth = widthMeasureSpec.ToDouble(Context);
-			var deviceIndependentHeight = heightMeasureSpec.ToDouble(Context);
+			var deviceIndependentWidth = widthMeasureSpec.ToDouble(_context);
+			var deviceIndependentHeight = heightMeasureSpec.ToDouble(_context);
 
-			var size = CrossPlatformMeasure(deviceIndependentWidth, deviceIndependentHeight);
+			var widthMode = MeasureSpec.GetMode(widthMeasureSpec);
+			var heightMode = MeasureSpec.GetMode(heightMeasureSpec);
 
-			var nativeWidth = Context.ToPixels(size.Width);
-			var nativeHeight = Context.ToPixels(size.Height);
+			var measure = CrossPlatformMeasure(deviceIndependentWidth, deviceIndependentHeight);
 
-			SetMeasuredDimension((int)nativeWidth, (int)nativeHeight);
+			// If the measure spec was exact, we should return the explicit size value, even if the content
+			// measure came out to a different size
+			var width = widthMode == MeasureSpecMode.Exactly ? deviceIndependentWidth : measure.Width;
+			var height = heightMode == MeasureSpecMode.Exactly ? deviceIndependentHeight : measure.Height;
+
+			var platformWidth = _context.ToPixels(width);
+			var platformHeight = _context.ToPixels(height);
+
+			// Minimum values win over everything
+			platformWidth = Math.Max(MinimumWidth, platformWidth);
+			platformHeight = Math.Max(MinimumHeight, platformHeight);
+
+			SetMeasuredDimension((int)platformWidth, (int)platformHeight);
 		}
 
-		protected override void OnLayout(bool changed, int l, int t, int r, int b)
+		protected override void OnLayout(bool changed, int left, int top, int right, int bottom)
 		{
-			if (CrossPlatformArrange == null || Context == null)
+			if (CrossPlatformArrange == null)
 			{
 				return;
 			}
 
-			var deviceIndependentLeft = Context.FromPixels(l);
-			var deviceIndependentTop = Context.FromPixels(t);
-			var deviceIndependentRight = Context.FromPixels(r);
-			var deviceIndependentBottom = Context.FromPixels(b);
-
-			var destination = Rectangle.FromLTRB(0, 0,
-				deviceIndependentRight - deviceIndependentLeft, deviceIndependentBottom - deviceIndependentTop);
+			var destination = _context.ToCrossPlatformRectInReferenceFrame(left, top, right, bottom);
 
 			CrossPlatformArrange(destination);
 		}
 
-		internal Func<double, double, Graphics.Size>? CrossPlatformMeasure { get; set; }
-		internal Func<Graphics.Rectangle, Graphics.Size>? CrossPlatformArrange { get; set; }
+		internal IBorderStroke? Clip
+		{
+			get => _clip;
+			set
+			{
+				_clip = value;
+				// NOTE: calls PostInvalidate()
+				SetHasClip(_clip is not null);
+			}
+		}
+
+		protected override Path? GetClipPath(int width, int height)
+		{
+			if (Clip is null || Clip?.Shape is null)
+				return null;
+
+			float density = _context.GetDisplayDensity();
+			float strokeThickness = (float)Clip.StrokeThickness;
+			float w = (width / density) - strokeThickness;
+			float h = (height / density) - strokeThickness;
+			float x = strokeThickness / 2;
+			float y = strokeThickness / 2;
+			IShape clipShape = Clip.Shape;
+
+			var bounds = new Graphics.RectF(x, y, w, h);
+
+			Path? platformPath = clipShape.ToPlatform(bounds, strokeThickness, density, true);
+			return platformPath;
+		}
+
+		IVisualTreeElement? IVisualTreeElementProvidable.GetElement()
+		{
+			if (CrossPlatformLayout is IVisualTreeElement layoutElement &&
+				layoutElement.IsThisMyPlatformView(this))
+			{
+				return layoutElement;
+			}
+
+			return null;
+		}
 	}
 }

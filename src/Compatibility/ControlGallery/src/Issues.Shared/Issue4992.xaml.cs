@@ -3,7 +3,7 @@ using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.Xaml;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if APP
 	[XamlCompilation(XamlCompilationOptions.Compile)]
@@ -18,8 +18,6 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 		public Issue4992()
 		{
 #if APP
-			Device.SetFlags(new List<string>(Device.Flags ?? new List<string>()) { "CollectionView_Experimental" });
-
 			InitializeComponent();
 
 			People = new List<string>

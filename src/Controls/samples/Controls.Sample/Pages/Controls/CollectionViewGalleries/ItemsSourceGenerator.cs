@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using CommunityToolkit.Mvvm.Messaging;
 using Maui.Controls.Sample.Pages.CollectionViewGalleries.CarouselViewGalleries;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Dispatching;
 
 namespace Maui.Controls.Sample.Pages.CollectionViewGalleries
 {
@@ -18,15 +20,18 @@ namespace Maui.Controls.Sample.Pages.CollectionViewGalleries
 
 	internal class ItemsSourceGenerator : ContentView
 	{
-		public event EventHandler<NotifyCollectionChangedEventArgs> CollectionChanged;
+		public event EventHandler<NotifyCollectionChangedEventArgs>? CollectionChanged;
 		readonly ItemsView _cv;
-		private readonly ItemsSourceType _itemsSourceType;
+		private ItemsSourceType _itemsSourceType;
 		readonly Entry _entry;
 		int _count = 0;
 
-		CarouselView carousel => _cv as CarouselView;
+		CarouselView? carousel => _cv as CarouselView;
 
 		public int Count => _count;
+
+		public ItemsSourceType ItemsSourceType => _itemsSourceType;
+
 		public ItemsSourceGenerator(ItemsView cv, int initialItems = 1000,
 			ItemsSourceType itemsSourceType = ItemsSourceType.List)
 		{
@@ -50,9 +55,9 @@ namespace Maui.Controls.Sample.Pages.CollectionViewGalleries
 			layout.Children.Add(button);
 
 			button.Clicked += GenerateItems;
-			MessagingCenter.Subscribe<ExampleTemplateCarousel>(this, "remove", (obj) =>
+			WeakReferenceMessenger.Default.Register<ExampleTemplateCarousel, string>(this, "remove", (_, obj) =>
 			{
-				(cv.ItemsSource as ObservableCollection<CollectionViewGalleryTestItem>).Remove(obj.BindingContext as CollectionViewGalleryTestItem);
+				(cv.ItemsSource as ObservableCollection<CollectionViewGalleryTestItem>)!.Remove((obj.BindingContext as CollectionViewGalleryTestItem)!);
 			});
 
 			Content = layout;
@@ -61,13 +66,17 @@ namespace Maui.Controls.Sample.Pages.CollectionViewGalleries
 		readonly string[] _images =
 		{
 			"cover1.jpg",
-			"oasis.jpg",
-			"photo.jpg",
-			"Vegetables.jpg",
-			"Fruits.jpg",
-			"FlowerBuds.jpg",
-			"Legumes.jpg"
+			"vegetables.jpg",
+			"fruits.jpg",
+			"flowerbuds.jpg",
+			"legumes.jpg"
 		};
+
+		public void GenerateItems(ItemsSourceType itemsSourceType)
+		{
+			_itemsSourceType = itemsSourceType;
+			GenerateItems();
+		}
 
 		public void GenerateItems()
 		{
@@ -105,7 +114,7 @@ namespace Maui.Controls.Sample.Pages.CollectionViewGalleries
 			}
 		}
 
-		ObservableCollection<CollectionViewGalleryTestItem> _obsCollection;
+		ObservableCollection<CollectionViewGalleryTestItem>? _obsCollection;
 		void GenerateObservableCollection()
 		{
 			if (int.TryParse(_entry.Text, out int count))
@@ -148,14 +157,19 @@ namespace Maui.Controls.Sample.Pages.CollectionViewGalleries
 			}
 		}
 
-		public void GenerateEmptyObservableCollectionAndAddItemsEverySecond()
+		public void GenerateEmptyObservableCollectionAndAddItemsEverySecond(bool resetBeforeAddItems)
 		{
 			if (int.TryParse(_entry.Text, out int count))
 			{
 				var items = new ObservableCollection<CollectionViewGalleryTestItem>();
 				_cv.ItemsSource = items;
-				Device.StartTimer(TimeSpan.FromSeconds(1), () =>
+				Dispatcher.StartTimer(TimeSpan.FromSeconds(1), () =>
 				{
+					//this test a issue with events firing out of order on IOS Obs Source
+					if (resetBeforeAddItems)
+					{
+						items.Clear();
+					}
 					var n = items.Count + 1;
 					items.Add(new CollectionViewGalleryTestItem(DateTime.Now.AddDays(n),
 						$"{_images[n % _images.Length]}, {n}", _images[n % _images.Length], n));
@@ -166,7 +180,7 @@ namespace Maui.Controls.Sample.Pages.CollectionViewGalleries
 		}
 
 
-		void GenerateItems(object sender, EventArgs e)
+		void GenerateItems(object? sender, EventArgs e)
 		{
 			GenerateItems();
 

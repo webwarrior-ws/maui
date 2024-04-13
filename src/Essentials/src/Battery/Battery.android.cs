@@ -1,74 +1,86 @@
+#nullable enable
+
 using System;
+using Android.App;
 using Android.Content;
 using Android.OS;
+using Microsoft.Maui.ApplicationModel;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.Devices
 {
-	public static partial class Battery
+	partial class BatteryImplementation : IBattery
 	{
-		static BatteryBroadcastReceiver batteryReceiver;
-		static EnergySaverBroadcastReceiver powerReceiver;
+		static PowerManager? powerManager;
 
-		static void StartEnergySaverListeners()
+		static PowerManager? PowerManager =>
+			powerManager ??= Application.Context.GetSystemService(Context.PowerService) as PowerManager;
+
+		BatteryBroadcastReceiver? batteryReceiver;
+		EnergySaverBroadcastReceiver? powerReceiver;
+
+		void StartEnergySaverListeners()
 		{
 			powerReceiver = new EnergySaverBroadcastReceiver(OnEnergySaverChanged);
-			Platform.AppContext.RegisterReceiver(powerReceiver, new IntentFilter(PowerManager.ActionPowerSaveModeChanged));
+			PlatformUtils.RegisterBroadcastReceiver(powerReceiver, new IntentFilter(PowerManager.ActionPowerSaveModeChanged));
 		}
 
-		static void StopEnergySaverListeners()
+		void StopEnergySaverListeners()
 		{
 			try
 			{
-				Platform.AppContext.UnregisterReceiver(powerReceiver);
+				Application.Context.UnregisterReceiver(powerReceiver);
 			}
 			catch (Java.Lang.IllegalArgumentException)
 			{
 				System.Diagnostics.Debug.WriteLine("Energy saver receiver already unregistered. Disposing of it.");
 			}
-			powerReceiver.Dispose();
+			powerReceiver?.Dispose();
 			powerReceiver = null;
 		}
 
-		static EnergySaverStatus PlatformEnergySaverStatus
+		public EnergySaverStatus EnergySaverStatus
 		{
 			get
 			{
-				var status = Platform.PowerManager?.IsPowerSaveMode ?? false;
+				var status = PowerManager?.IsPowerSaveMode ?? false;
 				return status ? EnergySaverStatus.On : EnergySaverStatus.Off;
 			}
 		}
 
-		static void StartBatteryListeners()
+		void StartBatteryListeners()
 		{
 			Permissions.EnsureDeclared<Permissions.Battery>();
 
 			batteryReceiver = new BatteryBroadcastReceiver(OnBatteryInfoChanged);
-			Platform.AppContext.RegisterReceiver(batteryReceiver, new IntentFilter(Intent.ActionBatteryChanged));
+			PlatformUtils.RegisterBroadcastReceiver(batteryReceiver, new IntentFilter(Intent.ActionBatteryChanged));
 		}
 
-		static void StopBatteryListeners()
+		void StopBatteryListeners()
 		{
 			try
 			{
-				Platform.AppContext.UnregisterReceiver(batteryReceiver);
+				Application.Context.UnregisterReceiver(batteryReceiver);
 			}
 			catch (Java.Lang.IllegalArgumentException)
 			{
 				System.Diagnostics.Debug.WriteLine("Battery receiver already unregistered. Disposing of it.");
 			}
-			batteryReceiver.Dispose();
+			batteryReceiver?.Dispose();
 			batteryReceiver = null;
 		}
 
-		static double PlatformChargeLevel
+		public double ChargeLevel
 		{
 			get
 			{
 				Permissions.EnsureDeclared<Permissions.Battery>();
 
 				using (var filter = new IntentFilter(Intent.ActionBatteryChanged))
-				using (var battery = Platform.AppContext.RegisterReceiver(null, filter))
+				using (var battery = PlatformUtils.RegisterBroadcastReceiver(null, filter))
 				{
+					if (battery is null)
+						return -1; // Unknown
+
 					var level = battery.GetIntExtra(BatteryManager.ExtraLevel, -1);
 					var scale = battery.GetIntExtra(BatteryManager.ExtraScale, -1);
 
@@ -80,15 +92,18 @@ namespace Microsoft.Maui.Essentials
 			}
 		}
 
-		static BatteryState PlatformState
+		public BatteryState State
 		{
 			get
 			{
 				Permissions.EnsureDeclared<Permissions.Battery>();
 
 				using (var filter = new IntentFilter(Intent.ActionBatteryChanged))
-				using (var battery = Platform.AppContext.RegisterReceiver(null, filter))
+				using (var battery = PlatformUtils.RegisterBroadcastReceiver(null, filter))
 				{
+					if (battery is null)
+						return BatteryState.Unknown;
+
 					var status = battery.GetIntExtra(BatteryManager.ExtraStatus, -1);
 					switch (status)
 					{
@@ -107,15 +122,18 @@ namespace Microsoft.Maui.Essentials
 			}
 		}
 
-		static BatteryPowerSource PlatformPowerSource
+		public BatteryPowerSource PowerSource
 		{
 			get
 			{
 				Permissions.EnsureDeclared<Permissions.Battery>();
 
 				using (var filter = new IntentFilter(Intent.ActionBatteryChanged))
-				using (var battery = Platform.AppContext.RegisterReceiver(null, filter))
+				using (var battery = PlatformUtils.RegisterBroadcastReceiver(null, filter))
 				{
+					if (battery is null)
+						return BatteryPowerSource.Unknown;
+
 					var chargePlug = battery.GetIntExtra(BatteryManager.ExtraPlugged, -1);
 
 					if (chargePlug == (int)BatteryPlugged.Usb)
@@ -136,7 +154,7 @@ namespace Microsoft.Maui.Essentials
 	[BroadcastReceiver(Enabled = true, Exported = false, Label = "Essentials Battery Broadcast Receiver")]
 	class BatteryBroadcastReceiver : BroadcastReceiver
 	{
-		Action onChanged;
+		readonly Action? onChanged;
 
 		public BatteryBroadcastReceiver()
 		{
@@ -145,14 +163,14 @@ namespace Microsoft.Maui.Essentials
 		public BatteryBroadcastReceiver(Action onChanged) =>
 			this.onChanged = onChanged;
 
-		public override void OnReceive(Context context, Intent intent) =>
+		public override void OnReceive(Context? context, Intent? intent) =>
 			onChanged?.Invoke();
 	}
 
 	[BroadcastReceiver(Enabled = true, Exported = false, Label = "Essentials Energy Saver Broadcast Receiver")]
 	class EnergySaverBroadcastReceiver : BroadcastReceiver
 	{
-		Action onChanged;
+		readonly Action? onChanged;
 
 		public EnergySaverBroadcastReceiver()
 		{
@@ -161,7 +179,7 @@ namespace Microsoft.Maui.Essentials
 		public EnergySaverBroadcastReceiver(Action onChanged) =>
 			this.onChanged = onChanged;
 
-		public override void OnReceive(Context context, Intent intent) =>
+		public override void OnReceive(Context? context, Intent? intent) =>
 			onChanged?.Invoke();
 	}
 }

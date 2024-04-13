@@ -1,23 +1,25 @@
+#nullable disable
 using System;
+using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Controls.Platform;
+using Microsoft.Maui.Graphics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.Maui.Controls.Internals;
-using WThickness = Microsoft.UI.Xaml.Thickness;
 using WSize = Windows.Foundation.Size;
-using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Controls.Platform;
+using WThickness = Microsoft.UI.Xaml.Thickness;
 
 namespace Microsoft.Maui.Controls.Platform
 {
 	public class ItemContentControl : ContentControl
 	{
 		VisualElement _visualElement;
-		IViewHandler _renderer;
+		IViewHandler _handler;
 		DataTemplate _currentTemplate;
 
 		public ItemContentControl()
 		{
 			DefaultStyleKey = typeof(ItemContentControl);
+			IsTabStop = false;
 		}
 
 		public static readonly DependencyProperty MauiContextProperty = DependencyProperty.Register(
@@ -117,77 +119,95 @@ namespace Microsoft.Maui.Controls.Platform
 		public static readonly DependencyProperty ItemSpacingProperty = DependencyProperty.Register(
 			nameof(ItemSpacing), typeof(Thickness), typeof(ItemContentControl),
 			new PropertyMetadata(default(Thickness)));
-		
+
 		public Thickness ItemSpacing
 		{
 			get => (Thickness)GetValue(ItemSpacingProperty);
 			set => SetValue(ItemSpacingProperty, value);
 		}
-				
+
 		protected override void OnContentChanged(object oldContent, object newContent)
 		{
 			base.OnContentChanged(oldContent, newContent);
 
 			if (oldContent != null && _visualElement != null)
+			{
 				_visualElement.MeasureInvalidated -= OnViewMeasureInvalidated;
+				_visualElement.PropertyChanged -= OnViewPropertyChanged;
+			}
 
 			if (newContent != null && _visualElement != null)
+			{
 				_visualElement.MeasureInvalidated += OnViewMeasureInvalidated;
+				_visualElement.PropertyChanged += OnViewPropertyChanged;
+				UpdateSemanticProperties(_visualElement);
+			}
 		}
 
 		internal void Realize()
 		{
 			var dataContext = FormsDataContext;
-			var formsTemplate = FormsDataTemplate;
+			var dataTemplate = FormsDataTemplate;
 			var container = FormsContainer;
 			var mauiContext = MauiContext;
 
 			var itemsView = container as ItemsView;
 
-			if (itemsView != null && _renderer?.VirtualView is Element e)
+			if (itemsView != null && _handler?.VirtualView is Element e)
 			{
 				itemsView.RemoveLogicalChild(e);
 			}
 
-			if (dataContext == null || formsTemplate == null || container == null || mauiContext == null)
+			if (dataContext is null || dataTemplate is null || container is null || mauiContext is null)
 			{
 				return;
 			}
 
-			if (_renderer?.ContainerView == null || _currentTemplate != formsTemplate)
+			// If the template is a DataTemplateSelector, we need to get the actual DataTemplate to use
+			// for our recycle check below
+			dataTemplate = dataTemplate.SelectDataTemplate(dataContext, container);
+
+			if (Content is null || _currentTemplate != dataTemplate)
 			{
 				// If the content has never been realized (i.e., this is a new instance), 
 				// or if we need to switch DataTemplates (because this instance is being recycled)
 				// then we'll need to create the content from the template 
-				_visualElement = formsTemplate.CreateContent(dataContext, container) as VisualElement;
+				_visualElement = dataTemplate.CreateContent() as VisualElement;
 				_visualElement.BindingContext = dataContext;
-				_renderer = _visualElement.GetOrCreateHandler(mauiContext);
+				_handler = _visualElement.ToHandler(mauiContext);
 
-				// We need to set IsNativeStateConsistent explicitly; otherwise, it won't be set until the renderer's Loaded 
+				// We need to set IsPlatformStateConsistent explicitly; otherwise, it won't be set until the renderer's Loaded 
 				// event. If the CollectionView is in a Layout, the Layout won't measure or layout the CollectionView until
-				// every visible descendant has `IsNativeStateConsistent == true`. And the problem that Layout is trying
+				// every visible descendant has `IsPlatformStateConsistent == true`. And the problem that Layout is trying
 				// to avoid by skipping layout for controls with not-yet-loaded children does not apply to CollectionView
 				// items. If we don't set this, the CollectionView just won't get layout at all, and will be invisible until
 				// the window is resized. 
 				SetNativeStateConsistent(_visualElement);
 
 				// Keep track of the template in case this instance gets reused later
-				_currentTemplate = formsTemplate;
+				_currentTemplate = dataTemplate;
 			}
 			else
 			{
 				// We are reusing this ItemContentControl and we can reuse the Element
-				_visualElement = _renderer.VirtualView as VisualElement;
 				_visualElement.BindingContext = dataContext;
 			}
 
-			Content = _renderer.GetWrappedNativeView();
+			if (_handler.VirtualView is ICrossPlatformLayout)
+			{
+				Content = _handler.ToPlatform();
+			}
+			else
+			{
+				Content = new ContentLayoutPanel(_handler.VirtualView);
+			}
+
 			itemsView?.AddLogicalChild(_visualElement);
 		}
 
-		void SetNativeStateConsistent(VisualElement visualElement) 
+		void SetNativeStateConsistent(VisualElement visualElement)
 		{
-			visualElement.IsNativeStateConsistent = true;
+			visualElement.IsPlatformStateConsistent = true;
 
 			foreach (var child in ((IElementController)visualElement).LogicalChildren)
 			{
@@ -202,7 +222,7 @@ namespace Microsoft.Maui.Controls.Platform
 
 		internal void UpdateIsSelected(bool isSelected)
 		{
-			var formsElement = _renderer?.VirtualView as VisualElement;
+			var formsElement = _handler?.VirtualView as VisualElement;
 
 			if (formsElement == null)
 				return;
@@ -217,44 +237,75 @@ namespace Microsoft.Maui.Controls.Platform
 			InvalidateMeasure();
 		}
 
+		void OnViewPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+		{
+			if (e.IsOneOf(
+				SemanticProperties.HeadingLevelProperty,
+				SemanticProperties.HintProperty,
+				SemanticProperties.DescriptionProperty,
+				AutomationProperties.IsInAccessibleTreeProperty) &&
+				sender is IView view)
+			{
+				UpdateSemanticProperties(view);
+			}
+		}
+
+		void UpdateSemanticProperties(IView view)
+		{
+			// If you don't set the automation properties on the root element
+			// of a list item it just reads out the class type to narrator
+			// https://docs.microsoft.com/en-us/accessibility-tools-docs/items/uwpxaml/listitem_name
+			// Because this is the root element of the ListViewItem we need to propagate
+			// the semantic properties from the root xplat element to this platform element
+			if (view == null)
+				return;
+
+			this.UpdateSemantics(view);
+
+			var semantics = view.Semantics;
+
+			UI.Xaml.Automation.Peers.AccessibilityView defaultAccessibilityView =
+				UI.Xaml.Automation.Peers.AccessibilityView.Content;
+
+			if (!String.IsNullOrWhiteSpace(semantics?.Description) || !String.IsNullOrWhiteSpace(semantics?.Hint))
+			{
+				defaultAccessibilityView = UI.Xaml.Automation.Peers.AccessibilityView.Raw;
+			}
+
+			this.SetAutomationPropertiesAccessibilityView(_visualElement, defaultAccessibilityView);
+		}
+
+		/// <inheritdoc/>
+		protected override WSize ArrangeOverride(WSize finalSize)
+		{
+			return base.ArrangeOverride(finalSize);
+		}
+
+		/// <inheritdoc/>
 		protected override WSize MeasureOverride(WSize availableSize)
 		{
-			if (_renderer == null)
+			if (_handler is null)
 			{
+				// Make sure we supply a real number for sizes otherwise virtualization won't function
+				if (double.IsFinite(availableSize.Width) && !double.IsFinite(availableSize.Height))
+					return new WSize(availableSize.Width, 32);
+				else if (!double.IsFinite(availableSize.Width) && double.IsFinite(availableSize.Height))
+					return new WSize(88, availableSize.Height);
+
 				return base.MeasureOverride(availableSize);
 			}
 
-			var frameworkElement = Content as FrameworkElement;
+			var width = ItemWidth == default ? availableSize.Width : ItemWidth;
+			var height = ItemHeight == default ? availableSize.Height : ItemHeight;
 
-			var formsElement = _renderer.VirtualView as VisualElement;
-			if (ItemHeight != default || ItemWidth != default)
-			{
-				formsElement.Layout(new Rectangle(0, 0, ItemWidth, ItemHeight));
+			// I realize if ItemWidth and ItemHeight are set that this call seems pointless, but it's not.
+			// From what I can tell, calling `base.MeasureOverride` causes the `ContentControl` to realize its content
+			// and build its visual tree. So, in order to just play nice with the WinUI `ContentControl` we always
+			// call base.MeasureOverride, so that we don't short circuit whatever bookkeeping it needs to do.
 
-				var wsize = new WSize(ItemWidth, ItemHeight);
+			var measureSize = base.MeasureOverride(new WSize(width, height));
 
-				frameworkElement.Margin = WinUIHelpers.CreateThickness(ItemSpacing.Left, ItemSpacing.Top, ItemSpacing.Right, ItemSpacing.Bottom);
-
-				frameworkElement.Measure(wsize);
-
-				return base.MeasureOverride(wsize);
-			}
-			else
-			{
-				var (width, height) = formsElement.Measure(availableSize.Width, availableSize.Height,
-					MeasureFlags.IncludeMargins).Request;
-
-				width = Max(width, availableSize.Width);
-				height = Max(height, availableSize.Height);
-
-				formsElement.Layout(new Rectangle(0, 0, width, height));
-
-				var wsize = new WSize(width, height);
-
-				frameworkElement.Measure(wsize);
-
-				return base.MeasureOverride(wsize);
-			}
+			return new WSize(Max(measureSize.Width, width), Max(measureSize.Height, height));
 		}
 
 		double Max(double requested, double available)
@@ -265,6 +316,29 @@ namespace Microsoft.Maui.Controls.Platform
 		double ClampInfinity(double value)
 		{
 			return double.IsInfinity(value) ? 0 : value;
+		}
+
+		internal VisualElement GetVisualElement() => _visualElement;
+
+		class ContentLayoutPanel : Panel
+		{
+			IView _view;
+			public ContentLayoutPanel(IView view)
+			{
+				_view = view;
+
+				var platformView = view.ToPlatform();
+
+				// Just in case this view is already parented to a wrapper that's been cycled out
+				if (platformView.Parent is ContentLayoutPanel clp)
+					clp.Children.Remove(platformView);
+
+				Children.Add(platformView);
+			}
+
+			protected override WSize ArrangeOverride(WSize finalSize) => _view.Arrange(new Rect(0, 0, finalSize.Width, finalSize.Height)).ToPlatform();
+
+			protected override WSize MeasureOverride(WSize availableSize) => _view.Measure(availableSize.Width, availableSize.Height).ToPlatform();
 		}
 	}
 }

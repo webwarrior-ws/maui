@@ -1,97 +1,184 @@
 ﻿#nullable enable
 #if __IOS__ || MACCATALYST
-using NativeView = Microsoft.Maui.Platform.ContentView;
+using PlatformView = Microsoft.Maui.Platform.ContentView;
 #elif __ANDROID__
-using NativeView = Microsoft.Maui.Platform.ContentViewGroup;
+using PlatformView = Microsoft.Maui.Platform.ContentViewGroup;
 #elif WINDOWS
-using NativeView = Microsoft.Maui.Platform.ContentPanel;
-#elif NETSTANDARD
-using NativeView = System.Object;
+using PlatformView = Microsoft.Maui.Platform.ContentPanel;
+#elif TIZEN
+using PlatformView = Microsoft.Maui.Platform.ContentViewGroup;
+#elif (NETSTANDARD || !PLATFORM)
+using PlatformView = System.Object;
 #endif
 
 namespace Microsoft.Maui.Handlers
 {
-	public partial class BorderHandler : IViewHandler
+	/// <summary>
+	/// Represents the view handler for the abstract <see cref="IBorderView"/> view and its platform-specific implementation.
+	/// </summary>
+	/// <seealso href="https://learn.microsoft.com/dotnet/maui/user-interface/handlers/">Conceptual documentation on handlers</seealso>
+	public partial class BorderHandler : IBorderHandler
 	{
-		public static IPropertyMapper<IBorder, BorderHandler> BorderMapper = new PropertyMapper<IBorder, BorderHandler>(ViewMapper)
+		public static IPropertyMapper<IBorderView, IBorderHandler> Mapper = new PropertyMapper<IBorderView, IBorderHandler>(ViewMapper)
 		{
-			[nameof(IContentView.Background)] = MapBackground,
-			[nameof(IContentView.Content)] = MapContent,
-			[nameof(IBorderStroke.Shape)] = MapStrokeShape,
-			[nameof(IBorderStroke.Stroke)] = MapStroke,
-			[nameof(IBorderStroke.StrokeThickness)] = MapStrokeThickness,
-			[nameof(IBorderStroke.StrokeLineCap)] = MapStrokeLineCap,
-			[nameof(IBorderStroke.StrokeLineJoin)] = MapStrokeLineJoin,
-			[nameof(IBorderStroke.StrokeDashPattern)] = MapStrokeDashPattern,
-			[nameof(IBorderStroke.StrokeDashOffset)] = MapStrokeDashOffset,
-			[nameof(IBorderStroke.StrokeMiterLimit)] = MapStrokeMiterLimit
+#if __ANDROID__
+			[nameof(IBorderView.Height)] = MapHeight,
+			[nameof(IBorderView.Width)] = MapWidth,
+#endif
+			[nameof(IBorderView.Background)] = MapBackground,
+			[nameof(IBorderView.Content)] = MapContent,
+			[nameof(IBorderView.Shape)] = MapStrokeShape,
+			[nameof(IBorderView.Stroke)] = MapStroke,
+			[nameof(IBorderView.StrokeThickness)] = MapStrokeThickness,
+			[nameof(IBorderView.StrokeLineCap)] = MapStrokeLineCap,
+			[nameof(IBorderView.StrokeLineJoin)] = MapStrokeLineJoin,
+			[nameof(IBorderView.StrokeDashPattern)] = MapStrokeDashPattern,
+			[nameof(IBorderView.StrokeDashOffset)] = MapStrokeDashOffset,
+			[nameof(IBorderView.StrokeMiterLimit)] = MapStrokeMiterLimit
 		};
 
-		public static CommandMapper<IBorder, BorderHandler> BorderCommandMapper = new(ViewCommandMapper)
+		public static CommandMapper<IBorderView, BorderHandler> CommandMapper = new(ViewCommandMapper)
 		{
 		};
 
-		public BorderHandler() : base(BorderMapper, BorderCommandMapper)
+		public BorderHandler() : base(Mapper, CommandMapper)
 		{
 
 		}
 
-		protected BorderHandler(IPropertyMapper mapper, CommandMapper? commandMapper = null)
-			: base(mapper, commandMapper ?? ViewCommandMapper)
+		public BorderHandler(IPropertyMapper? mapper)
+			: base(mapper ?? Mapper, CommandMapper)
 		{
 		}
 
-		public BorderHandler(IPropertyMapper? mapper = null) : base(mapper ?? BorderMapper)
+		public BorderHandler(IPropertyMapper? mapper, CommandMapper? commandMapper)
+			: base(mapper ?? Mapper, commandMapper ?? CommandMapper)
 		{
-
 		}
 
-		public static void MapBackground(BorderHandler handler, IBorder border)
+		IBorderView IBorderHandler.VirtualView => VirtualView;
+
+		PlatformView IBorderHandler.PlatformView => PlatformView;
+
+		/// <summary>
+		/// Maps the abstract <see cref="IView.Background"/> property to the platform-specific implementations.
+		/// </summary>
+		/// <param name="handler">The associated handler.</param>
+		/// <param name="border">The associated <see cref="IBorderView"/> instance.</param>
+		public static void MapBackground(IBorderHandler handler, IBorderView border)
 		{
-			((NativeView?)handler.NativeView)?.UpdateBackground(border);
+			((PlatformView?)handler.PlatformView)?.UpdateBackground(border);
 		}
 
-		public static void MapStrokeShape(BorderHandler handler, IBorder border)
+		/// <summary>
+		/// Maps the abstract <see cref="IBorderStroke.Shape"/> property to the platform-specific implementations.
+		/// </summary>
+		/// <param name="handler">The associated handler.</param>
+		/// <param name="border">The associated <see cref="IBorderView"/> instance.</param>
+		public static void MapStrokeShape(IBorderHandler handler, IBorderView border)
 		{
-			((NativeView?)handler.NativeView)?.UpdateStrokeShape(border);
+			((PlatformView?)handler.PlatformView)?.UpdateStrokeShape(border);
 			MapBackground(handler, border);
 		}
 
-		public static void MapStroke(BorderHandler handler, IBorder border)
+		/// <summary>
+		/// Maps the abstract <see cref="IStroke.Stroke"/> property to the platform-specific implementations.
+		/// </summary>
+		/// <param name="handler">The associated handler.</param>
+		/// <param name="border">The associated <see cref="IBorderView"/> instance.</param>
+		public static void MapStroke(IBorderHandler handler, IBorderView border)
 		{
-			((NativeView?)handler.NativeView)?.UpdateStroke(border);
+			((PlatformView?)handler.PlatformView)?.UpdateStroke(border);
 			MapBackground(handler, border);
 		}
 
-		public static void MapStrokeThickness(BorderHandler handler, IBorder border)
+		/// <summary>
+		/// Maps the abstract <see cref="IStroke.StrokeThickness"/> property to the platform-specific implementations.
+		/// </summary>
+		/// <param name="handler">The associated handler.</param>
+		/// <param name="border">The associated <see cref="IBorderView"/> instance.</param>
+		public static void MapStrokeThickness(IBorderHandler handler, IBorderView border)
 		{
-			((NativeView?)handler.NativeView)?.UpdateStrokeThickness(border);
+			((PlatformView?)handler.PlatformView)?.UpdateStrokeThickness(border);
 			MapBackground(handler, border);
 		}
 
-		public static void MapStrokeLineCap(BorderHandler handler, IBorder border)
+		/// <summary>
+		/// Maps the abstract <see cref="IStroke.StrokeLineCap"/> property to the platform-specific implementations.
+		/// </summary>
+		/// <param name="handler">The associated handler.</param>
+		/// <param name="border">The associated <see cref="IBorderView"/> instance.</param>
+		public static void MapStrokeLineCap(IBorderHandler handler, IBorderView border)
 		{
-			((NativeView?)handler.NativeView)?.UpdateStrokeLineCap(border);
+			((PlatformView?)handler.PlatformView)?.UpdateStrokeLineCap(border);
 		}
 
-		public static void MapStrokeLineJoin(BorderHandler handler, IBorder border)
+		/// <summary>
+		/// Maps the abstract <see cref="IStroke.StrokeLineJoin"/> property to the platform-specific implementations.
+		/// </summary>
+		/// <param name="handler">The associated handler.</param>
+		/// <param name="border">The associated <see cref="IBorderView"/> instance.</param>
+		public static void MapStrokeLineJoin(IBorderHandler handler, IBorderView border)
 		{
-			((NativeView?)handler.NativeView)?.UpdateStrokeLineJoin(border);
+			((PlatformView?)handler.PlatformView)?.UpdateStrokeLineJoin(border);
 		}
 
-		public static void MapStrokeDashPattern(BorderHandler handler, IBorder border)
+		/// <summary>
+		/// Maps the abstract <see cref="IStroke.StrokeDashPattern"/> property to the platform-specific implementations.
+		/// </summary>
+		/// <param name="handler">The associated handler.</param>
+		/// <param name="border">The associated <see cref="IBorderView"/> instance.</param>
+		public static void MapStrokeDashPattern(IBorderHandler handler, IBorderView border)
 		{
-			((NativeView?)handler.NativeView)?.UpdateStrokeDashPattern(border);
+			((PlatformView?)handler.PlatformView)?.UpdateStrokeDashPattern(border);
 		}
 
-		public static void MapStrokeDashOffset(BorderHandler handler, IBorder border)
+		/// <summary>
+		/// Maps the abstract <see cref="IStroke.StrokeDashOffset"/> property to the platform-specific implementations.
+		/// </summary>
+		/// <param name="handler">The associated handler.</param>
+		/// <param name="border">The associated <see cref="IBorderView"/> instance.</param>
+		public static void MapStrokeDashOffset(IBorderHandler handler, IBorderView border)
 		{
-			((NativeView?)handler.NativeView)?.UpdateStrokeDashOffset(border);
+			((PlatformView?)handler.PlatformView)?.UpdateStrokeDashOffset(border);
 		}
 
-		public static void MapStrokeMiterLimit(BorderHandler handler, IBorder border)
+		/// <summary>
+		/// Maps the abstract <see cref="IStroke.StrokeMiterLimit"/> property to the platform-specific implementations.
+		/// </summary>
+		/// <param name="handler">The associated handler.</param>
+		/// <param name="border">The associated <see cref="IBorderView"/> instance.</param>
+		public static void MapStrokeMiterLimit(IBorderHandler handler, IBorderView border)
 		{
-			((NativeView?)handler.NativeView)?.UpdateStrokeMiterLimit(border);
+			((PlatformView?)handler.PlatformView)?.UpdateStrokeMiterLimit(border);
 		}
+
+		/// <summary>
+		/// Maps the abstract <see cref="IContentView.Content"/> property to the platform-specific implementations.
+		/// </summary>
+		/// <param name="handler">The associated handler.</param>
+		/// <param name="border">The associated <see cref="IBorderView"/> instance.</param>
+		public static void MapContent(IBorderHandler handler, IBorderView border)
+		{
+			UpdateContent(handler);
+		}
+
+		static partial void UpdateContent(IBorderHandler handler);
+
+#if __ANDROID__
+		/// <summary>
+		/// Maps the abstract <see cref="IView.Width"/> property to the platform-specific implementations.
+		/// </summary>
+		/// <param name="handler">The associated handler.</param>
+		/// <param name="border">The associated <see cref="IBorderView"/> instance.</param>
+		public static partial void MapWidth(IBorderHandler handler, IBorderView border);
+
+		/// <summary>
+		/// Maps the abstract <see cref="IView.Height"/> property to the platform-specific implementations.
+		/// </summary>
+		/// <param name="handler">The associated handler.</param>
+		/// <param name="border">The associated <see cref="IBorderView"/> instance.</param>
+		public static partial void MapHeight(IBorderHandler handler, IBorderView border);
+#endif
 	}
 }

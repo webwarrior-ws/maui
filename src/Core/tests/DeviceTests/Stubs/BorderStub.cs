@@ -2,7 +2,7 @@
 
 namespace Microsoft.Maui.DeviceTests.Stubs
 {
-	public partial class BorderStub : StubBase, IBorder
+	public partial class BorderStub : StubBase, IBorderView
 	{
 		public object Content { get; set; }
 
@@ -26,7 +26,8 @@ namespace Microsoft.Maui.DeviceTests.Stubs
 
 		public float StrokeMiterLimit { get; set; }
 
-		public Size CrossPlatformArrange(Rectangle bounds)
+#if !WINDOWS
+		public Size CrossPlatformArrange(Rect bounds)
 		{
 			return Size.Zero;
 		}
@@ -35,5 +36,16 @@ namespace Microsoft.Maui.DeviceTests.Stubs
 		{
 			return Size.Zero;
 		}
+#else
+		public Size CrossPlatformMeasure(double widthConstraint, double heightConstraint)
+		{
+			return (PresentedContent ?? (Content as IView))?.Measure(widthConstraint, heightConstraint) ?? Size.Zero;
+		}
+
+		public Size CrossPlatformArrange(Rect bounds)
+		{
+			return (PresentedContent ?? (Content as IView))?.Arrange(bounds) ?? Size.Zero;
+		}
+#endif
 	}
 }

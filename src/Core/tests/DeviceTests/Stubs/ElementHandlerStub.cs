@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.Maui.DeviceTests.Stubs;
+using Microsoft.Maui.Handlers;
 
 namespace Microsoft.Maui.DeviceTests
 {
@@ -10,6 +11,6 @@ namespace Microsoft.Maui.DeviceTests
 
 		}
 
-		protected override object CreateNativeElement() => new Object();
+		protected override object CreatePlatformElement() => new Object();
 	}
 }

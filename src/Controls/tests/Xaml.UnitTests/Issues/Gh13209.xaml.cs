@@ -18,10 +18,7 @@ namespace Microsoft.Maui.Controls.Xaml.UnitTests
 		[TestFixture]
 		class Tests
 		{
-
-			[SetUp] public void Setup() => Device.PlatformServices = new MockPlatformServices();
-
-			[TearDown] public void TearDown() => Device.PlatformServices = null;
+			[TearDown] public void TearDown() => ResourceDictionary.ClearCache();
 
 			[TestCase(true), TestCase(false)]
 			public void RdWithSource(bool useCompiledXaml)

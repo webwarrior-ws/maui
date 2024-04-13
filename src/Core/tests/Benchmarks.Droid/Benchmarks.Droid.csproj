@@ -1,18 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0-android</TargetFramework>
+    <TargetFramework>$(_MauiDotNetTfm)-android</TargetFramework>
     <SupportedOSPlatformVersion>21</SupportedOSPlatformVersion>
     <OutputType>Exe</OutputType>
+    <AssemblyName>Microsoft.Maui.Benchmarks.Droid</AssemblyName>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationId>com.microsoft.maui.benchmarks</ApplicationId>
     <ApplicationVersion>1</ApplicationVersion>
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <PublishTrimmed>false</PublishTrimmed>
+    <RunAOTCompilation>false</RunAOTCompilation>
     <!-- Physical device is recommended -->
     <RuntimeIdentifier>android-arm64</RuntimeIdentifier>
-    <!-- HACK: to workaround System.IO.FileNotFoundException: /System.Private.CoreLib.dll -->
-    <EmbedAssembliesIntoApk>false</EmbedAssembliesIntoApk>
+    <DisableTransitiveFrameworkReferenceDownloads>False</DisableTransitiveFrameworkReferenceDownloads>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
   </PropertyGroup>
   <ItemGroup>
@@ -26,11 +27,12 @@
     <Using Include="BenchmarkDotNet.Loggers" />
     <Using Include="BenchmarkDotNet.Order" />
     <Using Include="BenchmarkDotNet.Running" />
-    <PackageReference Include="BenchmarkDotNet" Version="0.13.1" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.10" />
+    <PackageReference Include="Xamarin.Android.Glide" Version="4.14.2.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Controls\src\Core\Controls.Core-net6.csproj" />
-    <ProjectReference Include="..\..\src\Core-net6.csproj" />
+    <ProjectReference Include="..\..\..\Controls\src\Core\Controls.Core.csproj" />
+    <ProjectReference Include="..\..\src\Core.csproj" />
   </ItemGroup>
   <Target Name="Benchmark" DependsOnTargets="Install">
     <Message Text="Running benchmarks. This might take a while... See 'adb logcat' for realtime progress." Importance="High" />

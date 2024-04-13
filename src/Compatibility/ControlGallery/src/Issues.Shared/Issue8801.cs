@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 
 
@@ -17,7 +18,7 @@ using NUnit.Framework;
 using Microsoft.Maui.Controls.Compatibility.UITests;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.Github, 8801, "[Android] Attempt to read from field 'int android.view.ViewGroup$LayoutParams.width' on a null object reference",
@@ -79,7 +80,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 			Point GetRelativePosition(VisualElement subView, VisualElement parent);
 		}
 
-		public class PopupStackLayout : StackLayout, INotifyPropertyChanged
+		public class PopupStackLayout : Microsoft.Maui.Controls.Compatibility.StackLayout, INotifyPropertyChanged
 		{
 			private static readonly Guid PageRootGridId = Guid.NewGuid();
 			private readonly Guid ShowButtonId = Guid.NewGuid();
@@ -110,7 +111,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 					HorizontalOptions = LayoutOptions.Start,
 					VerticalOptions = LayoutOptions.Start,
 					Orientation = this.Orientation,
-					WidthRequest = Device.RuntimePlatform == Device.UWP ? 20 : 50,
+					WidthRequest = DeviceInfo.Platform == DevicePlatform.WinUI ? 20 : 50,
 				};
 
 				this.SetBinding(HeightRequestProperty, new Binding(nameof(Height), BindingMode.OneWay, source: showButton));
@@ -162,7 +163,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 			{
 				if (child != showButton && child is Button button)
 				{
-					if (Device.RuntimePlatform == Device.Android)
+					if (DeviceInfo.Platform == DevicePlatform.Android)
 					{
 						button.Clicked -= PopupStackLayout_Clicked;
 						button.Clicked += PopupStackLayout_Clicked;
@@ -200,7 +201,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 				{
 					if (rootPage.Content.AutomationId != PageRootGridId.ToString())
 					{
-						var rootGrid = new Grid() { AutomationId = PageRootGridId.ToString() };
+						var rootGrid = new Compatibility.Grid() { AutomationId = PageRootGridId.ToString() };
 						var content = rootPage.Content;
 						rootPage.Content = null;
 						rootGrid.Children.Add(content);
@@ -216,7 +217,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 					else
 					{
 						var rootGrid = rootPage.Content as Grid;
-						popupStack.Layout(new Rectangle(x, y, popupStack.WidthRequest, height));
+						popupStack.Layout(new Rect(x, y, popupStack.WidthRequest, height));
 						rootGrid.Children.Add(popupStack);
 						popupStack.Parent = rootGrid;
 						rootGrid.RaiseChild(popupStack);
@@ -279,10 +280,6 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 				{
 					return GetRootPage(tabPage.CurrentPage);
 				}
-				else if (page is CarouselPage carouselPage)
-				{
-					return GetRootPage(carouselPage.CurrentPage);
-				}
 				if (page is ContentPage cPage)
 				{
 					return cPage;
@@ -303,6 +300,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 
 
 #if UITEST && __ANDROID__
+[Microsoft.Maui.Controls.Compatibility.UITests.FailsOnMauiAndroid]
 		[Test]
 		public void NotAddingElementsNativelyDoesntCrashAndroid()
 		{

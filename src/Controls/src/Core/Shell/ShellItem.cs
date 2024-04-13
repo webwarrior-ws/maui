@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,32 +11,43 @@ using Microsoft.Maui.Controls.Internals;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../../docs/Microsoft.Maui.Controls/FlyoutItem.xml" path="Type[@FullName='Microsoft.Maui.Controls.FlyoutItem']/Docs/*" />
 	[EditorBrowsable(EditorBrowsableState.Always)]
 	public class FlyoutItem : ShellItem
 	{
+		/// <include file="../../../docs/Microsoft.Maui.Controls/FlyoutItem.xml" path="//Member[@MemberName='LabelStyle']/Docs/*" />
 		public const string LabelStyle = "FlyoutItemLabelStyle";
+		/// <include file="../../../docs/Microsoft.Maui.Controls/FlyoutItem.xml" path="//Member[@MemberName='ImageStyle']/Docs/*" />
 		public const string ImageStyle = "FlyoutItemImageStyle";
+		/// <include file="../../../docs/Microsoft.Maui.Controls/FlyoutItem.xml" path="//Member[@MemberName='LayoutStyle']/Docs/*" />
 		public const string LayoutStyle = "FlyoutItemLayoutStyle";
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/FlyoutItem.xml" path="//Member[@MemberName='.ctor']/Docs/*" />
 		public FlyoutItem()
 		{
 
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/FlyoutItem.xml" path="//Member[@MemberName='IsVisibleProperty']/Docs/*" />
 		public static readonly new BindableProperty IsVisibleProperty = BaseShellItem.IsVisibleProperty;
+		/// <include file="../../../docs/Microsoft.Maui.Controls/FlyoutItem.xml" path="//Member[@MemberName='GetIsVisible']/Docs/*" />
 		public static bool GetIsVisible(BindableObject obj) => (bool)obj.GetValue(IsVisibleProperty);
+		/// <include file="../../../docs/Microsoft.Maui.Controls/FlyoutItem.xml" path="//Member[@MemberName='SetIsVisible']/Docs/*" />
 		public static void SetIsVisible(BindableObject obj, bool isVisible) => obj.SetValue(IsVisibleProperty, isVisible);
 	}
 
+	/// <include file="../../../docs/Microsoft.Maui.Controls/TabBar.xml" path="Type[@FullName='Microsoft.Maui.Controls.TabBar']/Docs/*" />
 	[EditorBrowsable(EditorBrowsableState.Always)]
 	public class TabBar : ShellItem
 	{
+		/// <include file="../../../docs/Microsoft.Maui.Controls/TabBar.xml" path="//Member[@MemberName='.ctor']/Docs/*" />
 		public TabBar()
 		{
 		}
 	}
 
 
+	/// <include file="../../../docs/Microsoft.Maui.Controls/ShellItem.xml" path="Type[@FullName='Microsoft.Maui.Controls.ShellItem']/Docs/*" />
 	[ContentProperty(nameof(Items))]
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	public class ShellItem : ShellGroupItem, IShellItemController, IElementConfiguration<ShellItem>, IPropertyPropagationController, IVisualTreeElement
@@ -43,7 +55,7 @@ namespace Microsoft.Maui.Controls
 		#region PropertyKeys
 
 		static readonly BindablePropertyKey ItemsPropertyKey = BindableProperty.CreateReadOnly(nameof(Items), typeof(ShellSectionCollection), typeof(ShellItem), null,
-				defaultValueCreator: bo => new ShellSectionCollection { Inner = new ElementCollection<ShellSection>(((ShellItem)bo)._children) });
+				defaultValueCreator: bo => new ShellSectionCollection { Inner = new ElementCollection<ShellSection>(((ShellItem)bo).DeclaredChildren) });
 
 		#endregion PropertyKeys
 
@@ -73,8 +85,7 @@ namespace Microsoft.Maui.Controls
 		}
 
 		// we want the list returned from here to remain point in time accurate
-		ReadOnlyCollection<ShellSection> IShellItemController.GetItems() =>
-			new ReadOnlyCollection<ShellSection>(((ShellSectionCollection)Items).VisibleItemsReadOnly.ToList());
+		ReadOnlyCollection<ShellSection> IShellItemController.GetItems() => ((ShellSectionCollection)Items).VisibleItemsReadOnly;
 
 		event NotifyCollectionChangedEventHandler IShellItemController.ItemsCollectionChanged
 		{
@@ -86,18 +97,33 @@ namespace Microsoft.Maui.Controls
 		{
 			get
 			{
-				var displayedPage = CurrentItem?.DisplayedPage;
-				if (displayedPage == null)
-					return true;
-
 				Shell shell = Parent as Shell;
 				if (shell == null)
 					return true;
 
-				if (ShellItemController.GetItems().Count <= 1)
-					return false;
+				var displayedPage = shell.GetCurrentShellPage();
 
-				return shell.GetEffectiveValue<bool>(Shell.TabBarIsVisibleProperty, () => true, null, displayedPage);
+				bool defaultShowTabs = true;
+
+#if WINDOWS
+				// Windows supports nested tabs so we want the tabs to display
+				// if the current shell section has multiple contents
+				if (ShellItemController.GetItems().Count > 1 ||
+					(CurrentItem as IShellSectionController)?.GetItems()?.Count > 1)
+				{
+					defaultShowTabs = true;
+				}
+				else
+				{
+					defaultShowTabs = false;
+				}
+#else
+
+				if (ShellItemController.GetItems().Count <= 1)
+					defaultShowTabs = false;
+#endif
+
+				return shell.GetEffectiveValue<bool>(Shell.TabBarIsVisibleProperty, () => defaultShowTabs, null, displayedPage);
 			}
 		}
 
@@ -106,21 +132,22 @@ namespace Microsoft.Maui.Controls
 		#region IPropertyPropagationController
 		void IPropertyPropagationController.PropagatePropertyChanged(string propertyName)
 		{
-			PropertyPropagationExtensions.PropagatePropertyChanged(propertyName, this, Items);
+			PropertyPropagationExtensions.PropagatePropertyChanged(propertyName, this, ((IVisualTreeElement)this).GetVisualChildren());
 		}
 		#endregion
 
+		/// <summary>Bindable property for <see cref="CurrentItem"/>.</summary>
 		public static readonly BindableProperty CurrentItemProperty =
 			BindableProperty.Create(nameof(CurrentItem), typeof(ShellSection), typeof(ShellItem), null, BindingMode.TwoWay,
 				propertyChanged: OnCurrentItemChanged);
 
 
-		public static readonly BindableProperty ItemsProperty = ItemsPropertyKey.BindableProperty;
+		/// <summary>Bindable property for <see cref="Items"/>.</summary>
 
-		readonly ObservableCollection<Element> _children = new ObservableCollection<Element>();
-		ReadOnlyCollection<Element> _logicalChildren;
+		public static readonly BindableProperty ItemsProperty = ItemsPropertyKey.BindableProperty;
 		Lazy<PlatformConfigurationRegistry<ShellItem>> _platformConfigurationRegistry;
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/ShellItem.xml" path="//Member[@MemberName='.ctor']/Docs/*" />
 		public ShellItem()
 		{
 			((ShellElementCollection)Items).VisibleItemsChangedInternal += (_, args) =>
@@ -149,18 +176,18 @@ namespace Microsoft.Maui.Controls
 			_platformConfigurationRegistry = new Lazy<PlatformConfigurationRegistry<ShellItem>>(() => new PlatformConfigurationRegistry<ShellItem>(this));
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/ShellItem.xml" path="//Member[@MemberName='CurrentItem']/Docs/*" />
 		public ShellSection CurrentItem
 		{
 			get { return (ShellSection)GetValue(CurrentItemProperty); }
 			set { SetValue(CurrentItemProperty, value); }
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/ShellItem.xml" path="//Member[@MemberName='Items']/Docs/*" />
 		public IList<ShellSection> Items => (IList<ShellSection>)GetValue(ItemsProperty);
 		internal override ShellElementCollection ShellElementCollection => (ShellElementCollection)Items;
 
 		internal bool IsVisibleItem => Parent is Shell shell && shell?.CurrentItem == this;
-
-		internal override IReadOnlyList<Element> LogicalChildrenInternal => _logicalChildren ?? (_logicalChildren = new ReadOnlyCollection<Element>(_children));
 
 		internal void SendStructureChanged()
 		{
@@ -214,6 +241,7 @@ namespace Microsoft.Maui.Controls
 
 		public static implicit operator ShellItem(MenuItem menuItem) => new MenuShellItem(menuItem);
 
+		/// <inheritdoc/>
 		public IPlatformElementConfiguration<T, ShellItem> On<T>() where T : IConfigPlatform
 		{
 			return _platformConfigurationRegistry.Value.On<T>();
@@ -242,7 +270,7 @@ namespace Microsoft.Maui.Controls
 			if (CurrentItem == child)
 			{
 				if (ShellItemController.GetItems().Count == 0)
-					ClearValue(CurrentItemProperty);
+					ClearValue(CurrentItemProperty, specificity: SetterSpecificity.FromHandler);
 				else
 					SetValueFromRenderer(CurrentItemProperty, ShellItemController.GetItems()[0]);
 			}
@@ -305,12 +333,14 @@ namespace Microsoft.Maui.Controls
 		internal override void SendDisappearing()
 		{
 			base.SendDisappearing();
-			if (CurrentItem != null)
-			{
-				CurrentItem.SendDisappearing();
-			}
+			CurrentItem?.SendDisappearing();
 		}
 
-		IReadOnlyList<Maui.IVisualTreeElement> IVisualTreeElement.GetVisualChildren() => Items.ToList().AsReadOnly();
+		protected override void OnParentSet()
+		{
+			base.OnParentSet();
+			if (this.IsVisibleItem && CurrentItem != null)
+				((IShellController)Parent)?.AppearanceChanged(CurrentItem, false);
+		}
 	}
 }

@@ -1,14 +1,16 @@
-namespace Microsoft.Maui.Essentials
+using Microsoft.Maui.ApplicationModel;
+
+namespace Microsoft.Maui.Devices.Sensors
 {
-	public static partial class OrientationSensor
+	partial class OrientationSensorImplementation : IOrientationSensor
 	{
-		internal static bool IsSupported =>
+		bool PlatformIsSupported =>
 			throw ExceptionUtils.NotSupportedOrImplementedException;
 
-		static void PlatformStart(SensorSpeed sensorSpeed) =>
+		void PlatformStart(SensorSpeed sensorSpeed) =>
 			throw ExceptionUtils.NotSupportedOrImplementedException;
 
-		static void PlatformStop() =>
+		void PlatformStop() =>
 			throw ExceptionUtils.NotSupportedOrImplementedException;
 	}
 }

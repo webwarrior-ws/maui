@@ -3,13 +3,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Maui.Controls.Internals;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.Maui.Controls.Internals;
 using WBinding = Microsoft.UI.Xaml.Data.Binding;
-using WBrush = Microsoft.UI.Xaml.Media.Brush;
 using WBindingExpression = Microsoft.UI.Xaml.Data.BindingExpression;
+using WBrush = Microsoft.UI.Xaml.Media.Brush;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
@@ -68,38 +68,6 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				throw new ArgumentNullException("element");
 
 			element.SetBinding(GetForegroundProperty(element), binding);
-		}
-
-		internal static IEnumerable<T> GetDescendantsByName<T>(this DependencyObject parent, string elementName) where T : DependencyObject
-		{
-			int myChildrenCount = VisualTreeHelper.GetChildrenCount(parent);
-			for (int i = 0; i < myChildrenCount; i++)
-			{
-				var child = VisualTreeHelper.GetChild(parent, i);
-				var controlName = child.GetValue(FrameworkElement.NameProperty) as string;
-				if (controlName == elementName && child is T)
-					yield return child as T;
-				else
-				{
-					foreach (var subChild in child.GetDescendantsByName<T>(elementName))
-						yield return subChild;
-				}
-			}
-		}
-
-		internal static T GetFirstDescendant<T>(this DependencyObject element) where T : FrameworkElement
-		{
-			int count = VisualTreeHelper.GetChildrenCount(element);
-			for (var i = 0; i < count; i++)
-			{
-				DependencyObject child = VisualTreeHelper.GetChild(element, i);
-
-				T target = child as T ?? GetFirstDescendant<T>(child);
-				if (target != null)
-					return target;
-			}
-
-			return null;
 		}
 
 		static DependencyProperty GetForegroundProperty(FrameworkElement element)

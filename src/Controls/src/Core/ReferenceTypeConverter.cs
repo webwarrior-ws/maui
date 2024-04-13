@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -8,6 +9,7 @@ using Microsoft.Maui.Controls.Xaml.Internals;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/ReferenceTypeConverter.xml" path="Type[@FullName='Microsoft.Maui.Controls.ReferenceTypeConverter']/Docs/*" />
 	public sealed class ReferenceTypeConverter : TypeConverter, IExtendedTypeConverter
 	{
 

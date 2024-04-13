@@ -5,7 +5,7 @@
 //       Stephane Delcroix <stephane@mi8.be>
 //
 // Copyright (c) 2013 Mobile Inception
-// Copyright (c) 2013-2014 Microsoft.Maui.Controls, Inc
+// Copyright (c) 2013-2014 Xamarin, Inc
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -78,7 +78,7 @@ namespace Microsoft.Maui.Controls.Xaml
 					Visit(rootnode, new HydrationContext
 					{
 						RootElement = view,
-						RootAssembly = rootAssembly ?? view.GetType().GetTypeInfo().Assembly,
+						RootAssembly = rootAssembly ?? view.GetType().Assembly,
 						ExceptionHandler = doNotThrow ? ehandler : (Action<Exception>)null
 					}, useDesignProperties);
 
@@ -188,6 +188,7 @@ namespace Microsoft.Maui.Controls.Xaml
 					resources.Accept(new CreateValuesVisitor(visitorContext), null);
 					resources.Accept(new RegisterXNamesVisitor(visitorContext), null);
 					resources.Accept(new FillResourceDictionariesVisitor(visitorContext), null);
+					resources.Accept(new SimplifyTypeExtensionVisitor(), null);
 					resources.Accept(new ApplyPropertiesVisitor(visitorContext, true), null);
 
 					return visitorContext.Values[resources] as IResourceDictionary;
@@ -207,6 +208,7 @@ namespace Microsoft.Maui.Controls.Xaml
 			rootnode.Accept(new CreateValuesVisitor(visitorContext), null);
 			rootnode.Accept(new RegisterXNamesVisitor(visitorContext), null);
 			rootnode.Accept(new FillResourceDictionariesVisitor(visitorContext), null);
+			rootnode.Accept(new SimplifyTypeExtensionVisitor(), null);
 			rootnode.Accept(new ApplyPropertiesVisitor(visitorContext, true), null);
 		}
 
@@ -217,7 +219,7 @@ namespace Microsoft.Maui.Controls.Xaml
 			//the check at the end is preferred (using ResourceLoader). keep this until all the previewers are updated
 
 			string xaml;
-			var assembly = type.GetTypeInfo().Assembly;
+			var assembly = type.Assembly;
 			var resourceId = XamlResourceIdAttribute.GetResourceIdForType(type);
 
 			var rlr = ResourceLoader.ResourceProvider2?.Invoke(new ResourceLoader.ResourceLoadingQuery
@@ -253,7 +255,7 @@ namespace Microsoft.Maui.Controls.Xaml
 		static readonly Dictionary<Type, string> XamlResources = new Dictionary<Type, string>();
 		static string LegacyGetXamlForType(Type type)
 		{
-			var assembly = type.GetTypeInfo().Assembly;
+			var assembly = type.Assembly;
 
 			string resourceId;
 			if (XamlResources.TryGetValue(type, out resourceId))
@@ -355,7 +357,7 @@ namespace Microsoft.Maui.Controls.Xaml
 
 				var pattern = $"x:Class *= *\"{type.FullName}\"";
 				var regex = new Regex(pattern, RegexOptions.ECMAScript);
-				if (regex.IsMatch(xaml) || xaml.Contains($"x:Class=\"{type.FullName}\""))
+				if (regex.IsMatch(xaml) || xaml.IndexOf($"x:Class=\"{type.FullName}\"") != -1)
 					return xaml;
 			}
 			return null;

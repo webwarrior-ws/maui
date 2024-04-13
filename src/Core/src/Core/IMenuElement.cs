@@ -1,4 +1,5 @@
-﻿using Microsoft.Maui.Graphics;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Maui
 {
@@ -8,5 +9,10 @@ namespace Microsoft.Maui
 		/// Gets a value indicating whether this View is enabled in the user interface. 
 		/// </summary>
 		bool IsEnabled { get; }
+
+		/// <summary>
+		/// Occurs when the IMenuElement is clicked.
+		/// </summary>
+		void Clicked();
 	}
 }

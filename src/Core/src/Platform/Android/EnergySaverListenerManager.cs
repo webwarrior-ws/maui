@@ -1,6 +1,5 @@
 ﻿using System;
-using Microsoft.Maui.Essentials;
-using Microsoft.Maui.Internal;
+using Microsoft.Maui.Devices;
 
 namespace Microsoft.Maui.Platform
 {

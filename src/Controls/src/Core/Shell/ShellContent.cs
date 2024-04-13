@@ -1,18 +1,15 @@
+#nullable disable
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-
-#if NETSTANDARD1_0
-using System.Linq;
-#endif
-
 using System.Reflection;
 using Microsoft.Maui.Controls.Internals;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../../docs/Microsoft.Maui.Controls/ShellContent.xml" path="Type[@FullName='Microsoft.Maui.Controls.ShellContent']/Docs/*" />
 	[ContentProperty(nameof(Content))]
 	public class ShellContent : BaseShellItem, IShellContentController, IVisualTreeElement
 	{
@@ -20,25 +17,31 @@ namespace Microsoft.Maui.Controls
 			BindableProperty.CreateReadOnly(nameof(MenuItems), typeof(MenuItemCollection), typeof(ShellContent), null,
 				defaultValueCreator: bo => new MenuItemCollection());
 
+		/// <summary>Bindable property for <see cref="MenuItems"/>.</summary>
 		public static readonly BindableProperty MenuItemsProperty = MenuItemsPropertyKey.BindableProperty;
 
+		/// <summary>Bindable property for <see cref="Content"/>.</summary>
 		public static readonly BindableProperty ContentProperty =
 			BindableProperty.Create(nameof(Content), typeof(object), typeof(ShellContent), null, BindingMode.OneTime, propertyChanged: OnContentChanged);
 
+		/// <summary>Bindable property for <see cref="ContentTemplate"/>.</summary>
 		public static readonly BindableProperty ContentTemplateProperty =
 			BindableProperty.Create(nameof(ContentTemplate), typeof(DataTemplate), typeof(ShellContent), null, BindingMode.OneTime);
 
 		internal static readonly BindableProperty QueryAttributesProperty =
 			BindableProperty.CreateAttached("QueryAttributes", typeof(ShellRouteParameters), typeof(ShellContent), defaultValue: null, propertyChanged: OnQueryAttributesPropertyChanged);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/ShellContent.xml" path="//Member[@MemberName='MenuItems']/Docs/*" />
 		public MenuItemCollection MenuItems => (MenuItemCollection)GetValue(MenuItemsProperty);
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/ShellContent.xml" path="//Member[@MemberName='Content']/Docs/*" />
 		public object Content
 		{
 			get => GetValue(ContentProperty);
 			set => SetValue(ContentProperty, value);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/ShellContent.xml" path="//Member[@MemberName='ContentTemplate']/Docs/*" />
 		public DataTemplate ContentTemplate
 		{
 			get => (DataTemplate)GetValue(ContentTemplateProperty);
@@ -70,7 +73,7 @@ namespace Microsoft.Maui.Controls
 						var services = Parent?.FindMauiContext()?.Services;
 						if (services != null)
 						{
-							return Extensions.DependencyInjection.ActivatorUtilities.GetServiceOrCreateInstance(services, template.Type);
+							return services.GetService(template.Type) ?? Activator.CreateInstance(template.Type);
 						}
 						return Activator.CreateInstance(template.Type);
 					};
@@ -81,6 +84,15 @@ namespace Microsoft.Maui.Controls
 
 			if (result == null)
 				throw new InvalidOperationException($"No Content found for {nameof(ShellContent)}, Title:{Title}, Route {Route}");
+
+			if (result is TabbedPage)
+				throw new NotSupportedException($"Shell is currently not compatible with TabbedPage. Please use TabBar, Tab or switch to using NavigationPage for your {Application.Current}.MainPage");
+
+			if (result is FlyoutPage)
+				throw new NotSupportedException("Shell is currently not compatible with FlyoutPage.");
+
+			if (result is NavigationPage)
+				throw new NotSupportedException("Shell is currently not compatible with NavigationPage. Shell has Navigation built in and doesn't require a NavigationPage.");
 
 			if (GetValue(QueryAttributesProperty) is ShellRouteParameters delayedQueryParams)
 				result.SetValue(QueryAttributesProperty, delayedQueryParams);
@@ -93,13 +105,11 @@ namespace Microsoft.Maui.Controls
 		}
 
 		Page _contentCache;
-		IList<Element> _logicalChildren = new List<Element>();
-		ReadOnlyCollection<Element> _logicalChildrenReadOnly;
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls/ShellContent.xml" path="//Member[@MemberName='.ctor']/Docs/*" />
 		public ShellContent() => ((INotifyCollectionChanged)MenuItems).CollectionChanged += MenuItemsCollectionChanged;
 
 		internal bool IsVisibleContent => Parent is ShellSection shellSection && shellSection.IsVisibleSection && shellSection.CurrentItem == this;
-		internal override IReadOnlyList<Element> LogicalChildrenInternal => _logicalChildrenReadOnly ?? (_logicalChildrenReadOnly = new ReadOnlyCollection<Element>(_logicalChildren));
 
 		internal override void SendDisappearing()
 		{
@@ -129,13 +139,13 @@ namespace Microsoft.Maui.Controls
 				page.ParentSet += OnPresentedPageParentSet;
 				void OnPresentedPageParentSet(object sender, EventArgs e)
 				{
-					page.SendAppearing();
+					this.FindParentOfType<Shell>().SendPageAppearing(page);
 					(sender as Page).ParentSet -= OnPresentedPageParentSet;
 				}
 			}
-			else
+			else if (IsVisibleContent && page.IsVisible)
 			{
-				page.SendAppearing();
+				this.FindParentOfType<Shell>().SendPageAppearing(page);
 			}
 		}
 
@@ -144,12 +154,6 @@ namespace Microsoft.Maui.Controls
 			base.OnChildAdded(child);
 			if (child is Page page)
 			{
-				if (IsVisibleContent && page.IsVisible)
-				{
-					SendAppearing();
-					SendPageAppearing(page);
-				}
-
 				page.PropertyChanged += OnPagePropertyChanged;
 				_isPageVisibleChanged?.Invoke(this, EventArgs.Empty);
 			}
@@ -182,12 +186,11 @@ namespace Microsoft.Maui.Controls
 				var oldCache = _contentCache;
 				_contentCache = value;
 				if (oldCache != null)
-					OnChildRemoved(oldCache, -1);
+					RemoveLogicalChild(oldCache);
 
 				if (value != null && value.Parent != this)
 				{
-					_logicalChildren.Add(value);
-					OnChildAdded(value);
+					AddLogicalChild(value);
 				}
 
 				if (Parent != null)
@@ -197,6 +200,11 @@ namespace Microsoft.Maui.Controls
 
 		public static implicit operator ShellContent(TemplatedPage page)
 		{
+			if (page.Parent != null)
+			{
+				return (ShellContent)page.Parent;
+			}
+
 			var shellContent = new ShellContent();
 
 			var pageRoute = Routing.GetRoute(page);
@@ -223,8 +231,6 @@ namespace Microsoft.Maui.Controls
 					shellContent.ContentCache = null;
 				}
 
-				// make sure LogicalChildren collection stays consisten
-				shellContent._logicalChildren.Clear();
 				if (newValue is Page newElement)
 				{
 					shellContent.ContentCache = newElement;
@@ -256,6 +262,14 @@ namespace Microsoft.Maui.Controls
 		internal override void ApplyQueryAttributes(ShellRouteParameters query)
 		{
 			base.ApplyQueryAttributes(query);
+
+			// If the query parameters are empty and this attribute wasn't previously set
+			// That means there's no work to be done here.
+			// An empty query is only valid if we've previously propagated
+			// something to this bindable property
+			if (query.Count == 0 && !this.IsSet(QueryAttributesProperty))
+				return;
+
 			SetValue(QueryAttributesProperty, query);
 
 			if (ContentCache is BindableObject bindable)
@@ -273,22 +287,21 @@ namespace Microsoft.Maui.Controls
 			oldQuery = oldQuery ?? new ShellRouteParameters();
 
 			if (content is IQueryAttributable attributable)
-				attributable.ApplyQueryAttributes(query);
+			{
+				attributable
+					.ApplyQueryAttributes(query.ToReadOnlyIfUsingShellNavigationQueryParameters());
+			}
 
 			if (content is BindableObject bindable && bindable.BindingContext != null && content != bindable.BindingContext)
 				ApplyQueryAttributes(bindable.BindingContext, query, oldQuery);
 
 			var type = content.GetType();
-			var typeInfo = type.GetTypeInfo();
-
-#if NETSTANDARD1_0
-			var queryPropertyAttributes = typeInfo.GetCustomAttributes(typeof(QueryPropertyAttribute), true).ToArray();
-#else
-			var queryPropertyAttributes = typeInfo.GetCustomAttributes(typeof(QueryPropertyAttribute), true);
-#endif
-
+			var queryPropertyAttributes = type.GetCustomAttributes(typeof(QueryPropertyAttribute), true);
 			if (queryPropertyAttributes.Length == 0)
+			{
+				ClearQueryIfAppliedToPage(query, content);
 				return;
+			}
 
 			foreach (QueryPropertyAttribute attrib in queryPropertyAttributes)
 			{
@@ -320,9 +333,16 @@ namespace Microsoft.Maui.Controls
 						prop.SetValue(content, null);
 				}
 			}
+
+			ClearQueryIfAppliedToPage(query, content);
+
+			static void ClearQueryIfAppliedToPage(ShellRouteParameters query, object content)
+			{
+				// Once we've applied the attributes to ContentPage lets remove the 
+				// parameters used during navigation
+				if (content is ContentPage)
+					query.ResetToQueryParameters();
+			}
 		}
-
-		IReadOnlyList<Maui.IVisualTreeElement> GetVisualChildren() => new List<Maui.IVisualTreeElement> { ((IShellContentController)this).Page }.AsReadOnly();
-
 	}
 }

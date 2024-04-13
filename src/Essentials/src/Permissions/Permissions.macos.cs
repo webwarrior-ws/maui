@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using CoreLocation;
 using Foundation;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.ApplicationModel
 {
 	public static partial class Permissions
 	{
@@ -65,6 +65,10 @@ namespace Microsoft.Maui.Essentials
 		}
 
 		public partial class Battery : BasePlatformPermission
+		{
+		}
+
+		public partial class Bluetooth : BasePlatformPermission
 		{
 		}
 
@@ -183,6 +187,10 @@ namespace Microsoft.Maui.Essentials
 		{
 		}
 
+		public partial class NearbyWifiDevices : BasePlatformPermission
+		{
+		}
+
 		public partial class NetworkState : BasePlatformPermission
 		{
 		}
@@ -192,6 +200,14 @@ namespace Microsoft.Maui.Essentials
 		}
 
 		public partial class Photos : BasePlatformPermission
+		{
+		}
+
+		public partial class PhotosAddOnly : BasePlatformPermission
+		{
+		}
+
+		public partial class PostNotifications : BasePlatformPermission
 		{
 		}
 

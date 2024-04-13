@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.DeviceTests.Stubs;
 using Microsoft.Maui.Graphics;
@@ -28,35 +28,86 @@ namespace Microsoft.Maui.DeviceTests
 				return new
 				{
 					ViewValue = button.CharacterSpacing,
-					NativeViewValue = GetNativeCharacterSpacing(handler)
+					PlatformViewValue = GetNativeCharacterSpacing(handler)
 				};
 			});
 
 			Assert.Equal(xplatCharacterSpacing, values.ViewValue);
-			Assert.Equal(xplatCharacterSpacing, values.NativeViewValue);
+			Assert.Equal(xplatCharacterSpacing, values.PlatformViewValue);
 		}
 
-		[Fact(DisplayName = "Button Padding Initializing")]
-		public async Task PaddingInitializesCorrectly()
+		[Fact(DisplayName = "CharacterSpacing Initializes Correctly")]
+		public async Task CharacterSpacingAndTextColorInitializesCorrectly()
 		{
+			string originalText = "Test";
+			var xplatCharacterSpacing = 4;
+			var color = Colors.HotPink;
+
 			var button = new ButtonStub()
 			{
-				Text = "Test",
-				Padding = new Thickness(5, 10, 15, 20)
+				CharacterSpacing = xplatCharacterSpacing,
+				TextColor = color,
+				Text = originalText
 			};
 
-			var handler = await CreateHandlerAsync(button);
-			var uiButton = (UIButton)handler.NativeView;
+			var values = await GetValueAsync(button, (handler) =>
+			{
+				return new
+				{
+					ViewValue = button.CharacterSpacing,
+					PlatformViewValue = GetNativeCharacterSpacing(handler)
+				};
+			});
 
-			var insets = await InvokeOnMainThreadAsync(() => { return uiButton.ContentEdgeInsets; });
+			var colorvalues = await GetValueAsync(button, (handler) =>
+			{
+				return new
+				{
+					ViewValue = button.TextColor,
+					PlatformViewValue = GetNativeTextColor(handler)
+				};
+			});
 
-			Assert.Equal(5, insets.Left);
-			Assert.Equal(10, insets.Top);
-			Assert.Equal(15, insets.Right);
-			Assert.Equal(20, insets.Bottom);
+			Assert.Equal(xplatCharacterSpacing, values.ViewValue);
+			Assert.Equal(xplatCharacterSpacing, values.PlatformViewValue);
+
+			Assert.Equal(color, colorvalues.ViewValue);
+			Assert.Equal(color, colorvalues.PlatformViewValue);
 		}
 
+		[Fact(DisplayName = "CharacterSpacing updates size Correctly")]
+		public async Task CharacterSpacingUpdatesSizeCorrectly()
+		{
+			string originalText = "Loren ipsum";
 
+			var button = new ButtonStub()
+			{
+				CharacterSpacing = 4,
+				Text = originalText
+			};
+
+			double newCharacterSpacing = 14;
+
+			var handler = await CreateHandlerAsync(button);
+
+			await InvokeOnMainThreadAsync(async () =>
+			{
+				await handler.PlatformView.AttachAndRun(() =>
+				{
+					double previousWidth = handler.PlatformView.Bounds.Width;
+
+					button.CharacterSpacing = newCharacterSpacing;
+					handler.UpdateValue(nameof(ILabel.CharacterSpacing));
+
+					var platformCharacterSpacing = GetNativeCharacterSpacing(handler);
+					Assert.Equal(newCharacterSpacing, platformCharacterSpacing);
+
+					handler.PlatformView.SizeToFit();
+					double newWidth = handler.PlatformView.Bounds.Width;
+					Assert.True(newWidth > previousWidth);
+				});
+			});
+		}
 
 		[Fact(DisplayName = "Default Accessibility Traits Don't Change")]
 		[InlineData()]
@@ -70,27 +121,31 @@ namespace Microsoft.Maui.DeviceTests
 					// a UIView is added to the visual hierarchy so we are just 
 					// initializing here and then validating that the value doesn't get cleared
 
-					handler.NativeView.AccessibilityTraits = UIAccessibilityTrait.Button;
+					handler.PlatformView.AccessibilityTraits = UIAccessibilityTrait.Button;
 					view.Semantics.Hint = "Test Hint";
 					view.Handler.UpdateValue("Semantics");
-					return handler.NativeView.AccessibilityTraits;
+					return handler.PlatformView.AccessibilityTraits;
 				});
 
 			Assert.Equal(UIAccessibilityTrait.Button, trait);
 		}
 
-
 		bool ImageSourceLoaded(ButtonHandler buttonHandler) =>
-			buttonHandler.NativeView.ImageView.Image != null;
+			buttonHandler.PlatformView.ImageView.Image != null;
 
 		UIButton GetNativeButton(ButtonHandler buttonHandler) =>
-			(UIButton)buttonHandler.NativeView;
+			(UIButton)buttonHandler.PlatformView;
 
 		string GetNativeText(ButtonHandler buttonHandler) =>
 			GetNativeButton(buttonHandler).CurrentTitle;
 
 		Color GetNativeTextColor(ButtonHandler buttonHandler) =>
 			GetNativeButton(buttonHandler).CurrentTitleColor.ToColor();
+
+#pragma warning disable CA1416, CA1422
+		UIEdgeInsets GetNativePadding(ButtonHandler buttonHandler) =>
+			GetNativeButton(buttonHandler).ContentEdgeInsets;
+#pragma warning restore CA1416, CA1422
 
 		Task PerformClick(IButton button)
 		{
@@ -104,9 +159,12 @@ namespace Microsoft.Maui.DeviceTests
 		{
 			var button = GetNativeButton(buttonHandler);
 
-			var attributedText = button.TitleLabel.AttributedText;
+			var attributedText = button.GetAttributedTitle(UIControlState.Normal);
 
 			return attributedText.GetCharacterSpacing();
 		}
+
+		UILineBreakMode GetNativeLineBreakMode(ButtonHandler buttonHandler) =>
+			GetNativeButton(buttonHandler).TitleLabel.LineBreakMode;
 	}
 }

@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -6,6 +7,7 @@ using System.Reflection;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="Type[@FullName='Microsoft.Maui.Controls.Binding']/Docs/*" />
 	public sealed class Binding : BindingBase
 	{
 		public const string SelfPath = ".";
@@ -17,10 +19,12 @@ namespace Microsoft.Maui.Controls
 		object _source;
 		string _updateSourceEventName;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='.ctor'][1]/Docs/*" />
 		public Binding()
 		{
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='.ctor']/Docs/*" />
 		public Binding(string path, BindingMode mode = BindingMode.Default, IValueConverter converter = null, object converterParameter = null, string stringFormat = null, object source = null)
 		{
 			if (path == null)
@@ -36,6 +40,7 @@ namespace Microsoft.Maui.Controls
 			Source = source;
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='Converter']/Docs/*" />
 		public IValueConverter Converter
 		{
 			get { return _converter; }
@@ -47,6 +52,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='ConverterParameter']/Docs/*" />
 		public object ConverterParameter
 		{
 			get { return _converterParameter; }
@@ -58,6 +64,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='Path']/Docs/*" />
 		public string Path
 		{
 			get { return _path; }
@@ -70,6 +77,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='Source']/Docs/*" />
 		public object Source
 		{
 			get { return _source; }
@@ -82,8 +90,10 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='DoNothing']/Docs/*" />
 		public static readonly object DoNothing = new object();
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Binding.xml" path="//Member[@MemberName='UpdateSourceEventName']/Docs/*" />
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public string UpdateSourceEventName
 		{
@@ -105,33 +115,33 @@ namespace Microsoft.Maui.Controls
 			_expression.Apply(fromTarget);
 		}
 
-		internal override void Apply(object context, BindableObject bindObj, BindableProperty targetProperty, bool fromBindingContextChanged = false)
+		internal override void Apply(object context, BindableObject bindObj, BindableProperty targetProperty, bool fromBindingContextChanged, SetterSpecificity specificity)
 		{
 			object src = _source;
 			var isApplied = IsApplied;
 
-			base.Apply(src ?? context, bindObj, targetProperty, fromBindingContextChanged: fromBindingContextChanged);
+			base.Apply(src ?? context, bindObj, targetProperty, fromBindingContextChanged, specificity);
 
 			if (src != null && isApplied && fromBindingContextChanged)
 				return;
 
 			if (Source is RelativeBindingSource)
 			{
-				ApplyRelativeSourceBinding(bindObj, targetProperty);
+				ApplyRelativeSourceBinding(bindObj, targetProperty, specificity);
 			}
 			else
 			{
 				object bindingContext = src ?? Context ?? context;
-				if (_expression == null && bindingContext != null)
+				if (_expression == null)
 					_expression = new BindingExpression(this, SelfPath);
-				_expression.Apply(bindingContext, bindObj, targetProperty);
+				_expression.Apply(bindingContext, bindObj, targetProperty, specificity);
 			}
 		}
 
 #pragma warning disable RECS0165 // Asynchronous methods should return a Task instead of void
 		async void ApplyRelativeSourceBinding(
 			BindableObject targetObject,
-			BindableProperty targetProperty)
+			BindableProperty targetProperty, SetterSpecificity specificity)
 #pragma warning restore RECS0165 // Asynchronous methods should return a Task instead of void
 		{
 			if (!(Source is RelativeBindingSource relativeSource))
@@ -154,20 +164,21 @@ namespace Microsoft.Maui.Controls
 
 				case RelativeBindingSourceMode.FindAncestor:
 				case RelativeBindingSourceMode.FindAncestorBindingContext:
-					ApplyAncestorTypeBinding(targetObject, relativeSourceTarget, targetProperty);
+					ApplyAncestorTypeBinding(targetObject, relativeSourceTarget, targetProperty, specificity);
 					return;
 
 				default:
 					throw new InvalidOperationException();
 			}
 
-			_expression.Apply(resolvedSource, targetObject, targetProperty);
+			_expression.Apply(resolvedSource, targetObject, targetProperty, specificity);
 		}
 
 		void ApplyAncestorTypeBinding(
 			BindableObject actualTarget,
 			Element relativeSourceTarget,
 			BindableProperty targetProperty,
+			SetterSpecificity specificity,
 			Element currentElement = null,
 			int currentLevel = 0,
 			List<Element> chain = null,
@@ -184,7 +195,7 @@ namespace Microsoft.Maui.Controls
 			{
 				// Couldn't find the desired ancestor type in the chain, but it may be added later, 
 				// so apply with a null source for now.
-				_expression.Apply(null, actualTarget, targetProperty);
+				_expression.Apply(null, actualTarget, targetProperty, specificity);
 				_expression.SubscribeToAncestryChanges(
 					chain,
 					relativeSource.Mode == RelativeBindingSourceMode.FindAncestorBindingContext,
@@ -200,7 +211,7 @@ namespace Microsoft.Maui.Controls
 						resolvedSource = currentElement.RealParent;
 					else
 						resolvedSource = currentElement.RealParent?.BindingContext;
-					_expression.Apply(resolvedSource, actualTarget, targetProperty);
+					_expression.Apply(resolvedSource, actualTarget, targetProperty, specificity);
 					_expression.SubscribeToAncestryChanges(
 						chain,
 						relativeSource.Mode == RelativeBindingSourceMode.FindAncestorBindingContext,
@@ -212,6 +223,7 @@ namespace Microsoft.Maui.Controls
 						actualTarget,
 						relativeSourceTarget,
 						targetProperty,
+						specificity,
 						currentElement.RealParent,
 						currentLevel,
 						chain,
@@ -228,6 +240,7 @@ namespace Microsoft.Maui.Controls
 						actualTarget,
 						relativeSourceTarget,
 						targetProperty,
+						specificity,
 						currentElement,
 						currentLevel,
 						chain,
@@ -244,12 +257,12 @@ namespace Microsoft.Maui.Controls
 
 			bool fitsElementType =
 				relativeSource.Mode == RelativeBindingSourceMode.FindAncestor &&
-				relativeSource.AncestorType.GetTypeInfo().IsAssignableFrom(element.GetType().GetTypeInfo());
+				relativeSource.AncestorType.IsAssignableFrom(element.GetType());
 
 			bool fitsBindingContextType =
 				element.BindingContext != null &&
 				relativeSource.Mode == RelativeBindingSourceMode.FindAncestorBindingContext &&
-				relativeSource.AncestorType.GetTypeInfo().IsAssignableFrom(element.BindingContext.GetType().GetTypeInfo());
+				relativeSource.AncestorType.IsAssignableFrom(element.BindingContext.GetType());
 
 			if (!fitsElementType && !fitsBindingContextType)
 				return false;
@@ -272,7 +285,7 @@ namespace Microsoft.Maui.Controls
 
 		internal override BindingBase Clone()
 		{
-			return new Binding(Path, Mode)
+			var clone = new Binding(Path, Mode)
 			{
 				Converter = Converter,
 				ConverterParameter = ConverterParameter,
@@ -282,6 +295,11 @@ namespace Microsoft.Maui.Controls
 				TargetNullValue = TargetNullValue,
 				FallbackValue = FallbackValue,
 			};
+
+			if (DebuggerHelper.DebuggerIsAttached && VisualDiagnostics.GetSourceInfo(this) is SourceInfo info)
+				VisualDiagnostics.RegisterSourceInfo(clone, info.SourceUri, info.LineNumber, info.LinePosition);
+
+			return clone;
 		}
 
 		internal override object GetSourceValue(object value, Type targetPropertyType)

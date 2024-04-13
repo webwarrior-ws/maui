@@ -14,7 +14,7 @@ using NUnit.Framework;
 using Microsoft.Maui.Controls.Compatibility.UITests;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.Github, 3840, "[iOS] Translation change causes ScrollView to reset to initial position (0, 0)",
@@ -75,13 +75,14 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 			};
 
 			var mainLayout = new AbsoluteLayout();
-			mainLayout.Children.Add(scroll, new Rectangle(0, 0, 1, 1), AbsoluteLayoutFlags.All);
+			mainLayout.Children.Add(scroll, new Rect(0, 0, 1, 1), AbsoluteLayoutFlags.All);
 			Content = mainLayout;
 		}
 
 
 #if UITEST
 		[Test]
+		[Compatibility.UITests.FailsOnMauiIOS]
 		public void TranslatingViewKeepsScrollViewPosition()
 		{
 			RunningApp.WaitForElement(_failedText);

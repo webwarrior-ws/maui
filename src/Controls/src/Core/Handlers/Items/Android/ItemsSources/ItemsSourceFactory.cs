@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿#nullable disable
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using AndroidX.RecyclerView.Widget;
@@ -7,7 +8,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 {
 	internal static class ItemsSourceFactory
 	{
-		public static IItemsViewSource Create(IEnumerable itemsSource, ICollectionChangedNotifier notifier)
+		public static IItemsViewSource Create(IEnumerable itemsSource, BindableObject container, ICollectionChangedNotifier notifier)
 		{
 			if (itemsSource == null)
 			{
@@ -17,9 +18,11 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			switch (itemsSource)
 			{
 				case IList list when itemsSource is INotifyCollectionChanged:
-					return new ObservableItemsSource(new MarshalingObservableCollection(list), notifier);
+					return new ObservableItemsSource(new MarshalingObservableCollection(list), container, notifier);
 				case IEnumerable _ when itemsSource is INotifyCollectionChanged:
-					return new ObservableItemsSource(itemsSource as IEnumerable, notifier);
+					return new ObservableItemsSource(itemsSource, container, notifier);
+				case IList list:
+					return new ListSource(list);
 				case IEnumerable<object> generic:
 					return new ListSource(generic);
 			}
@@ -27,14 +30,14 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			return new ListSource(itemsSource);
 		}
 
-		public static IItemsViewSource Create(IEnumerable itemsSource, RecyclerView.Adapter adapter)
+		public static IItemsViewSource Create(IEnumerable itemsSource, BindableObject container, RecyclerView.Adapter adapter)
 		{
-			return Create(itemsSource, new AdapterNotifier(adapter));
+			return Create(itemsSource, container, new AdapterNotifier(adapter));
 		}
 
 		public static IItemsViewSource Create(ItemsView itemsView, RecyclerView.Adapter adapter)
 		{
-			return Create(itemsView.ItemsSource, adapter);
+			return Create(itemsView.ItemsSource, itemsView, adapter);
 		}
 
 		public static IGroupableItemsViewSource Create(GroupableItemsView itemsView, RecyclerView.Adapter adapter)
@@ -46,7 +49,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 				return new ObservableGroupedSource(itemsView, new AdapterNotifier(adapter));
 			}
 
-			return new UngroupedItemsSource(Create(itemsView.ItemsSource, adapter));
+			return new UngroupedItemsSource(Create(itemsView.ItemsSource, itemsView, adapter));
 		}
 	}
 }

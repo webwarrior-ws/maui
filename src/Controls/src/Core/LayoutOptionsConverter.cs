@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -7,6 +8,7 @@ using Microsoft.Maui.Controls.Internals;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/LayoutOptionsConverter.xml" path="Type[@FullName='Microsoft.Maui.Controls.LayoutOptionsConverter']/Docs/*" />
 	[Xaml.ProvideCompiled("Microsoft.Maui.Controls.XamlC.LayoutOptionsConverter")]
 	public sealed class LayoutOptionsConverter : TypeConverter
 	{

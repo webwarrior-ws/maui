@@ -47,18 +47,18 @@ namespace Microsoft.Maui
 		int GetOrder(IView view);
 
 		/// <summary>
-		/// Returns the value that determines the proportional growth that this element will accept to acccommodate 
+		/// Returns the value that determines the proportional growth that this element will accept to accommodate 
 		/// the layout in the row or column.
 		/// </summary>
 		/// <param name="view">The view for which to retrieve the property value.</param>
-		/// <returns>The value that determines the proportional growth that this element will accept to acccommodate the layout in the row or column.</returns>
+		/// <returns>The value that determines the proportional growth that this element will accept to  the layout in the row or column.</returns>
 		float GetGrow(IView view);
 
 		/// <summary>
-		/// Returns the value that determines the proportional reduction in size that this element will accept to acccommodate the layout in the row or column.
+		/// Returns the value that determines the proportional reduction in size that this element will accept to  the layout in the row or column.
 		/// </summary>
 		/// <param name="view">The view for which to retrieve the property value.</param>
-		/// <returns>The proportional reduction in size that this element will accept to acccommodate the layout in the row or column.</returns>
+		/// <returns>The proportional reduction in size that this element will accept to  the layout in the row or column.</returns>
 		float GetShrink(IView view);
 
 		/// <summary>
@@ -75,7 +75,7 @@ namespace Microsoft.Maui
 		/// <returns>The value that describes this element's relative or absolute basis length.</returns>
 		FlexBasis GetBasis(IView view);
 
-		Rectangle GetFlexFrame(IView view);
+		Rect GetFlexFrame(IView view);
 
 		void Layout(double width, double height);
 	}

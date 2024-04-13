@@ -17,7 +17,7 @@ namespace Microsoft.Maui.Controls.Xaml.UnitTests
 	public class Gh7837VM : Gh7837VMBase
 	{
 		public new string this[int index] => index == 42 ? "forty-two" : "dull number";
-		public new string this[string index] => index.ToUpper();
+		public new string this[string index] => index.ToUpperInvariant();
 	}
 
 	public partial class Gh7837 : ContentPage
@@ -31,9 +31,6 @@ namespace Microsoft.Maui.Controls.Xaml.UnitTests
 		[TestFixture]
 		class Tests
 		{
-			[SetUp] public void Setup() => Device.PlatformServices = new MockPlatformServices();
-			[TearDown] public void TearDown() => Device.PlatformServices = null;
-
 			[Test]
 			public void BindingWithMultipleIndexers([Values(false, true)] bool useCompiledXaml)
 			{

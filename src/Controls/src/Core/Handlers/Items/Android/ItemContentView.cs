@@ -1,21 +1,19 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using Android.Content;
 using Android.Views;
-using AndroidX.CoordinatorLayout.Widget;
-using AndroidX.Fragment.App;
 using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Handlers;
 using AView = Android.Views.View;
-using Object = Java.Lang.Object;
 
 namespace Microsoft.Maui.Controls.Handlers.Items
 {
 	public class ItemContentView : ViewGroup
 	{
-		protected INativeViewHandler Content;
-		internal IView View => Content?.VirtualView;
 		Size? _size;
 		Action<Size> _reportMeasure;
+
+		protected IPlatformViewHandler Content;
+		internal IView View => Content?.VirtualView;
 
 		public ItemContentView(Context context) : base(context)
 		{
@@ -23,25 +21,35 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 		internal void ClickOn() => CallOnClick();
 
+		AView PlatformView => Content?.ContainerView ?? Content?.PlatformView;
+
 		internal void RealizeContent(View view, ItemsView itemsView)
 		{
 			Content = CreateHandler(view, itemsView);
-			AddView(Content.NativeView);
+			var platformView = PlatformView;
 
-			//TODO: RUI IS THIS THE BEST WAY TO CAST? 
-			(View as VisualElement).MeasureInvalidated += ElementMeasureInvalidated;
+			//make sure we don't belong to a previous Holder
+			platformView.RemoveFromParent();
+			AddView(platformView);
+
+			if (View is VisualElement visualElement)
+			{
+				visualElement.MeasureInvalidated += ElementMeasureInvalidated;
+			}
 		}
 
 		internal void Recycle()
 		{
-			if (View != null)
+			if (View is VisualElement visualElement)
 			{
-				(View as VisualElement).MeasureInvalidated -= ElementMeasureInvalidated;
+				visualElement.MeasureInvalidated -= ElementMeasureInvalidated;
 			}
 
-			if (Content?.NativeView != null)
+			var platformView = PlatformView;
+
+			if (platformView != null)
 			{
-				RemoveView(Content.NativeView);
+				RemoveView(platformView);
 			}
 
 			Content = null;
@@ -61,19 +69,10 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 				return;
 			}
 
-			var size = Context.FromPixels(r - l, b - t);
-
-			//TODO: RUI Is this the best way?
-			//View.Arrange(new Rectangle(Point.Zero, size));
-			//Arrange doesn't seem to work as expected
-
-			var mauiControlsView = View as View;
-			if (mauiControlsView == null)
-				return;
-
-			mauiControlsView.Layout(new Rectangle(Point.Zero, size));
-
-			UpdateContentLayout();
+			if (View?.Handler is IPlatformViewHandler handler)
+			{
+				handler.LayoutVirtualView(l, t, r, b);
+			}
 		}
 
 		protected override void OnMeasure(int widthMeasureSpec, int heightMeasureSpec)
@@ -84,34 +83,48 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 				return;
 			}
 
-			if (_size != null)
+			// If we're using ItemSizingStrategy.MeasureFirstItem and now we have a set size, use that
+			// Even though we already know the size we still need to pass the measure through to the children.
+			if (_size is not null)
 			{
-				// If we're using ItemSizingStrategy.MeasureFirstItem and now we have a set size, use that
-				SetMeasuredDimension((int)_size.Value.Width, (int)_size.Value.Height);
+				var w = (int)_size.Value.Width;
+				var h = (int)_size.Value.Height;
+
+				// If the platform childs measure has been invalidated, it's going to still want to
+				// participate in the measure lifecycle in order to update its internal
+				// book keeping.
+				_ = View.Measure
+					(
+						MeasureSpec.MakeMeasureSpec(w, MeasureSpecMode.Exactly),
+						MeasureSpec.MakeMeasureSpec(h, MeasureSpecMode.Exactly)
+					);
+
+				SetMeasuredDimension(w, h);
 				return;
 			}
 
 			int pixelWidth = MeasureSpec.GetSize(widthMeasureSpec);
 			int pixelHeight = MeasureSpec.GetSize(heightMeasureSpec);
 
-			var width = MeasureSpec.GetMode(widthMeasureSpec) == MeasureSpecMode.Unspecified
+			var widthSpec = MeasureSpec.GetMode(widthMeasureSpec) == MeasureSpecMode.Unspecified
 				? double.PositiveInfinity
-				: Context.FromPixels(pixelWidth);
+				: this.FromPixels(pixelWidth);
 
-			var height = MeasureSpec.GetMode(heightMeasureSpec) == MeasureSpecMode.Unspecified
+			var heightSpec = MeasureSpec.GetMode(heightMeasureSpec) == MeasureSpecMode.Unspecified
 				? double.PositiveInfinity
-				: Context.FromPixels(pixelHeight);
+				: this.FromPixels(pixelHeight);
 
-			SizeRequest measure = (View as VisualElement).Measure(width, height, MeasureFlags.IncludeMargins);
+
+			var measure = View.Measure(widthSpec, heightSpec);
 
 			if (pixelWidth == 0)
 			{
-				pixelWidth = (int)Context.ToPixels(measure.Request.Width);
+				pixelWidth = (int)this.ToPixels(measure.Width);
 			}
 
 			if (pixelHeight == 0)
 			{
-				pixelHeight = (int)Context.ToPixels(measure.Request.Height);
+				pixelHeight = (int)this.ToPixels(measure.Height);
 			}
 
 			_reportMeasure?.Invoke(new Size(pixelWidth, pixelHeight));
@@ -120,11 +133,11 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			SetMeasuredDimension(pixelWidth, pixelHeight);
 		}
 
-		void ElementMeasureInvalidated(object sender, System.EventArgs e)
+		void ElementMeasureInvalidated(object sender, EventArgs e)
 		{
 			if (this.IsAlive())
 			{
-				RequestLayout();
+				PlatformInterop.RequestLayoutIfNeeded(this);
 			}
 			else if (sender is VisualElement ve)
 			{
@@ -132,33 +145,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			}
 		}
 
-		void UpdateContentLayout()
-		{
-			VisualElement mauiControlsView = (View as VisualElement);
-			AView aview = Content.NativeView;
-
-			if (mauiControlsView == null || aview == null)
-				return;
-
-			var x = (int)Context.ToPixels(mauiControlsView.X);
-			var y = (int)Context.ToPixels(mauiControlsView.Y);
-			var width = Math.Max(0, (int)Context.ToPixels(mauiControlsView.Width));
-			var height = Math.Max(0, (int)Context.ToPixels(mauiControlsView.Height));
-
-			Content.NativeView.Layout(x, y, width, height);
-
-			if ((aview is LayoutViewGroup || aview is ContentViewGroup || aview is CoordinatorLayout || aview is FragmentContainerView) && width == 0 && height == 0)
-			{
-				// Nothing to do here; just chill.
-			}
-			else
-			{
-				aview.Measure(MeasureSpecMode.Exactly.MakeMeasureSpec(width), MeasureSpecMode.Exactly.MakeMeasureSpec(height));
-				aview.Layout(x, y, x + width, y + height);
-			}
-		}
-
-		static INativeViewHandler CreateHandler(View view, ItemsView itemsView) =>
+		static IPlatformViewHandler CreateHandler(View view, ItemsView itemsView) =>
 			TemplateHelpers.GetHandler(view, itemsView.FindMauiContext());
 	}
 }

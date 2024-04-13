@@ -8,7 +8,7 @@ using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Graphics;
 using AbsoluteLayoutFlags = Microsoft.Maui.Layouts.AbsoluteLayoutFlags;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.Github, 6698, "crash on TypedBinding.Apply", PlatformAffected.All)]
@@ -54,7 +54,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 
 			AbsoluteLayout.SetLayoutFlags(view,
 				AbsoluteLayoutFlags.WidthProportional | AbsoluteLayoutFlags.HeightProportional);
-			AbsoluteLayout.SetLayoutBounds(view, new Rectangle(0, 0, 1, 1));
+			AbsoluteLayout.SetLayoutBounds(view, new Rect(0, 0, 1, 1));
 
 			_container.Children.Add(view);
 		}

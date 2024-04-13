@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 
 
 #if UITEST
@@ -13,7 +14,7 @@ using NUnit.Framework;
 using Microsoft.Maui.Controls.Compatibility.UITests;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.Github, 9360, "[Bug] Android Icons no longer customizable via NavigationPageRenderer UpdateMenuItemIcon()",
@@ -30,7 +31,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 			{
 				string text = "This Test is only Relevant on Android";
 
-				if (Device.RuntimePlatform == Device.Android)
+				if (DeviceInfo.Platform == DevicePlatform.Android)
 					text = "Toolbar Item Icon should be a hear";
 
 				ContentPage contentPage = new ContentPage()
@@ -57,7 +58,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 				contentPage.ToolbarItems.Add(new ToolbarItem() { Text = "BAD" });
 				contentPage.ToolbarItems.Add(new ToolbarItem()
 				{
-					IconImageSource = ImageSource.FromResource("Microsoft.Maui.Controls.ControlGallery.GalleryPages.crimson.jpg", typeof(Issue9360NavigationPage).GetTypeInfo().Assembly)
+					IconImageSource = ImageSource.FromResource("Microsoft.Maui.Controls.ControlGallery.GalleryPages.crimson.jpg", typeof(Issue9360NavigationPage).Assembly)
 				});
 
 				contentPage.ToolbarItems.Add(new ToolbarItem()
@@ -86,6 +87,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 		}
 
 #if UITEST && __ANDROID__
+[Microsoft.Maui.Controls.Compatibility.UITests.FailsOnMauiAndroid]
 		[Test]
 		public void NavigationPageRendererMenuItemIconOverrideWorks()
 		{

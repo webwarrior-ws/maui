@@ -1,14 +1,17 @@
+#nullable disable
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Maui.Controls.Internals;
 
 namespace Microsoft.Maui.Controls
 {
-	public abstract class ItemsView<TVisual> : View, ITemplatedItemsView<TVisual> where TVisual : BindableObject
+	/// <include file="../../docs/Microsoft.Maui.Controls/ItemsView.xml" path="Type[@FullName='Microsoft.Maui.Controls.ItemsView']/Docs/*" />
+	public abstract class ItemsView<[DynamicallyAccessedMembers(BindableProperty.DeclaringTypeMembers | BindableProperty.ReturnTypeMembers)] TVisual> : View, ITemplatedItemsView<TVisual> where TVisual : BindableObject
 	{
 		/*
+		/// <summary>Bindable property for <see cref="InfiniteScrolling"/>.</summary>
 		public static readonly BindableProperty InfiniteScrollingProperty =
 			BindableProperty.Create<ItemsView, bool> (lv => lv.InfiniteScrolling, false);
 
@@ -18,10 +21,12 @@ namespace Microsoft.Maui.Controls
 			set { SetValue (InfiniteScrollingProperty, value); }
 		}*/
 
+		/// <summary>Bindable property for <see cref="ItemsSource"/>.</summary>
 		public static readonly BindableProperty ItemsSourceProperty =
 			BindableProperty.Create(nameof(ItemsSource), typeof(IEnumerable), typeof(ItemsView<TVisual>), null,
 									propertyChanged: OnItemsSourceChanged);
 
+		/// <summary>Bindable property for <see cref="ItemTemplate"/>.</summary>
 		public static readonly BindableProperty ItemTemplateProperty =
 			BindableProperty.Create(nameof(ItemTemplate), typeof(DataTemplate), typeof(ItemsView<TVisual>), null,
 									validateValue: (b, v) => ((ItemsView<TVisual>)b).ValidateItemTemplate((DataTemplate)v));
@@ -29,12 +34,14 @@ namespace Microsoft.Maui.Controls
 		internal ItemsView()
 			=> TemplatedItems = new TemplatedItemsList<ItemsView<TVisual>, TVisual>(this, ItemsSourceProperty, ItemTemplateProperty);
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ItemsView.xml" path="//Member[@MemberName='ItemsSource']/Docs/*" />
 		public IEnumerable ItemsSource
 		{
 			get => (IEnumerable)GetValue(ItemsSourceProperty);
 			set => SetValue(ItemsSourceProperty, value);
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ItemsView.xml" path="//Member[@MemberName='ItemTemplate']/Docs/*" />
 		public DataTemplate ItemTemplate
 		{
 			get => (DataTemplate)GetValue(ItemTemplateProperty);

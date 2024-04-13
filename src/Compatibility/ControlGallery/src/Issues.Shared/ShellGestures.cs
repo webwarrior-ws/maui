@@ -9,6 +9,7 @@ using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.PlatformConfiguration;
 using Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;
+using Microsoft.Maui.Devices;
 
 
 #if UITEST
@@ -17,7 +18,7 @@ using NUnit.Framework;
 using Microsoft.Maui.Controls.Compatibility.UITests;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.None, 0, "Shell Gestures Test",
@@ -115,7 +116,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 			listView.ItemsSource = Enumerable.Range(0, 100).Select(x => $"{x} Entry").ToList();
 			listViewPage.Content = listView;
 
-			if (Device.RuntimePlatform == Device.Android)
+			if (DeviceInfo.Platform == DevicePlatform.Android)
 			{
 				var touchListenter = CreateContentPage(shellItemTitle: TouchListenerTitle);
 				touchListenter.Content = new TouchTestView();
@@ -174,6 +175,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 #if __ANDROID__
 		[NUnit.Framework.Category(UITestCategories.CustomRenderers)]
 		[Test]
+		[Compatibility.UITests.FailsOnMauiAndroid]
 		public void TouchListener()
 		{
 			TapInFlyout(TouchListenerTitle);

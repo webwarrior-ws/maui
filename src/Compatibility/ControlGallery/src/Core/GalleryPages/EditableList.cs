@@ -3,7 +3,7 @@ using System.Linq;
 using System.Windows.Input;
 using Microsoft.Maui.Controls.Internals;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
+namespace Microsoft.Maui.Controls.ControlGallery
 {
 	internal class MessagesViewModel : ViewModelBase
 	{
@@ -11,7 +11,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
 		{
 			Messages = new ObservableCollection<MessageViewModel>(Enumerable.Range(0, messagesCount).Select(i =>
 			{
-				return new MessageViewModel { Subject = "Subject Line " + i, MessagePreview = "Lorem ipsum dolorem monkeys bonkers " + i };
+				return new MessageViewModel { Subject = "Subject Line " + i, MessagePreview = "Lorem ipsum dolorem monkeys" + i };
 			}));
 
 			MessagingCenter.Subscribe<MessageViewModel, MessageViewModel>(this, "DeleteMessage", (vm, vm2) =>

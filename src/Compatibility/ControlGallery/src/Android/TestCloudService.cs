@@ -1,6 +1,7 @@
-using Microsoft.Maui.Controls.Compatibility.ControlGallery;
+using System;
+using Microsoft.Maui.Controls.ControlGallery;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Android
+namespace Microsoft.Maui.Controls.ControlGallery.Android
 {
 	public class TestCloudService : ITestCloudService
 	{
@@ -8,7 +9,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Android
 		{
 			var isInTestCloud = System.Environment.GetEnvironmentVariable("XAMARIN_TEST_CLOUD");
 
-			return isInTestCloud != null && isInTestCloud.Equals("1");
+			return isInTestCloud != null && isInTestCloud.Equals("1", StringComparison.Ordinal);
 		}
 
 		public string GetTestCloudDeviceName()

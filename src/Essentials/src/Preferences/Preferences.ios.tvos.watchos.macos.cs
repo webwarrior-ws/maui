@@ -2,13 +2,13 @@ using System;
 using System.Globalization;
 using Foundation;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.Storage
 {
-	public static partial class Preferences
+	class PreferencesImplementation : IPreferences
 	{
 		static readonly object locker = new object();
 
-		static bool PlatformContainsKey(string key, string sharedName)
+		public bool ContainsKey(string key, string sharedName)
 		{
 			lock (locker)
 			{
@@ -16,7 +16,7 @@ namespace Microsoft.Maui.Essentials
 			}
 		}
 
-		static void PlatformRemove(string key, string sharedName)
+		public void Remove(string key, string sharedName)
 		{
 			lock (locker)
 			{
@@ -28,7 +28,7 @@ namespace Microsoft.Maui.Essentials
 			}
 		}
 
-		static void PlatformClear(string sharedName)
+		public void Clear(string sharedName)
 		{
 			lock (locker)
 			{
@@ -45,8 +45,10 @@ namespace Microsoft.Maui.Essentials
 			}
 		}
 
-		static void PlatformSet<T>(string key, T value, string sharedName)
+		public void Set<T>(string key, T value, string sharedName)
 		{
+			Preferences.CheckIsSupportedType<T>();
+
 			lock (locker)
 			{
 				using (var userDefaults = GetUserDefaults(sharedName))
@@ -79,12 +81,16 @@ namespace Microsoft.Maui.Essentials
 						case float f:
 							userDefaults.SetFloat(f, key);
 							break;
+						case DateTime dt:
+							var encodedDateTime = Convert.ToString(dt.ToBinary(), CultureInfo.InvariantCulture);
+							userDefaults.SetString(encodedDateTime, key);
+							break;
 					}
 				}
 			}
 		}
 
-		static T PlatformGet<T>(string key, T defaultValue, string sharedName)
+		public T Get<T>(string key, T defaultValue, string sharedName)
 		{
 			object value = null;
 
@@ -112,6 +118,11 @@ namespace Microsoft.Maui.Essentials
 							break;
 						case float f:
 							value = userDefaults.FloatForKey(key);
+							break;
+						case DateTime dt:
+							var savedDateTime = userDefaults.StringForKey(key);
+							var encodedDateTime = Convert.ToInt64(savedDateTime, CultureInfo.InvariantCulture);
+							value = DateTime.FromBinary(encodedDateTime);
 							break;
 						case string s:
 							// the case when the string is not null

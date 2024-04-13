@@ -1,18 +1,90 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Android.Graphics.Drawables;
+using Android.Text;
 using AndroidX.AppCompat.Widget;
 using AndroidX.Core.Widget;
-using Google.Android.Material.Button;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.DeviceTests.Stubs;
-using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Handlers;
 using Xunit;
-using AColor = global::Android.Graphics.Color;
+using static Microsoft.Maui.DeviceTests.AssertHelpers;
+using AColor = Android.Graphics.Color;
 
 namespace Microsoft.Maui.DeviceTests
 {
 	public partial class ButtonHandlerTests
 	{
+		[Fact(DisplayName = "Button has Ripple Effect")]
+		public async Task ButtonRippleEffect()
+		{
+			var layout = new LayoutStub();
+
+			var button = new ButtonStub
+			{
+				Text = "Text",
+				Background = new LinearGradientPaintStub(Colors.Red, Colors.Orange),
+			};
+
+			layout.Add(button);
+
+			var clicked = false;
+
+			button.Clicked += delegate
+			{
+				clicked = true;
+			};
+
+			await PerformClick(button);
+
+			Assert.True(clicked);
+
+			await AttachAndRun(button, async (handler) =>
+			{
+				await Task.Delay(100);
+
+				var hasRipple = GetNativeHasRippleDrawable(handler);
+				Assert.True(hasRipple);
+			});
+		}
+
+		[Fact(DisplayName = "IsVisible updates Correctly")]
+		public async Task IsVisibleUpdatesCorrectly()
+		{
+			var expected = Colors.Red;
+
+			var layout = new LayoutStub();
+
+			var hiddenButton = new ButtonStub
+			{
+				Text = "Text",
+				TextColor = expected,
+				Visibility = Visibility.Collapsed,
+			};
+
+			var button = new ButtonStub
+			{
+				Text = "Change IsVisible"
+			};
+
+			layout.Add(hiddenButton);
+			layout.Add(button);
+
+			var clicked = false;
+
+			button.Clicked += delegate
+			{
+				hiddenButton.Visibility = Visibility.Visible;
+				clicked = true;
+			};
+
+			await PerformClick(button);
+
+			Assert.True(clicked);
+
+			var result = await GetValueAsync(hiddenButton, GetVisibility);
+			Assert.Equal(hiddenButton.Visibility, result);
+
+			await ValidateHasColor(hiddenButton, expected);
+		}
+
 		[Fact(DisplayName = "CharacterSpacing Initializes Correctly")]
 		public async Task CharacterSpacingInitializesCorrectly()
 		{
@@ -31,45 +103,90 @@ namespace Microsoft.Maui.DeviceTests
 				return new
 				{
 					ViewValue = button.CharacterSpacing,
-					NativeViewValue = GetNativeCharacterSpacing(handler)
+					PlatformViewValue = GetNativeCharacterSpacing(handler)
 				};
 			});
 
 			Assert.Equal(xplatCharacterSpacing, values.ViewValue);
-			Assert.Equal(expectedValue, values.NativeViewValue, EmCoefficientPrecision);
+			Assert.Equal(expectedValue, values.PlatformViewValue, EmCoefficientPrecision);
 		}
 
-		[Fact(DisplayName = "Button Padding Initializing")]
-		public async Task PaddingInitializesCorrectly()
+		[Theory(DisplayName = "CornerRadius Initializes Correctly"
+#if __ANDROID_23__	
+			, Skip = "Failing on Android 23"
+#endif
+		)]
+		[InlineData(0, 0)]
+		[InlineData(5, 5)]
+		public async Task CornerRadiusInitializesCorrectly(int viewRadius, int platformViewRadius)
 		{
-			var button = new ButtonStub()
+			var button = new ButtonStub
 			{
-				Text = "Test",
-				Padding = new Thickness(5, 10, 15, 20)
+				Background = new LinearGradientPaintStub(Colors.Red, Colors.Orange),
+				ImageSource = new FileImageSourceStub("black.png"),
+				CornerRadius = viewRadius
 			};
 
-			var handler = await CreateHandlerAsync(button);
-			var appCompatButton = (AppCompatButton)handler.NativeView;
-			var (left, top, right, bottom) = (appCompatButton.PaddingLeft, appCompatButton.PaddingTop, appCompatButton.PaddingRight, appCompatButton.PaddingBottom);
+			var values = await GetValueAsync(button, (handler) =>
+			{
+				return new
+				{
+					ViewValue = button.CornerRadius,
+					PlatformViewValue = GetNativeCornerRadius(handler)
+				};
+			});
 
-			var context = handler.NativeView.Context;
+			Assert.Equal(viewRadius, values.ViewValue);
+			Assert.Equal(platformViewRadius, values.PlatformViewValue);
+		}
 
-			var expectedLeft = context.ToPixels(5);
-			var expectedTop = context.ToPixels(10);
-			var expectedRight = context.ToPixels(15);
-			var expectedBottom = context.ToPixels(20);
+		[Theory]
+		[InlineData("red.png", "#FF0000")]
+		[InlineData("green.png", "#00FF00")]
+		public async Task ImageSourceUpdatesCorrectly(string filename, string colorHex)
+		{
+			var image = new ButtonStub
+			{
+				ImageSource = new FileImageSourceStub("black.png"),
+			};
 
-			Assert.Equal(expectedLeft, left);
-			Assert.Equal(expectedTop, top);
-			Assert.Equal(expectedRight, right);
-			Assert.Equal(expectedBottom, bottom);
+			// Update the Button Icon
+			image.ImageSource = new FileImageSourceStub(filename);
+
+			await InvokeOnMainThreadAsync(async () =>
+			{
+				var handler = CreateHandler(image);
+
+				await AssertEventually(() => ImageSourceLoaded(handler));
+
+				var expectedColor = Color.FromArgb(colorHex);
+				await handler.PlatformView.AssertContainsColor(expectedColor, MauiContext);
+			});
 		}
 
 		AppCompatButton GetNativeButton(ButtonHandler buttonHandler) =>
-			(AppCompatButton)buttonHandler.NativeView;
+			buttonHandler.PlatformView;
 
 		string GetNativeText(ButtonHandler buttonHandler) =>
 			GetNativeButton(buttonHandler).Text;
+
+		int GetNativeCornerRadius(ButtonHandler buttonHandler)
+		{
+			var appCompatButton = GetNativeButton(buttonHandler);
+
+			if (appCompatButton.Background is RippleDrawable rippleDrawable)
+			{
+				const int BackgroundDrawableId = 999;
+				var background = rippleDrawable.FindDrawableByLayerId(BackgroundDrawableId) as GradientDrawable;
+
+				if (background != null)
+				{
+					return (int)MauiContext.Context.FromPixels(background.CornerRadius);
+				}
+			}
+
+			return -1;
+		}
 
 		Color GetNativeTextColor(ButtonHandler buttonHandler)
 		{
@@ -82,16 +199,12 @@ namespace Microsoft.Maui.DeviceTests
 		Thickness GetNativePadding(ButtonHandler buttonHandler)
 		{
 			var appCompatButton = GetNativeButton(buttonHandler);
-			return ToThicknees(appCompatButton);
 
-			static Thickness ToThicknees(AppCompatButton appCompatButton)
-			{
-				var onePx = appCompatButton.Context.ToPixels(1);
-
-
-				return new Thickness(appCompatButton.PaddingLeft,
-					appCompatButton.PaddingTop, appCompatButton.PaddingRight, appCompatButton.PaddingBottom);
-			}
+			return new Thickness(
+				appCompatButton.PaddingLeft,
+				appCompatButton.PaddingTop,
+				appCompatButton.PaddingRight,
+				appCompatButton.PaddingBottom);
 		}
 
 		Task PerformClick(IButton button)
@@ -116,10 +229,25 @@ namespace Microsoft.Maui.DeviceTests
 
 		bool ImageSourceLoaded(ButtonHandler buttonHandler)
 		{
-			var image = buttonHandler.NativeView.Icon ??
-						TextViewCompat.GetCompoundDrawablesRelative(buttonHandler.NativeView)[3];
+			var image = buttonHandler.PlatformView.Icon ??
+						TextViewCompat.GetCompoundDrawablesRelative(buttonHandler.PlatformView)[3];
 
 			return image != null;
+		}
+
+		TextUtils.TruncateAt GetNativeLineBreakMode(ButtonHandler buttonHandler) =>
+			GetNativeButton(buttonHandler).Ellipsize;
+
+		bool GetNativeHasRippleDrawable(ButtonHandler buttonHandler)
+		{
+			var button = buttonHandler.PlatformView;
+
+			if (button is null)
+				return false;
+
+			var rippleDrawable = button.Background as RippleDrawable;
+
+			return rippleDrawable is not null;
 		}
 	}
 }

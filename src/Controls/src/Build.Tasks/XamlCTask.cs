@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Xml;
+using Microsoft.Build.Utilities;
 using Microsoft.Maui.Controls.Xaml;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -13,13 +14,99 @@ using IOPath = System.IO.Path;
 
 namespace Microsoft.Maui.Controls.Build.Tasks
 {
+	/// <summary>
+	/// Provides extension methods for the <see cref="TaskLoggingHelper"/> class to assist with logging warnings and errors.
+	/// </summary>
+	static class LoggingHelperExtensions
+	{
+		class LoggingHelperContext
+		{
+			public int WarningLevel { get; set; } = 4; //unused so far
+			public bool TreatWarningsAsErrors { get; set; } = false;
+			public IList<int> WarningsAsErrors { get; set; }
+			public IList<int> WarningsNotAsErrors { get; set; }
+			public IList<int> NoWarn { get; set; }
+		}
+
+		static LoggingHelperContext Context { get; set; }
+
+		public static void SetContext(this TaskLoggingHelper loggingHelper, int warningLevel, bool treatWarningsAsErrors, string noWarn, string warningsAsErrors, string warningsNotAsErrors)
+		{
+			if (Context == null)
+				Context = new LoggingHelperContext();
+			Context.WarningLevel = warningLevel;
+			Context.TreatWarningsAsErrors = treatWarningsAsErrors;
+
+			Context.NoWarn = noWarn?.Split([';', ','], StringSplitOptions.RemoveEmptyEntries).Select(s =>
+			{
+				if (int.TryParse(s, out var i))
+					return i;
+				if (s.StartsWith("XC"))
+				{
+					var code = s.Substring(2);
+					if (int.TryParse(code, out i))
+						return i;
+				}
+				return -1;
+			}).Where(i => i != -1).ToList();
+
+			Context.WarningsAsErrors = warningsAsErrors?.Split([';', ','], StringSplitOptions.RemoveEmptyEntries).Select(s =>
+			{
+				if (int.TryParse(s, out var i))
+					return i;
+				if (s.StartsWith("XC"))
+				{
+					var code = s.Substring(2);
+					if (int.TryParse(code, out i))
+						return i;
+				}
+				return -1;
+			}).Where(i => i != -1).ToList();
+
+			Context.WarningsNotAsErrors = warningsNotAsErrors?.Split([';', ','], StringSplitOptions.RemoveEmptyEntries).Select(s =>
+			{
+				if (int.TryParse(s, out var i))
+					return i;
+				if (s.StartsWith("XC"))
+				{
+					var code = s.Substring(2);
+					if (int.TryParse(code, out i))
+						return i;
+				}
+				return -1;
+			}).Where(i => i != -1).ToList();
+		}
+
+		public static void LogWarningOrError(this TaskLoggingHelper loggingHelper, BuildExceptionCode code, string xamlFilePath, int lineNumber, int linePosition, int endLineNumber, int endLinePosition, params object[] messageArgs)
+		{
+			if (Context == null)
+				Context = new LoggingHelperContext();
+			if (Context.NoWarn != null && Context.NoWarn.Contains(code.CodeCode))
+				return;
+			if ((Context.TreatWarningsAsErrors && (Context.WarningsNotAsErrors == null || !Context.WarningsNotAsErrors.Contains(code.CodeCode)))
+				|| (Context.WarningsAsErrors != null && Context.WarningsAsErrors.Contains(code.CodeCode)))
+				loggingHelper.LogError($"XamlC {code.CodePrefix}{code.CodeCode:0000}", null, null, xamlFilePath, lineNumber, linePosition, endLineNumber, endLinePosition, ErrorMessages.ResourceManager.GetString(code.ErrorMessageKey), messageArgs);
+			else
+				loggingHelper.LogWarning($"XamlC {code.CodePrefix}{code.CodeCode:0000}", null, null, xamlFilePath, lineNumber, linePosition, endLineNumber, endLinePosition, ErrorMessages.ResourceManager.GetString(code.ErrorMessageKey), messageArgs);
+		}
+	}
+
 	public class XamlCTask : XamlTask
 	{
+		readonly XamlCache cache = new();
 		bool hasCompiledXamlResources;
 		public bool KeepXamlResources { get; set; }
-		public bool OptimizeIL { get; set; }
+		public bool OptimizeIL { get; set; } = true;
 		public bool DefaultCompile { get; set; }
 		public bool ForceCompile { get; set; }
+		public string TargetFramework { get; set; }
+
+		public int WarningLevel { get; set; } = 4; //unused so far
+		public bool TreatWarningsAsErrors { get; set; } = false;
+		public string WarningsAsErrors { get; set; }
+		public string WarningsNotAsErrors { get; set; }
+		public string NoWarn { get; set; }
+
 
 		public IAssemblyResolver DefaultAssemblyResolver { get; set; }
 
@@ -35,6 +122,7 @@ namespace Microsoft.Maui.Controls.Build.Tasks
 		public override bool Execute(out IList<Exception> thrownExceptions)
 		{
 			thrownExceptions = null;
+			LoggingHelper.SetContext(WarningLevel, TreatWarningsAsErrors, NoWarn, WarningsAsErrors, WarningsNotAsErrors);
 			LoggingHelper.LogMessage(Normal, $"{new string(' ', 0)}Compiling Xaml, assembly: {Assembly}");
 			var skipassembly = !DefaultCompile;
 			bool success = true;
@@ -108,7 +196,7 @@ namespace Microsoft.Maui.Controls.Build.Tasks
 						{
 							LoggingHelper.LogMessage(Low, $"{new string(' ', 4)}Resource: {resource.Name}");
 							string classname;
-							if (!resource.IsXaml(module, out classname))
+							if (!resource.IsXaml(cache, module, out classname))
 							{
 								LoggingHelper.LogMessage(Low, $"{new string(' ', 6)}skipped.");
 								continue;
@@ -153,30 +241,6 @@ namespace Microsoft.Maui.Controls.Build.Tasks
 													  (string)xamlFilePathAttr.ConstructorArguments[0].Value :
 													  resource.Name;
 
-							MethodDefinition initCompRuntime = null;
-							if (!ValidateOnly)
-							{
-								initCompRuntime = typeDef.Methods.FirstOrDefault(md => md.Name == "__InitComponentRuntime");
-								if (initCompRuntime != null)
-									LoggingHelper.LogMessage(Low, $"{new string(' ', 6)}__InitComponentRuntime already exists... not creating");
-								else
-								{
-									LoggingHelper.LogMessage(Low, $"{new string(' ', 6)}Creating empty {typeDef.Name}.__InitComponentRuntime");
-									initCompRuntime = new MethodDefinition("__InitComponentRuntime", initComp.Attributes, initComp.ReturnType);
-									initCompRuntime.Body.InitLocals = true;
-									LoggingHelper.LogMessage(Low, $"{new string(' ', 8)}done.");
-									LoggingHelper.LogMessage(Low, $"{new string(' ', 6)}Copying body of InitializeComponent to __InitComponentRuntime");
-									initCompRuntime.Body = new MethodBody(initCompRuntime);
-									var iCRIl = initCompRuntime.Body.GetILProcessor();
-									foreach (var instr in initComp.Body.Instructions)
-										iCRIl.Append(instr);
-									initComp.Body.Instructions.Clear();
-									initComp.Body.GetILProcessor().Emit(OpCodes.Ret);
-									initComp.Body.InitLocals = true;
-									typeDef.Methods.Add(initCompRuntime);
-									LoggingHelper.LogMessage(Low, $"{new string(' ', 8)}done.");
-								}
-							}
 
 							LoggingHelper.LogMessage(Low, $"{new string(' ', 6)}Parsing Xaml");
 							var rootnode = ParseXaml(resource.GetResourceStream(), typeDef);
@@ -191,7 +255,7 @@ namespace Microsoft.Maui.Controls.Build.Tasks
 
 							LoggingHelper.LogMessage(Low, $"{new string(' ', 6)}Replacing {0}.InitializeComponent ()");
 							Exception e;
-							if (!TryCoreCompile(initComp, initCompRuntime, rootnode, xamlFilePath, out e))
+							if (!TryCoreCompile(initComp, rootnode, xamlFilePath, LoggingHelper, out e))
 							{
 								success = false;
 								LoggingHelper.LogMessage(Low, $"{new string(' ', 8)}failed.");
@@ -274,7 +338,7 @@ namespace Microsoft.Maui.Controls.Build.Tasks
 			return success;
 		}
 
-		bool TryCoreCompile(MethodDefinition initComp, MethodDefinition initCompRuntime, ILRootNode rootnode, string xamlFilePath, out Exception exception)
+		bool TryCoreCompile(MethodDefinition initComp, ILRootNode rootnode, string xamlFilePath, TaskLoggingHelper loggingHelper, out Exception exception)
 		{
 			try
 			{
@@ -282,24 +346,26 @@ namespace Microsoft.Maui.Controls.Build.Tasks
 				var module = body.Method.Module;
 				body.InitLocals = true;
 				var il = body.GetILProcessor();
-				var resourcePath = GetPathForType(module, initComp.DeclaringType);
+				var resourcePath = GetPathForType(cache, module, initComp.DeclaringType);
 
 				il.Emit(Nop);
 
-				var visitorContext = new ILContext(il, body, module)
+				var visitorContext = new ILContext(il, body, module, cache)
 				{
-					DefineDebug = DebugSymbols || (!string.IsNullOrEmpty(DebugType) && DebugType.ToLowerInvariant() != "none"),
-					XamlFilePath = xamlFilePath
+					XamlFilePath = xamlFilePath,
+					LoggingHelper = loggingHelper,
 				};
 
 
 				rootnode.Accept(new XamlNodeVisitor((node, parent) => node.Parent = parent), null);
 				rootnode.Accept(new ExpandMarkupsVisitor(visitorContext), null);
 				rootnode.Accept(new PruneIgnoredNodesVisitor(), null);
+				rootnode.Accept(new SimplifyOnPlatformVisitor(TargetFramework), null);
 				rootnode.Accept(new CreateObjectVisitor(visitorContext), null);
 				rootnode.Accept(new SetNamescopesAndRegisterNamesVisitor(visitorContext), null);
 				rootnode.Accept(new SetFieldVisitor(visitorContext), null);
 				rootnode.Accept(new SetResourcesVisitor(visitorContext), null);
+				rootnode.Accept(new SimplifyTypeExtensionVisitor(), null);
 				rootnode.Accept(new SetPropertiesVisitor(visitorContext, true), null);
 
 				il.Emit(Ret);
@@ -314,11 +380,11 @@ namespace Microsoft.Maui.Controls.Build.Tasks
 			}
 		}
 
-		internal static string GetPathForType(ModuleDefinition module, TypeReference type)
+		internal static string GetPathForType(XamlCache cache, ModuleDefinition module, TypeReference type)
 		{
 			foreach (var ca in type.Module.GetCustomAttributes())
 			{
-				if (!TypeRefComparer.Default.Equals(ca.AttributeType, module.ImportReference(("Microsoft.Maui.Controls", "Microsoft.Maui.Controls.Xaml", "XamlResourceIdAttribute"))))
+				if (!TypeRefComparer.Default.Equals(ca.AttributeType, module.ImportReference(cache, ("Microsoft.Maui.Controls", "Microsoft.Maui.Controls.Xaml", "XamlResourceIdAttribute"))))
 					continue;
 				if (!TypeRefComparer.Default.Equals(ca.ConstructorArguments[2].Value as TypeReference, type))
 					continue;
@@ -327,11 +393,11 @@ namespace Microsoft.Maui.Controls.Build.Tasks
 			return null;
 		}
 
-		internal static string GetResourceIdForPath(ModuleDefinition module, string path)
+		internal static string GetResourceIdForPath(XamlCache cache, ModuleDefinition module, string path)
 		{
 			foreach (var ca in module.GetCustomAttributes())
 			{
-				if (!TypeRefComparer.Default.Equals(ca.AttributeType, module.ImportReference(("Microsoft.Maui.Controls", "Microsoft.Maui.Controls.Xaml", "XamlResourceIdAttribute"))))
+				if (!TypeRefComparer.Default.Equals(ca.AttributeType, module.ImportReference(cache, ("Microsoft.Maui.Controls", "Microsoft.Maui.Controls.Xaml", "XamlResourceIdAttribute"))))
 					continue;
 				if (ca.ConstructorArguments[1].Value as string != path)
 					continue;

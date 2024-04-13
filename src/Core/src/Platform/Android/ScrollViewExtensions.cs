@@ -33,14 +33,13 @@ namespace Microsoft.Maui.Platform
 
 		public static void UpdateContent(this MauiScrollView scrollView, IView? content, IMauiContext context)
 		{
-			var nativeContent = content == null ? null : content.ToNative(context);
+			var nativeContent = content == null ? null : content.ToPlatform(context);
 
 			scrollView.RemoveAllViews();
 
 			if (nativeContent != null)
 			{
 				scrollView.SetContent(nativeContent);
-
 			}
 		}
 	}

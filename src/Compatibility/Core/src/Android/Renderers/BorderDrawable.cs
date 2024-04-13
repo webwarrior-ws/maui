@@ -145,7 +145,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 		{
 		}
 
-		public Color BackgroundColor => BorderElement.BackgroundColor == null ? _defaultColor : BorderElement.BackgroundColor;
+		public Color BackgroundColor => BorderElement.BackgroundColor ?? _defaultColor;
 		public Color PressedBackgroundColor => BackgroundColor.AddLuminosity(-.12f);//<item name="highlight_alpha_material_light" format="float" type="dimen">0.12</item>
 
 		protected override void Dispose(bool disposing)
@@ -199,7 +199,9 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 
 			path.AddRoundRect(rect, borderRadius, borderRadius, APath.Direction.Cw);
 
+#pragma warning disable CA1416 // https://github.com/xamarin/xamarin-android/issues/6962
 			paint.Color = pressed ? PressedBackgroundColor.ToAndroid() : BackgroundColor.ToAndroid();
+#pragma warning restore CA1416
 			paint.SetStyle(Paint.Style.Fill);
 			paint.SetShadowLayer(_shadowRadius, _shadowDx, _shadowDy, _shadowColor);
 
@@ -291,7 +293,9 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 				path.AddRoundRect(rect, borderRadius, borderRadius, APath.Direction.Cw);
 				paint.StrokeWidth = borderWidth;
 				paint.SetStyle(Paint.Style.Stroke);
+#pragma warning disable CA1416 // https://github.com/xamarin/xamarin-android/issues/6962
 				paint.Color = BorderElement.BorderColor.ToAndroid(Graphics.Colors.Black);
+#pragma warning restore CA1416
 
 				canvas.DrawPath(path, paint);
 			}

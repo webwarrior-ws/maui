@@ -1,6 +1,4 @@
-﻿using Microsoft.Maui.Graphics;
-
-namespace Microsoft.Maui.DeviceTests.Stubs
+﻿namespace Microsoft.Maui.DeviceTests.Stubs
 {
 	public partial class ScrollViewStub : StubBase, IScrollView
 	{
@@ -24,7 +22,7 @@ namespace Microsoft.Maui.DeviceTests.Stubs
 			throw new System.NotImplementedException();
 		}
 
-		public Size CrossPlatformArrange(Rectangle bounds)
+		public Size CrossPlatformArrange(Rect bounds)
 		{
 			return bounds.Size;
 		}

@@ -1,7 +1,7 @@
 #nullable enable
 using System;
-using Windows.UI;
 using Microsoft.UI;
+using Windows.UI;
 using WBrush = Microsoft.UI.Xaml.Media.Brush;
 using WSolidColorBrush = Microsoft.UI.Xaml.Media.SolidColorBrush;
 
@@ -28,12 +28,12 @@ namespace Microsoft.Maui.Platform
 			return solidColorBrush.Color.ToColor();
 		}
 
-		public static bool IsDefault(this Graphics.Color? color) 
+		public static bool IsDefault(this Graphics.Color? color)
 		{
 			return color == null;
 		}
 
-		public static WBrush ToNative(this Graphics.Color color)
+		public static WBrush ToPlatform(this Graphics.Color color)
 		{
 			return new WSolidColorBrush(color.ToWindowsColor());
 		}

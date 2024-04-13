@@ -18,6 +18,7 @@ using AppKit;
 namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 #endif
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class ShapeRenderer<TShape, TNativeShape> : ViewRenderer<TShape, TNativeShape>
 		where TShape : Shape
 		where TNativeShape : ShapeView
@@ -123,7 +124,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.MacOS
 		void UpdateStrokeDashArray()
 		{
 			if (Element.StrokeDashArray == null || Element.StrokeDashArray.Count == 0)
-				Control.ShapeLayer.UpdateStrokeDash(new nfloat[0]);
+				Control.ShapeLayer.UpdateStrokeDash(Array.Empty<nfloat>());
 			else
 			{
 				nfloat[] dashArray;

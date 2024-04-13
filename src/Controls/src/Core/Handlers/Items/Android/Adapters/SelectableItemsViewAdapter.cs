@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Collections.Generic;
 using Android.Content;
 using AndroidX.RecyclerView.Widget;
@@ -48,7 +49,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			base.OnViewRecycled(holder);
 		}
 
-		internal void ClearNativeSelection()
+		internal void ClearPlatformSelection()
 		{
 			for (int i = 0; i < _currentViewHolders.Count; i++)
 			{
@@ -56,7 +57,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			}
 		}
 
-		internal void MarkNativeSelection(object selectedItem)
+		internal void MarkPlatformSelection(object selectedItem)
 		{
 			if (selectedItem == null)
 			{
@@ -80,13 +81,13 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			switch (ItemsView.SelectionMode)
 			{
 				case SelectionMode.None:
-					return new int[0];
+					return Array.Empty<int>();
 
 				case SelectionMode.Single:
 					var selectedItem = ItemsView.SelectedItem;
 					if (selectedItem == null)
 					{
-						return new int[0];
+						return Array.Empty<int>();
 					}
 
 					return new int[1] { GetPositionForItem(selectedItem) };
@@ -103,7 +104,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 					return result;
 			}
 
-			return new int[0];
+			return Array.Empty<int>();
 		}
 
 		bool PositionIsSelected(int position)

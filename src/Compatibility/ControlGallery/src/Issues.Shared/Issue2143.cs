@@ -6,10 +6,13 @@ using System.Threading.Tasks;
 using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.Github, 2143, "Picker on windows phone", PlatformAffected.WinPhone)]
+	#if UITEST
+	[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.TableView)]
+	#endif
 	public class Issue2143 : ContentPage
 	{
 		public Issue2143()

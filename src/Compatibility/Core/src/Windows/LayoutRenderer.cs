@@ -1,15 +1,16 @@
 using System.ComponentModel;
-using Windows.UI;
+using Microsoft.Maui.Controls.Platform;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Media;
+using Windows.UI;
 using WRect = Windows.Foundation.Rect;
 using WSolidColorBrush = Microsoft.UI.Xaml.Media.SolidColorBrush;
-using Microsoft.UI;
-using Microsoft.Maui.Controls.Platform;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class LayoutRenderer : ViewRenderer<Layout, FrameworkElement>
 	{
 		protected override void OnElementChanged(ElementChangedEventArgs<Layout> e)

@@ -1,5 +1,7 @@
+#nullable disable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Foundation;
 using ObjCRuntime;
 using UIKit;
@@ -86,7 +88,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			}
 		}
 
-		internal void UpdateNativeSelection()
+		internal void UpdatePlatformSelection()
 		{
 			if (ItemsView == null)
 			{
@@ -114,7 +116,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 					return;
 				case SelectionMode.Multiple:
-					SynchronizeNativeSelectionWithSelectedItems();
+					SynchronizePlatformSelectionWithSelectedItems();
 					break;
 			}
 		}
@@ -139,20 +141,24 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 					break;
 			}
 
-			UpdateNativeSelection();
+			UpdatePlatformSelection();
 		}
 
-		void SynchronizeNativeSelectionWithSelectedItems()
+		void SynchronizePlatformSelectionWithSelectedItems()
 		{
-			var selectedItems = ItemsView.SelectedItems;
+			var selectedItems = ItemsView.SelectedItems.ToHashSet();
 			var selectedIndexPaths = CollectionView.GetIndexPathsForSelectedItems();
 
 			foreach (var path in selectedIndexPaths)
 			{
 				var itemAtPath = GetItemAtIndex(path);
-				if (ShouldNotBeSelected(itemAtPath, selectedItems))
+				if (!selectedItems.Contains(itemAtPath))
 				{
 					CollectionView.DeselectItem(path, true);
+				}
+				else
+				{
+					selectedItems.Remove(itemAtPath);
 				}
 			}
 
@@ -160,19 +166,6 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			{
 				SelectItem(item);
 			}
-		}
-
-		bool ShouldNotBeSelected(object item, IList<object> selectedItems)
-		{
-			for (int n = 0; n < selectedItems.Count; n++)
-			{
-				if (selectedItems[n] == item)
-				{
-					return false;
-				}
-			}
-
-			return true;
 		}
 	}
 }

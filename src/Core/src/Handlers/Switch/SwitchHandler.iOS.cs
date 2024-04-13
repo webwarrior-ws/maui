@@ -1,4 +1,5 @@
 using System;
+using Microsoft.Maui.Graphics;
 using ObjCRuntime;
 using UIKit;
 using RectangleF = CoreGraphics.CGRect;
@@ -7,58 +8,74 @@ namespace Microsoft.Maui.Handlers
 {
 	public partial class SwitchHandler : ViewHandler<ISwitch, UISwitch>
 	{
-		static UIColor? DefaultOnTrackColor;
-		static UIColor? DefaultOffTrackColor;
-		static UIColor? DefaultThumbColor;
+		readonly SwitchProxy _proxy = new();
 
-		protected override UISwitch CreateNativeView()
+		// the UISwitch control becomes inaccessible if it grows to a width > 101
+		// An issue has been logged with Apple
+		// This ensures that the UISwitch remains the natural size that iOS expects
+		// But the container can be used for setting BGColors and other features.
+		public override bool NeedsContainer => true;
+
+		protected override UISwitch CreatePlatformView()
 		{
 			return new UISwitch(RectangleF.Empty);
 		}
 
-		protected override void ConnectHandler(UISwitch nativeView)
+		protected override void ConnectHandler(UISwitch platformView)
 		{
-			base.ConnectHandler(nativeView);
-
-			nativeView.ValueChanged += OnControlValueChanged;
+			base.ConnectHandler(platformView);
+			_proxy.Connect(VirtualView, platformView);
 		}
 
-		protected override void DisconnectHandler(UISwitch nativeView)
+		protected override void DisconnectHandler(UISwitch platformView)
 		{
-			base.DisconnectHandler(nativeView);
-
-			nativeView.ValueChanged -= OnControlValueChanged;
+			base.DisconnectHandler(platformView);
+			_proxy.Disconnect(platformView);
 		}
 
-		void SetupDefaults(UISwitch nativeView)
+		public static void MapIsOn(ISwitchHandler handler, ISwitch view)
 		{
-			DefaultOnTrackColor = UISwitch.Appearance.OnTintColor;
-			DefaultOffTrackColor = nativeView.GetOffTrackColor();
-			DefaultThumbColor = UISwitch.Appearance.ThumbTintColor;
+			UpdateIsOn(handler);
+			handler.PlatformView?.UpdateIsOn(view);
 		}
 
-		public static void MapIsOn(SwitchHandler handler, ISwitch view)
+		public static void MapTrackColor(ISwitchHandler handler, ISwitch view)
 		{
-			handler.NativeView?.UpdateIsOn(view);
+			handler.PlatformView?.UpdateTrackColor(view);
 		}
 
-		public static void MapTrackColor(SwitchHandler handler, ISwitch view)
+		public static void MapThumbColor(ISwitchHandler handler, ISwitch view)
 		{
-			handler.NativeView?.UpdateTrackColor(view, DefaultOnTrackColor, DefaultOffTrackColor);
+			handler.PlatformView?.UpdateThumbColor(view);
 		}
 
-		public static void MapThumbColor(SwitchHandler handler, ISwitch view)
+		static void UpdateIsOn(ISwitchHandler handler)
 		{
-			handler.NativeView?.UpdateThumbColor(view, DefaultThumbColor);
+			handler.UpdateValue(nameof(ISwitch.TrackColor));
 		}
 
-		void OnControlValueChanged(object? sender, EventArgs e)
+		class SwitchProxy
 		{
-			if (VirtualView == null)
-				return;
+			WeakReference<ISwitch>? _virtualView;
 
-			if (NativeView != null)
-				VirtualView.IsOn = NativeView.On;
+			ISwitch? VirtualView => _virtualView is not null && _virtualView.TryGetTarget(out var v) ? v : null;
+
+			public void Connect(ISwitch virtualView, UISwitch platformView)
+			{
+				_virtualView = new(virtualView);
+				platformView.ValueChanged += OnControlValueChanged;
+			}
+
+			public void Disconnect(UISwitch platformView)
+			{
+				platformView.ValueChanged -= OnControlValueChanged;
+			}
+
+			void OnControlValueChanged(object? sender, EventArgs e)
+			{
+				if (VirtualView is ISwitch virtualView && sender is UISwitch platformView && virtualView.IsOn != platformView.On)
+					virtualView.IsOn = platformView.On;
+			}
 		}
 	}
 }

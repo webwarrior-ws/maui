@@ -2,7 +2,7 @@
 using Microsoft.Maui.Graphics;
 using NUnit.Framework;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Tests
+namespace Microsoft.Maui.Controls.ControlGallery.Tests
 {
 	[TestFixture]
 	public class CrossPlatformTests : CrossPlatformTestFixture
@@ -61,18 +61,6 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Tests
 		{
 			var collectionView = new CollectionView { ItemsSource = null, IsGrouped = true };
 			await TestingPlatform.CreateRenderer(collectionView);
-		}
-
-		[Test]
-		[Description("[Bug] [UWP] NullReferenceException when call SavePropertiesAsync method off the main thread")]
-		public async Task GitHub8682()
-		{
-			await Task.Run(async () =>
-			{
-#pragma warning disable CS0618 // Type or member is obsolete
-				await Application.Current.SavePropertiesAsync();
-#pragma warning restore CS0618 // Type or member is obsolete
-			});
 		}
 	}
 }

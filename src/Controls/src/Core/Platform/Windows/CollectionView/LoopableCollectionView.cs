@@ -1,10 +1,10 @@
+#nullable disable
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.InteropServices.WindowsRuntime;
+using Microsoft.UI.Xaml.Data;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
-using Microsoft.UI.Xaml.Data;
 
 namespace Microsoft.Maui.Controls.Platform
 {
@@ -68,6 +68,11 @@ namespace Microsoft.Maui.Controls.Platform
 		{
 			get
 			{
+				if (_internal == null || _internal.Count == 0)
+				{
+					return null;
+				}
+
 				if (!IsLoopingEnabled)
 				{
 					return _internal[index];
@@ -165,8 +170,6 @@ namespace Microsoft.Maui.Controls.Platform
 			return _internal.Remove(item);
 		}
 
-
-
 		public IEnumerator<object> GetEnumerator()
 		{
 			return _internal.GetEnumerator();
@@ -254,5 +257,3 @@ namespace Microsoft.Maui.Controls.Platform
 		//}
 	}
 }
-
-

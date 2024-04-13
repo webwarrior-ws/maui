@@ -1,11 +1,144 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Debug = System.Diagnostics.Debug;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.Media
 {
+	/// <summary>
+	/// The TextToSpeech API enables an application to utilize the built-in text-to-speech engines to speak back text from the device and also to query available languages that the engine can support.
+	/// </summary>
+	public interface ITextToSpeech
+	{
+		/// <summary>
+		/// Gets a list of languages supported by text-to-speech.
+		/// </summary>
+		/// <returns>A collection of <see cref="Locale"/> objects with languages supported by text-to-speech on this device.</returns>
+		Task<IEnumerable<Locale>> GetLocalesAsync();
+
+		/// <summary>
+		/// Speaks the given text through the device's speech-to-text.
+		/// </summary>
+		/// <param name="text">The text to speak.</param>
+		/// <param name="options">The options to use for speaking.</param>
+		/// <param name="cancelToken">Optional cancellation token to stop speaking.</param>
+		/// <returns>A <see cref="Task"/> object with the current status of the asynchronous operation.</returns>
+		Task SpeakAsync(string text, SpeechOptions? options = default, CancellationToken cancelToken = default);
+	}
+
+	/// <summary>
+	/// The TextToSpeech API enables an application to utilize the built-in text-to-speech engines to speak back text from the device and also to query available languages that the engine can support.
+	/// </summary>
+	/// <remarks>When using this on Android targeting Android 11 (R API 30) you must update your Android Manifest with queries that are used with the new package visibility requirements. See the conceptual docs for more information.</remarks>
 	public static partial class TextToSpeech
+	{
+		/// <summary>
+		/// Gets a list of languages supported by text-to-speech.
+		/// </summary>
+		/// <returns>A collection of <see cref="Locale"/> objects with languages supported by text-to-speech on this device.</returns>
+		public static Task<IEnumerable<Locale>> GetLocalesAsync() =>
+			Default.GetLocalesAsync();
+
+		/// <summary>
+		/// Speaks the given text through the device's speech-to-text.
+		/// </summary>
+		/// <param name="text">The text to speak.</param>
+		/// <param name="cancelToken">Optional cancellation token to stop speaking.</param>
+		/// <returns>A <see cref="Task"/> object with the current status of the asynchronous operation.</returns>
+		public static Task SpeakAsync(string text, CancellationToken cancelToken = default) =>
+			Default.SpeakAsync(text, default, cancelToken);
+
+		/// <summary>
+		/// Speaks the given text through the device's speech-to-text.
+		/// </summary>
+		/// <param name="text">The text to speak.</param>
+		/// <param name="options">The options to use for speaking.</param>
+		/// <param name="cancelToken">Optional cancellation token to stop speaking.</param>
+		/// <returns>A <see cref="Task"/> object with the current status of the asynchronous operation.</returns>
+		public static Task SpeakAsync(string text, SpeechOptions? options, CancellationToken cancelToken = default) =>
+			Default.SpeakAsync(text, options, cancelToken);
+
+		static ITextToSpeech? defaultImplementation;
+
+		/// <summary>
+		/// Provides the default implementation for static usage of this API.
+		/// </summary>
+		public static ITextToSpeech Default =>
+			defaultImplementation ??= new TextToSpeechImplementation();
+
+		internal static void SetDefault(ITextToSpeech? implementation) =>
+			defaultImplementation = implementation;
+
+		internal static List<string> SplitSpeak(string text, int max)
+		{
+			var parts = new List<string>();
+			if (text.Length <= max)
+			{
+				// no need to split
+				parts.Add(text);
+			}
+			else
+			{
+				var positionbegin = 0;
+				var positionend = max;
+				var position = positionbegin;
+
+				var p = string.Empty;
+				while (position != text.Length)
+				{
+					while (positionend > positionbegin)
+					{
+						if (positionend >= text.Length)
+						{
+							// we just need the rest of it
+							p = text.Substring(positionbegin, text.Length - positionbegin);
+							parts.Add(p);
+							return parts;
+						}
+
+						var ch = text[positionend];
+						if (char.IsWhiteSpace(ch) || char.IsPunctuation(ch))
+						{
+							p = text.Substring(positionbegin, positionend - positionbegin);
+							break;
+						}
+						else if (positionend == positionbegin)
+						{
+							// no whitespace or punctuation found
+							// grab the whole buffer (max)
+							p = text.Substring(positionbegin, positionbegin + max);
+							break;
+						}
+
+						positionend--;
+					}
+
+					Debug.WriteLine($"p             = {p}");
+					Debug.WriteLine($"p.Length      = {p.Length}");
+					Debug.WriteLine($"positionbegin = {positionbegin}");
+					Debug.WriteLine($"positionend   = {positionend}");
+					Debug.WriteLine($"position      = {position}");
+
+					positionbegin = positionbegin + p.Length + 1;
+					positionend = positionbegin + max;
+					position = positionbegin;
+
+					Debug.WriteLine($"------------------------------");
+					Debug.WriteLine($"positionbegin = {positionbegin}");
+					Debug.WriteLine($"positionend   = {positionend}");
+					Debug.WriteLine($"position      = {position}");
+
+					parts.Add(p);
+				}
+			}
+
+			return parts;
+		}
+	}
+
+	partial class TextToSpeechImplementation : ITextToSpeech
 	{
 		internal const float PitchMax = 2.0f;
 		internal const float PitchDefault = 1.0f;
@@ -15,15 +148,12 @@ namespace Microsoft.Maui.Essentials
 		internal const float VolumeDefault = 0.5f;
 		internal const float VolumeMin = 0.0f;
 
-		static SemaphoreSlim semaphore;
+		SemaphoreSlim? semaphore;
 
-		public static Task<IEnumerable<Locale>> GetLocalesAsync() =>
+		public Task<IEnumerable<Locale>> GetLocalesAsync() =>
 			PlatformGetLocalesAsync();
 
-		public static Task SpeakAsync(string text, CancellationToken cancelToken = default) =>
-			SpeakAsync(text, default, cancelToken);
-
-		public static async Task SpeakAsync(string text, SpeechOptions options, CancellationToken cancelToken = default)
+		public async Task SpeakAsync(string text, SpeechOptions? options = default, CancellationToken cancelToken = default)
 		{
 			if (string.IsNullOrEmpty(text))
 				throw new ArgumentNullException(nameof(text), "Text cannot be null or empty string");
@@ -54,23 +184,34 @@ namespace Microsoft.Maui.Essentials
 					semaphore.Release();
 			}
 		}
-
-		internal static float PlatformNormalize(float min, float max, float percent)
-		{
-			var range = max - min;
-			var add = range * percent;
-			return min + add;
-		}
 	}
 
+	/// <summary>
+	/// Represents a specific geographical, political, or cultural region.
+	/// </summary>
 	public class Locale
 	{
+		/// <summary>
+		/// Gets the language name or code.
+		/// </summary>
+		/// <remarks>This value may vary between platforms.</remarks>
 		public string Language { get; }
+
+		/// <summary>
+		/// Gets the country name or code.
+		/// </summary>
+		/// <remarks>This value may vary between platforms.</remarks>
 
 		public string Country { get; }
 
+		/// <summary>
+		/// Gets the display name of the locale.
+		/// </summary>
 		public string Name { get; }
 
+		/// <summary>
+		/// Gets the unique identifier of the locale.
+		/// </summary>
 		public string Id { get; }
 
 		internal Locale(string language, string country, string name, string id)
@@ -82,12 +223,27 @@ namespace Microsoft.Maui.Essentials
 		}
 	}
 
+	/// <summary>
+	/// Represents options that can be used to influence the <see cref="ITextToSpeech"/> behavior.
+	/// </summary>
 	public class SpeechOptions
 	{
-		public Locale Locale { get; set; }
+		/// <summary>
+		/// Gets or sets the locale to use with text-to-speech.
+		/// </summary>
+		/// <remarks>The <see cref="Locale.Language"/> property should match a <see cref="Locale.Language"/> value returned by <see cref="ITextToSpeech.GetLocalesAsync"/>.</remarks>
+		public Locale? Locale { get; set; }
 
+		/// <summary>
+		/// The pitch to use when speaking.
+		/// </summary>
+		/// <remarks>This value should be between <c>0f</c> and <c>2.0f</c>.</remarks>
 		public float? Pitch { get; set; }
 
+		/// <summary>
+		/// The volume to use when speaking.
+		/// </summary>
+		/// <remarks>This value should be between <c>0f</c> and <c>1.0f</c>.</remarks>
 		public float? Volume { get; set; }
 	}
 }

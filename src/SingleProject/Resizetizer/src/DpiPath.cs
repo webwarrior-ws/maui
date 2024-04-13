@@ -113,7 +113,7 @@ namespace Microsoft.Maui.Resizetizer
 
 		public static class Windows
 		{
-			public const string OutputPath = "Assets";
+			public const string OutputPath = "";
 
 			public static DpiPath Original =>
 				new DpiPath(OutputPath, 1.0m, null, ".scale-100");
@@ -142,11 +142,30 @@ namespace Microsoft.Maui.Resizetizer
 			public static DpiPath[] Logo
 				=> new[]
 				{
+					// normal
 					new DpiPath(OutputPath, 1.00m, "Logo", ".scale-100", new SKSize(44, 44)),
 					new DpiPath(OutputPath, 1.25m, "Logo", ".scale-125", new SKSize(44, 44)),
 					new DpiPath(OutputPath, 1.50m, "Logo", ".scale-150", new SKSize(44, 44)),
 					new DpiPath(OutputPath, 2.00m, "Logo", ".scale-200", new SKSize(44, 44)),
 					new DpiPath(OutputPath, 4.00m, "Logo", ".scale-400", new SKSize(44, 44)),
+					// targetsize
+					new DpiPath(OutputPath, 1.00m, "Logo", ".targetsize-16", new SKSize(16, 16)),
+					new DpiPath(OutputPath, 1.00m, "Logo", ".targetsize-24", new SKSize(24, 24)),
+					new DpiPath(OutputPath, 1.00m, "Logo", ".targetsize-32", new SKSize(32, 32)),
+					new DpiPath(OutputPath, 1.00m, "Logo", ".targetsize-48", new SKSize(48, 48)),
+					new DpiPath(OutputPath, 1.00m, "Logo", ".targetsize-256", new SKSize(256, 256)),
+					// altform-unplated_targetsize
+					new DpiPath(OutputPath, 1.00m, "Logo", ".altform-unplated_targetsize-16", new SKSize(16, 16)),
+					new DpiPath(OutputPath, 1.00m, "Logo", ".altform-unplated_targetsize-24", new SKSize(24, 24)),
+					new DpiPath(OutputPath, 1.00m, "Logo", ".altform-unplated_targetsize-32", new SKSize(32, 32)),
+					new DpiPath(OutputPath, 1.00m, "Logo", ".altform-unplated_targetsize-48", new SKSize(48, 48)),
+					new DpiPath(OutputPath, 1.00m, "Logo", ".altform-unplated_targetsize-256", new SKSize(256, 256)),
+					// altform-lightunplated_targetsize
+					new DpiPath(OutputPath, 1.00m, "Logo", ".altform-lightunplated_targetsize-16", new SKSize(16, 16)),
+					new DpiPath(OutputPath, 1.00m, "Logo", ".altform-lightunplated_targetsize-24", new SKSize(24, 24)),
+					new DpiPath(OutputPath, 1.00m, "Logo", ".altform-lightunplated_targetsize-32", new SKSize(32, 32)),
+					new DpiPath(OutputPath, 1.00m, "Logo", ".altform-lightunplated_targetsize-48", new SKSize(48, 48)),
+					new DpiPath(OutputPath, 1.00m, "Logo", ".altform-lightunplated_targetsize-256", new SKSize(256, 256)),
 				};
 
 			// Store Logo
@@ -244,6 +263,37 @@ namespace Microsoft.Maui.Resizetizer
 				};
 		}
 
+
+		public static class Tizen
+		{
+			public static DpiPath Original => new DpiPath("res", 1.0m);
+
+			public static DpiPath[] Image
+				=> new[]
+				{
+				new DpiPath("res/contents/default_All-LDPI", 0.8m),
+				new DpiPath("res/contents/default_All-MDPI", 1.0m),
+				new DpiPath("res/contents/default_All-HDPI", 1.5m),
+				new DpiPath("res/contents/default_All-XHDPI", 2.0m),
+				new DpiPath("res/contents/default_All-XXHDPI", 3.0m),
+				};
+
+			public static DpiPath[] AppIcon
+				=> new[]
+				{
+				new DpiPath("shared/res/hdpi", 1.0m, null, ".high", new SKSize(78, 78)),
+				new DpiPath("shared/res/xhdpi", 1.0m, null, ".xhigh", new SKSize(117, 117)),
+				};
+
+			public static DpiPath[] SplashScreen
+				=> new[]
+				{
+				new DpiPath("res/contents/default_All-MDPI", 1.0m),
+				new DpiPath("res/contents/default_All-HDPI", 1.5m),
+				};
+
+		}
+
 		public static DpiPath GetOriginal(string platform)
 		{
 			switch (platform.ToLowerInvariant())
@@ -256,6 +306,8 @@ namespace Microsoft.Maui.Resizetizer
 					return DpiPath.Windows.Original;
 				case "wpf":
 					return DpiPath.Wpf.Original;
+				case "tizen":
+					return DpiPath.Tizen.Original;
 			}
 
 			return null;
@@ -273,6 +325,8 @@ namespace Microsoft.Maui.Resizetizer
 					return DpiPath.Windows.Image;
 				case "wpf":
 					return DpiPath.Wpf.Image;
+				case "tizen":
+					return DpiPath.Tizen.Image;
 			}
 
 			return null;
@@ -295,6 +349,9 @@ namespace Microsoft.Maui.Resizetizer
 					break;
 				case "wpf":
 					result = DpiPath.Wpf.AppIcon;
+					break;
+				case "tizen":
+					result = DpiPath.Tizen.AppIcon;
 					break;
 			}
 

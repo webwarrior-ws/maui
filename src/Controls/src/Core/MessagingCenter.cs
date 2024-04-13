@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,8 +21,11 @@ namespace Microsoft.Maui.Controls
 		void Unsubscribe<TSender>(object subscriber, string message) where TSender : class;
 	}
 
+	/// <include file="../../docs/Microsoft.Maui.Controls/MessagingCenter.xml" path="Type[@FullName='Microsoft.Maui.Controls.MessagingCenter']/Docs/*" />
+	[Obsolete("We recommend migrating to `CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger`: https://www.nuget.org/packages/CommunityToolkit.Mvvm")]
 	public class MessagingCenter : IMessagingCenter
 	{
+		/// <include file="../../docs/Microsoft.Maui.Controls/MessagingCenter.xml" path="//Member[@MemberName='Instance']/Docs/*" />
 		public static IMessagingCenter Instance { get; } = new MessagingCenter();
 
 		class Sender : Tuple<string, Type, Type>

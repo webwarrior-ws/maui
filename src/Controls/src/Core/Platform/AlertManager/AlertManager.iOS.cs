@@ -4,10 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Foundation;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Graphics;
-using ObjCRuntime;
 using UIKit;
 
 namespace Microsoft.Maui.Controls.Platform
@@ -18,19 +16,22 @@ namespace Microsoft.Maui.Controls.Platform
 
 		internal void Subscribe(Window window)
 		{
-			var nativeWindow = window?.MauiContext.GetNativeWindow();
+			var platformWindow = window?.MauiContext.GetPlatformWindow();
 
-			if (Subscriptions.Any(s => s.Window == nativeWindow))
+			if (Subscriptions.Any(s => s.PlatformView == platformWindow))
 				return;
 
-			Subscriptions.Add(new AlertRequestHelper(nativeWindow));
+			Subscriptions.Add(new AlertRequestHelper(window, platformWindow));
 		}
 
 		internal void Unsubscribe(Window window)
 		{
-			var nativeWindow = window?.MauiContext.GetNativeWindow();
+			IMauiContext mauiContext = window?.Handler?.MauiContext;
+			var platformWindow = mauiContext?.GetPlatformWindow();
+			if (platformWindow == null)
+				return;
 
-			var toRemove = Subscriptions.Where(s => s.Window == nativeWindow).ToList();
+			var toRemove = Subscriptions.Where(s => s.PlatformView == platformWindow).ToList();
 
 			foreach (AlertRequestHelper alertRequestHelper in toRemove)
 			{
@@ -45,74 +46,88 @@ namespace Microsoft.Maui.Controls.Platform
 
 			int _busyCount;
 
-			internal AlertRequestHelper(UIWindow window)
+			internal AlertRequestHelper(Window virtualView, UIWindow platformView)
 			{
-				Window = window;
+				VirtualView = virtualView;
+				PlatformView = platformView;
 
-				MessagingCenter.Subscribe<Page, bool>(Window, Page.BusySetSignalName, OnPageBusy);
-				MessagingCenter.Subscribe<Page, AlertArguments>(Window, Page.AlertSignalName, OnAlertRequested);
-				MessagingCenter.Subscribe<Page, PromptArguments>(Window, Page.PromptSignalName, OnPromptRequested);
-				MessagingCenter.Subscribe<Page, ActionSheetArguments>(Window, Page.ActionSheetSignalName, OnActionSheetRequested);
+#pragma warning disable CS0618 // TODO: Remove when we internalize/replace MessagingCenter
+				MessagingCenter.Subscribe<Page, bool>(PlatformView, Page.BusySetSignalName, OnPageBusy);
+				MessagingCenter.Subscribe<Page, AlertArguments>(PlatformView, Page.AlertSignalName, OnAlertRequested);
+				MessagingCenter.Subscribe<Page, PromptArguments>(PlatformView, Page.PromptSignalName, OnPromptRequested);
+				MessagingCenter.Subscribe<Page, ActionSheetArguments>(PlatformView, Page.ActionSheetSignalName, OnActionSheetRequested);
+#pragma warning restore CS0618 // Type or member is obsolete
 			}
 
-			public UIWindow Window { get; }
+			public Window VirtualView { get; }
+
+			public UIWindow PlatformView { get; }
 
 			public void Dispose()
 			{
-				MessagingCenter.Unsubscribe<Page, bool>(Window, Page.BusySetSignalName);
-				MessagingCenter.Unsubscribe<Page, AlertArguments>(Window, Page.AlertSignalName);
-				MessagingCenter.Unsubscribe<Page, PromptArguments>(Window, Page.PromptSignalName);
-				MessagingCenter.Unsubscribe<Page, ActionSheetArguments>(Window, Page.ActionSheetSignalName);
+#pragma warning disable CS0618 // TODO: Remove when we internalize/replace MessagingCenter
+				MessagingCenter.Unsubscribe<Page, bool>(PlatformView, Page.BusySetSignalName);
+				MessagingCenter.Unsubscribe<Page, AlertArguments>(PlatformView, Page.AlertSignalName);
+				MessagingCenter.Unsubscribe<Page, PromptArguments>(PlatformView, Page.PromptSignalName);
+				MessagingCenter.Unsubscribe<Page, ActionSheetArguments>(PlatformView, Page.ActionSheetSignalName);
+#pragma warning restore CS0618 // Type or member is obsolete
 			}
 
-			void OnPageBusy(IView sender, bool enabled)
+			void OnPageBusy(Page sender, bool enabled)
 			{
 				_busyCount = Math.Max(0, enabled ? _busyCount + 1 : _busyCount - 1);
+#pragma warning disable CA1416, CA1422 // TODO:  'UIApplication.NetworkActivityIndicatorVisible' is unsupported on: 'ios' 13.0 and later
 				UIApplication.SharedApplication.NetworkActivityIndicatorVisible = _busyCount > 0;
+#pragma warning restore CA1416, CA1422
 			}
 
-			void OnAlertRequested(IView sender, AlertArguments arguments)
+			void OnAlertRequested(Page sender, AlertArguments arguments)
 			{
-				PresentAlert(arguments);
+				if (!PageIsInThisWindow(sender))
+					return;
+
+				PresentAlert(sender, arguments);
 			}
 
-			void OnPromptRequested(IView sender, PromptArguments arguments)
+			void OnPromptRequested(Page sender, PromptArguments arguments)
 			{
-				PresentPrompt(arguments);
+				if (!PageIsInThisWindow(sender))
+					return;
+
+				PresentPrompt(sender, arguments);
 			}
 
-			void OnActionSheetRequested(IView sender, ActionSheetArguments arguments)
+			void OnActionSheetRequested(Page sender, ActionSheetArguments arguments)
 			{
-				PresentActionSheet(arguments);
+				if (!PageIsInThisWindow(sender))
+					return;
+
+				PresentActionSheet(sender, arguments);
 			}
 
-			void PresentAlert(AlertArguments arguments)
+			void PresentAlert(Page sender, AlertArguments arguments)
 			{
-				var window = new UIWindow { BackgroundColor = Colors.Transparent.ToNative() };
-
 				var alert = UIAlertController.Create(arguments.Title, arguments.Message, UIAlertControllerStyle.Alert);
 				var oldFrame = alert.View.Frame;
-				alert.View.Frame = new RectangleF((float)oldFrame.X, (float)oldFrame.Y, (float)oldFrame.Width, (float)oldFrame.Height - AlertPadding * 2);
+				alert.View.Frame = new RectF((float)oldFrame.X, (float)oldFrame.Y, (float)oldFrame.Width, (float)oldFrame.Height - AlertPadding * 2);
 
 				if (arguments.Cancel != null)
 				{
-					alert.AddAction(CreateActionWithWindowHide(arguments.Cancel, UIAlertActionStyle.Cancel,
-						() => arguments.SetResult(false), window));
+					alert.AddAction(UIAlertAction.Create(arguments.Cancel, UIAlertActionStyle.Cancel,
+						_ => arguments.SetResult(false)));
 				}
 
 				if (arguments.Accept != null)
 				{
-					alert.AddAction(CreateActionWithWindowHide(arguments.Accept, UIAlertActionStyle.Default,
-						() => arguments.SetResult(true), window));
+					alert.AddAction(UIAlertAction.Create(arguments.Accept, UIAlertActionStyle.Default,
+						_ => arguments.SetResult(true)));
 				}
 
-				PresentPopUp(window, alert);
+				PresentPopUp(sender, VirtualView, PlatformView, alert);
 			}
 
-			void PresentPrompt(PromptArguments arguments)
+			void PresentPrompt(Page sender, PromptArguments arguments)
 			{
-				var window = new UIWindow { BackgroundColor = Colors.Transparent.ToNative() };
-
 				var alert = UIAlertController.Create(arguments.Title, arguments.Message, UIAlertControllerStyle.Alert);
 				alert.AddTextField(uiTextField =>
 				{
@@ -123,29 +138,28 @@ namespace Microsoft.Maui.Controls.Platform
 				});
 
 				var oldFrame = alert.View.Frame;
-				alert.View.Frame = new RectangleF((float)oldFrame.X, (float)oldFrame.Y, (float)oldFrame.Width, (float)oldFrame.Height - AlertPadding * 2);
+				alert.View.Frame = new RectF((float)oldFrame.X, (float)oldFrame.Y, (float)oldFrame.Width, (float)oldFrame.Height - AlertPadding * 2);
 
-				alert.AddAction(CreateActionWithWindowHide(arguments.Cancel, UIAlertActionStyle.Cancel, () => arguments.SetResult(null), window));
-				alert.AddAction(CreateActionWithWindowHide(arguments.Accept, UIAlertActionStyle.Default, () => arguments.SetResult(alert.TextFields[0].Text), window));
+				alert.AddAction(UIAlertAction.Create(arguments.Cancel, UIAlertActionStyle.Cancel, _ => arguments.SetResult(null)));
+				alert.AddAction(UIAlertAction.Create(arguments.Accept, UIAlertActionStyle.Default, _ => arguments.SetResult(alert.TextFields[0].Text)));
 
-				PresentPopUp(window, alert);
+				PresentPopUp(sender, VirtualView, PlatformView, alert);
 			}
 
 
-			void PresentActionSheet(ActionSheetArguments arguments)
+			void PresentActionSheet(Page sender, ActionSheetArguments arguments)
 			{
 				var alert = UIAlertController.Create(arguments.Title, null, UIAlertControllerStyle.ActionSheet);
-				var window = new UIWindow { BackgroundColor = Colors.Transparent.ToNative() };
 
 				// Clicking outside of an ActionSheet is an implicit cancel on iPads. If we don't handle it, it freezes the app.
 				if (arguments.Cancel != null || UIDevice.CurrentDevice.UserInterfaceIdiom == UIUserInterfaceIdiom.Pad)
 				{
-					alert.AddAction(CreateActionWithWindowHide(arguments.Cancel ?? "", UIAlertActionStyle.Cancel, () => arguments.SetResult(arguments.Cancel), window));
+					alert.AddAction(UIAlertAction.Create(arguments.Cancel ?? "", UIAlertActionStyle.Cancel, _ => arguments.SetResult(arguments.Cancel)));
 				}
 
 				if (arguments.Destruction != null)
 				{
-					alert.AddAction(CreateActionWithWindowHide(arguments.Destruction, UIAlertActionStyle.Destructive, () => arguments.SetResult(arguments.Destruction), window));
+					alert.AddAction(UIAlertAction.Create(arguments.Destruction, UIAlertActionStyle.Destructive, _ => arguments.SetResult(arguments.Destruction)));
 				}
 
 				foreach (var label in arguments.Buttons)
@@ -155,23 +169,19 @@ namespace Microsoft.Maui.Controls.Platform
 
 					var blabel = label;
 
-					alert.AddAction(CreateActionWithWindowHide(blabel, UIAlertActionStyle.Default, () => arguments.SetResult(blabel), window));
+					alert.AddAction(UIAlertAction.Create(blabel, UIAlertActionStyle.Default, _ => arguments.SetResult(blabel)));
 				}
 
-				PresentPopUp(window, alert, arguments);
+				PresentPopUp(sender, VirtualView, PlatformView, alert, arguments);
 			}
-			static void PresentPopUp(UIWindow window, UIAlertController alert, ActionSheetArguments arguments = null)
-			{
-				window.RootViewController = new UIViewController();
-				window.RootViewController.View.BackgroundColor = Colors.Transparent.ToNative();
-				window.WindowLevel = UIWindowLevel.Alert + 1;
-				window.MakeKeyAndVisible();
 
+			static void PresentPopUp(Page sender, Window virtualView, UIWindow platformView, UIAlertController alert, ActionSheetArguments arguments = null)
+			{
 				if (UIDevice.CurrentDevice.UserInterfaceIdiom == UIUserInterfaceIdiom.Pad && arguments != null)
 				{
 					UIDevice.CurrentDevice.BeginGeneratingDeviceOrientationNotifications();
 					var observer = NSNotificationCenter.DefaultCenter.AddObserver(UIDevice.OrientationDidChangeNotification,
-						n => { alert.PopoverPresentationController.SourceRect = window.RootViewController.View.Bounds; });
+						n => { alert.PopoverPresentationController.SourceRect = platformView.RootViewController.View.Bounds; });
 
 					arguments.Result.Task.ContinueWith(t =>
 					{
@@ -179,24 +189,41 @@ namespace Microsoft.Maui.Controls.Platform
 						UIDevice.CurrentDevice.EndGeneratingDeviceOrientationNotifications();
 					}, TaskScheduler.FromCurrentSynchronizationContext());
 
-					alert.PopoverPresentationController.SourceView = window.RootViewController.View;
-					alert.PopoverPresentationController.SourceRect = window.RootViewController.View.Bounds;
+					alert.PopoverPresentationController.SourceView = platformView.RootViewController.View;
+					alert.PopoverPresentationController.SourceRect = platformView.RootViewController.View.Bounds;
 					alert.PopoverPresentationController.PermittedArrowDirections = 0; // No arrow
 				}
 
-				window.RootViewController.PresentViewController(alert, true, null);
+				UIWindow presentingWindow = platformView;
+				if (sender.Handler is IPlatformViewHandler pvh &&
+					pvh.PlatformView?.Window is UIWindow senderPageWindow &&
+					senderPageWindow != platformView &&
+					senderPageWindow.RootViewController is not null)
+				{
+					presentingWindow = senderPageWindow;
+				}
+
+				presentingWindow.BeginInvokeOnMainThread(() =>
+				{
+					GetTopUIViewController(presentingWindow)
+						.PresentViewControllerAsync(alert, true)
+						.FireAndForget(virtualView?.Handler?.MauiContext?.CreateLogger<AlertManager>());
+				});
 			}
 
-			// Creates a UIAlertAction which includes a call to hide the presenting UIWindow at the end
-			UIAlertAction CreateActionWithWindowHide(string text, UIAlertActionStyle style, Action setResult, UIWindow window)
+			static UIViewController GetTopUIViewController(UIWindow platformWindow)
 			{
-				return UIAlertAction.Create(text, style,
-					action =>
-					{
-						window.Hidden = true;
-						setResult();
-					});
+				var topUIViewController = platformWindow.RootViewController;
+				while (topUIViewController.PresentedViewController is not null)
+				{
+					topUIViewController = topUIViewController.PresentedViewController;
+				}
+
+				return topUIViewController;
 			}
+
+			bool PageIsInThisWindow(Page page) =>
+				page?.Window == VirtualView;
 		}
 	}
 }

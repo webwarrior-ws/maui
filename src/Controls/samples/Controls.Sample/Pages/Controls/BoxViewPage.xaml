@@ -26,7 +26,25 @@
                 HeightRequest="160"
                 VerticalOptions="Center"
                 HorizontalOptions="Center" />
-
+            
+            <Label
+                Text="Background"
+                Style="{StaticResource Headline}" />
+            <BoxView 
+                WidthRequest="160"
+                HeightRequest="160"
+                VerticalOptions="Center"
+                HorizontalOptions="Center">
+                <BoxView.Background>
+                    <LinearGradientBrush EndPoint="1,0">
+                        <GradientStop Color="Yellow" 
+                                      Offset="0.1" />
+                        <GradientStop Color="Green"                                   
+                                      Offset="1.0" />
+                    </LinearGradientBrush>
+                </BoxView.Background>
+            </BoxView>
+            
             <Label
                 Text="Using CornerRadius"
                 Style="{StaticResource Headline}"/>
@@ -48,6 +66,51 @@
                 HeightRequest="160"
                 VerticalOptions="Center"
                 HorizontalOptions="Center" />
+
+            <Label
+                Text="Using Opacity"
+                Style="{StaticResource Headline}"/>
+            <BoxView
+                Color="Orange"
+                Opacity="0.5"
+                WidthRequest="160"
+                HeightRequest="160"
+                VerticalOptions="Center"
+                HorizontalOptions="Center" />
+            
+            <Label
+                Text="Clip"
+                Style="{StaticResource Headline}"/>
+            <BoxView
+                Color="Pink"
+                WidthRequest="160"
+                HeightRequest="160"
+                VerticalOptions="Center"
+                HorizontalOptions="Center" >
+                <BoxView.Clip>
+                    <EllipseGeometry
+                        Center="80, 80"
+                        RadiusX="80"
+                        RadiusY="80"/>
+                </BoxView.Clip>
+            </BoxView>
+            
+            <Label
+                Text="Shadow"
+                Style="{StaticResource Headline}"/>
+            <BoxView
+                Color="Pink"
+                WidthRequest="160"
+                HeightRequest="160"
+                VerticalOptions="Center"
+                HorizontalOptions="Center" >
+                <BoxView.Shadow>
+                    <Shadow 
+                        Radius="6"
+                        Offset="6, 6"
+                        Brush="Red"/>
+                </BoxView.Shadow>
+            </BoxView>
 
         </VerticalStackLayout>
     </ScrollView>

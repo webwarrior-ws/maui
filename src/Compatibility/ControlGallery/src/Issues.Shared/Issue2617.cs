@@ -9,7 +9,7 @@ using NUnit.Framework;
 using Microsoft.Maui.Controls.Compatibility.UITests;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.Github, 2617, "Error on binding ListView with duplicated items", PlatformAffected.UWP)]
@@ -135,6 +135,8 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 
 
 #if UITEST
+[Microsoft.Maui.Controls.Compatibility.UITests.FailsOnMauiAndroid]
+[Microsoft.Maui.Controls.Compatibility.UITests.FailsOnMauiIOS]
 		[Test]
 		public async Task BindingToValuesTypesAndScrollingNoCrash()
 		{

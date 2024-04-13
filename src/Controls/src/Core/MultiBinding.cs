@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -6,6 +7,7 @@ using Microsoft.Maui.Controls.Xaml.Diagnostics;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/MultiBinding.xml" path="Type[@FullName='Microsoft.Maui.Controls.MultiBinding']/Docs/*" />
 	[ContentProperty(nameof(Bindings))]
 	public sealed class MultiBinding : BindingBase
 	{
@@ -18,6 +20,7 @@ namespace Microsoft.Maui.Controls
 		BindableProperty[] _bpProxies;
 		bool _applying;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/MultiBinding.xml" path="//Member[@MemberName='Converter']/Docs/*" />
 		public IMultiValueConverter Converter
 		{
 			get { return _converter; }
@@ -28,6 +31,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/MultiBinding.xml" path="//Member[@MemberName='ConverterParameter']/Docs/*" />
 		public object ConverterParameter
 		{
 			get { return _converterParameter; }
@@ -38,6 +42,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/MultiBinding.xml" path="//Member[@MemberName='Bindings']/Docs/*" />
 		public IList<BindingBase> Bindings
 		{
 			get => _bindings ?? (_bindings = new List<BindingBase>());
@@ -54,7 +59,7 @@ namespace Microsoft.Maui.Controls
 			foreach (var b in Bindings)
 				bindingsclone.Add(b.Clone());
 
-			return new MultiBinding()
+			var clone = new MultiBinding()
 			{
 				Converter = Converter,
 				ConverterParameter = ConverterParameter,
@@ -64,6 +69,11 @@ namespace Microsoft.Maui.Controls
 				TargetNullValue = TargetNullValue,
 				StringFormat = StringFormat,
 			};
+
+			if (DebuggerHelper.DebuggerIsAttached && VisualDiagnostics.GetSourceInfo(this) is SourceInfo info)
+				VisualDiagnostics.RegisterSourceInfo(clone, info.SourceUri, info.LineNumber, info.LinePosition);
+
+			return clone;
 		}
 
 		internal override void Apply(bool fromTarget)
@@ -93,7 +103,7 @@ namespace Microsoft.Maui.Controls
 						BindingDiagnostics.SendBindingFailure(this, null, _targetObject, _targetProperty, "MultiBinding", BindingExpression.CannotConvertTypeErrorMessage, value, _targetProperty.ReturnType);
 						return;
 					}
-					_targetObject.SetValueCore(_targetProperty, value, SetValueFlags.ClearDynamicResource, BindableObject.SetValuePrivateFlags.Default | BindableObject.SetValuePrivateFlags.Converted);
+					_targetObject.SetValueCore(_targetProperty, value, SetValueFlags.ClearDynamicResource, BindableObject.SetValuePrivateFlags.Default | BindableObject.SetValuePrivateFlags.Converted, specificity: SetterSpecificity.FromBinding);
 					_applying = false;
 				}
 			}
@@ -110,7 +120,7 @@ namespace Microsoft.Maui.Controls
 					{
 						if (ReferenceEquals(values[i], Binding.DoNothing) || ReferenceEquals(values[i], BindableProperty.UnsetValue))
 							continue;
-						_proxyObject.SetValueCore(_bpProxies[i], values[i], SetValueFlags.None);
+						_proxyObject.SetValue(_bpProxies[i], values[i]);
 					}
 				}
 				finally
@@ -121,7 +131,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
-		internal override void Apply(object context, BindableObject targetObject, BindableProperty targetProperty, bool fromBindingContextChanged = false)
+		internal override void Apply(object context, BindableObject targetObject, BindableProperty targetProperty, bool fromBindingContextChanged, SetterSpecificity specificity)
 		{
 			if (_bindings == null)
 				throw new InvalidOperationException("Bindings is null");
@@ -129,7 +139,7 @@ namespace Microsoft.Maui.Controls
 			if (Converter == null && StringFormat == null)
 				throw new InvalidOperationException("Cannot apply MultiBinding because both Converter and StringFormat are null.");
 
-			base.Apply(context, targetObject, targetProperty, fromBindingContextChanged);
+			base.Apply(context, targetObject, targetProperty, fromBindingContextChanged, specificity);
 
 			if (!ReferenceEquals(_targetObject, targetObject))
 			{
@@ -166,7 +176,7 @@ namespace Microsoft.Maui.Controls
 					BindingDiagnostics.SendBindingFailure(this, context, _targetObject, _targetProperty, "MultiBinding", BindingExpression.CannotConvertTypeErrorMessage, value, _targetProperty.ReturnType);
 					return;
 				}
-				_targetObject.SetValueCore(_targetProperty, value, SetValueFlags.ClearDynamicResource, BindableObject.SetValuePrivateFlags.Default | BindableObject.SetValuePrivateFlags.Converted);
+				_targetObject.SetValueCore(_targetProperty, value, SetValueFlags.ClearDynamicResource, BindableObject.SetValuePrivateFlags.Default | BindableObject.SetValuePrivateFlags.Converted, specificity);
 				_applying = false;
 			}
 		}
@@ -189,7 +199,7 @@ namespace Microsoft.Maui.Controls
 			if (valuearray != null && Converter != null)
 				value = Converter.Convert(valuearray, targetPropertyType, ConverterParameter, CultureInfo.CurrentUICulture);
 
-			if (valuearray != null && Converter == null && StringFormat != null && TryFormat(StringFormat, valuearray, out var formatted))
+			if (valuearray != null && Converter == null && StringFormat != null && BindingBase.TryFormat(StringFormat, valuearray, out var formatted))
 				return formatted;
 
 			if (ReferenceEquals(BindableProperty.UnsetValue, value))
@@ -228,6 +238,7 @@ namespace Microsoft.Maui.Controls
 
 				_bpProxies = null;
 				_proxyObject = null;
+				_targetObject = null;
 			}
 
 			base.Unapply(fromBindingContextChanged: fromBindingContextChanged);

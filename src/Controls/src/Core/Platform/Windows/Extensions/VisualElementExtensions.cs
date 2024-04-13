@@ -1,21 +1,15 @@
-#nullable enable
 using System;
 using Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific;
+using Microsoft.UI.Xaml;
 
 namespace Microsoft.Maui.Controls.Platform
 {
 	public static class VisualElementExtensions
 	{
-		public static IViewHandler? GetOrCreateHandler(this IView self, IMauiContext mauiContext)
+		public static void UpdateAccessKey(this FrameworkElement platformView, IView view)
 		{
-			if (self == null)
-				throw new ArgumentNullException("self");
-
-			if (self.Handler != null)
-				return self.Handler;
-
-			self.ToNative(mauiContext);
-			return self.Handler;
+			if (platformView is not null && view is VisualElement element)
+				AccessKeyHelper.UpdateAccessKey(platformView, element);
 		}
 
 		internal static void Cleanup(this Element self)
@@ -25,7 +19,7 @@ namespace Microsoft.Maui.Controls.Platform
 
 			foreach (Element element in self.Descendants())
 			{
-				if(element is Maui.IElement mauiElement)
+				if (element is Maui.IElement mauiElement)
 					mauiElement.Handler?.DisconnectHandler();
 			}
 

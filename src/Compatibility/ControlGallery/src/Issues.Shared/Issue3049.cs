@@ -1,13 +1,14 @@
 ﻿using System;
 using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 
 #if UITEST && __IOS__
 using Xamarin.UITest;
 using NUnit.Framework;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if UITEST
 	[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.Github5000)]
@@ -51,7 +52,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 				}
 			};
 
-			if (Device.Idiom != TargetIdiom.Tablet || Device.RuntimePlatform != Device.iOS)
+			if (DeviceInfo.Idiom != DeviceIdiom.Tablet || DeviceInfo.Platform != DevicePlatform.iOS)
 				stackLayout.Children.Insert(0, skip);
 
 			Content = stackLayout;
@@ -59,6 +60,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 
 #if UITEST && __IOS__
 		[Test]
+		[Compatibility.UITests.FailsOnMauiIOS]
 		public void Issue3049Test()
 		{
 			RunningApp.WaitForElement(q => q.Marked(Button1Id));

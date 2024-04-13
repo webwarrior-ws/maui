@@ -8,7 +8,7 @@ namespace Microsoft.Maui.Controls.Xaml.UnitTests
 {
 	public class Gh4516VM
 	{
-		public Uri[] Images { get; } = { };
+		public Uri[] Images { get; } = Array.Empty<Uri>();
 	}
 
 	public partial class Gh4516 : ContentPage
@@ -22,9 +22,6 @@ namespace Microsoft.Maui.Controls.Xaml.UnitTests
 		[TestFixture]
 		class Tests
 		{
-			[SetUp] public void Setup() => Device.PlatformServices = new MockPlatformServices();
-			[TearDown] public void TearDown() => Device.PlatformServices = null;
-
 			[TestCase(true), TestCase(false)]
 			public void BindingToEmptyCollection(bool useCompiledXaml)
 			{

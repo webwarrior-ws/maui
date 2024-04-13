@@ -1,7 +1,7 @@
-﻿using WThickness = Microsoft.UI.Xaml.Thickness;
+﻿using UwpGridUnitType = Microsoft.UI.Xaml.GridUnitType;
 using WCornerRadius = Microsoft.UI.Xaml.CornerRadius;
 using WGridLength = Microsoft.UI.Xaml.GridLength;
-using UwpGridUnitType = Microsoft.UI.Xaml.GridUnitType;
+using WThickness = Microsoft.UI.Xaml.Thickness;
 
 namespace Microsoft.Maui.Platform
 {
@@ -41,6 +41,9 @@ namespace Microsoft.Maui.Platform
 
 		public static WCornerRadius CreateCornerRadius(double all)
 		{
+			if (all <= 0)
+				return new WCornerRadius();
+
 			return new WCornerRadius
 			{
 				TopLeft = all,

@@ -1,10 +1,13 @@
+﻿#nullable disable
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/Accelerator.xml" path="Type[@FullName='Microsoft.Maui.Controls.Accelerator']/Docs/*" />
 	[System.ComponentModel.TypeConverter(typeof(AcceleratorTypeConverter))]
+	[Obsolete("Use KeyboardAccelerator instead.")]
 	public class Accelerator
 	{
 		const char Separator = '+';
@@ -17,12 +20,15 @@ namespace Microsoft.Maui.Controls
 			_text = text;
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Accelerator.xml" path="//Member[@MemberName='Modifiers']/Docs/*" />
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public IEnumerable<string> Modifiers { get; set; }
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Accelerator.xml" path="//Member[@MemberName='Keys']/Docs/*" />
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public IEnumerable<string> Keys { get; set; }
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Accelerator.xml" path="//Member[@MemberName='FromString']/Docs/*" />
 		public static Accelerator FromString(string text)
 		{
 			var accelarat = new Accelerator(text);
@@ -35,7 +41,7 @@ namespace Microsoft.Maui.Controls
 				for (int i = 0; i < acceleratorParts.Length; i++)
 				{
 					var modifierMask = acceleratorParts[i];
-					var modiferMaskLower = modifierMask.ToLower();
+					var modiferMaskLower = modifierMask.ToLowerInvariant();
 					switch (modiferMaskLower)
 					{
 						case "ctrl":
@@ -45,7 +51,11 @@ namespace Microsoft.Maui.Controls
 						case "fn":
 						case "win":
 							modifiers.Add(modiferMaskLower);
+#if NETSTANDARD2_0
 							text = text.Replace(modifierMask, "");
+#else
+							text = text.Replace(modifierMask, "", StringComparison.Ordinal);
+#endif
 							break;
 					}
 				}
@@ -65,11 +75,13 @@ namespace Microsoft.Maui.Controls
 			return accelarat;
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Accelerator.xml" path="//Member[@MemberName='ToString']/Docs/*" />
 		public override string ToString()
 		{
 			return _text;
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Accelerator.xml" path="//Member[@MemberName='Equals']/Docs/*" />
 		public override bool Equals(object obj)
 		{
 			return obj is Accelerator && Equals((Accelerator)obj);
@@ -80,9 +92,14 @@ namespace Microsoft.Maui.Controls
 			return other.ToString() == ToString();
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/Accelerator.xml" path="//Member[@MemberName='GetHashCode']/Docs/*" />
 		public override int GetHashCode()
 		{
-			return ToString().GetHashCode();
+#if NETSTANDARD2_0
+			return _text.GetHashCode();
+#else
+			return _text.GetHashCode(StringComparison.Ordinal);
+#endif
 		}
 
 		public static implicit operator Accelerator(string accelerator)

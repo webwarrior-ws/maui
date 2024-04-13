@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.ComponentModel;
 using Microsoft.Maui.Graphics;
@@ -5,17 +6,21 @@ using Microsoft.Maui.Layouts;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/ContentPresenter.xml" path="Type[@FullName='Microsoft.Maui.Controls.ContentPresenter']/Docs/*" />
 	public class ContentPresenter : Compatibility.Layout, IContentView
 	{
+		/// <include file="../../docs/Microsoft.Maui.Controls/ContentPresenter.xml" path="//Member[@MemberName='ContentProperty']/Docs/*" />
 		public static BindableProperty ContentProperty = BindableProperty.Create(nameof(Content), typeof(View),
 			typeof(ContentPresenter), null, propertyChanged: OnContentChanged);
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ContentPresenter.xml" path="//Member[@MemberName='.ctor']/Docs/*" />
 		public ContentPresenter()
 		{
 			SetBinding(ContentProperty, new Binding(ContentProperty.PropertyName, source: RelativeBindingSource.TemplatedParent,
 				converterParameter: this, converter: new ContentConverter()));
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/ContentPresenter.xml" path="//Member[@MemberName='Content']/Docs/*" />
 		public View Content
 		{
 			get { return (View)GetValue(ContentProperty); }
@@ -32,7 +37,7 @@ namespace Microsoft.Maui.Controls
 				Element element = LogicalChildrenInternal[i];
 				var child = element as View;
 				if (child != null)
-					LayoutChildIntoBoundingRegion(child, new Rectangle(x, y, width, height));
+					LayoutChildIntoBoundingRegion(child, new Rect(x, y, width, height));
 			}
 		}
 
@@ -95,12 +100,24 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
-		Size IContentView.CrossPlatformMeasure(double widthConstraint, double heightConstraint)
+		protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
+		{
+			return this.ComputeDesiredSize(widthConstraint, heightConstraint);
+		}
+
+		Size ICrossPlatformLayout.CrossPlatformMeasure(double widthConstraint, double heightConstraint)
 		{
 			return this.MeasureContent(widthConstraint, heightConstraint);
 		}
 
-		Size IContentView.CrossPlatformArrange(Rectangle bounds)
+		protected override Size ArrangeOverride(Rect bounds)
+		{
+			Frame = this.ComputeFrame(bounds);
+			Handler?.PlatformArrange(Frame);
+			return Frame.Size;
+		}
+
+		Size ICrossPlatformLayout.CrossPlatformArrange(Rect bounds)
 		{
 			this.ArrangeContent(bounds);
 			return bounds.Size;

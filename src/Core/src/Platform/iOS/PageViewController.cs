@@ -1,5 +1,4 @@
-﻿using Microsoft.Maui.Handlers;
-using ObjCRuntime;
+﻿using Microsoft.Maui.ApplicationModel;
 using UIKit;
 
 namespace Microsoft.Maui.Platform
@@ -14,12 +13,11 @@ namespace Microsoft.Maui.Platform
 			LoadFirstView(page);
 		}
 
-		protected override UIView CreateNativeView(IElement view)
+		protected override UIView CreatePlatformView(IElement view)
 		{
 			return new ContentView
 			{
-				CrossPlatformArrange = ((IContentView)view).CrossPlatformArrange,
-				CrossPlatformMeasure = ((IContentView)view).CrossPlatformMeasure
+				CrossPlatformLayout = ((IContentView)view)
 			};
 		}
 
@@ -28,10 +26,14 @@ namespace Microsoft.Maui.Platform
 			if (CurrentView?.Handler is ElementHandler handler)
 			{
 				var application = handler.GetRequiredService<IApplication>();
+
+				application?.UpdateUserInterfaceStyle();
 				application?.ThemeChanged();
 			}
 
+#pragma warning disable CA1422 // Validate platform compatibility
 			base.TraitCollectionDidChange(previousTraitCollection);
+#pragma warning restore CA1422 // Validate platform compatibility
 		}
 	}
 }

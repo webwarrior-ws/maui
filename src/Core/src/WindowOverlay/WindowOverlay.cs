@@ -4,13 +4,15 @@ using System.Linq;
 using Microsoft.Maui.Graphics;
 
 #if __IOS__ || MACCATALYST
-using NativeView = UIKit.UIView;
+using PlatformView = UIKit.UIView;
 #elif __ANDROID__
-using NativeView = Android.Views.View;
+using PlatformView = Android.Views.View;
 #elif WINDOWS
-using NativeView = Microsoft.UI.Xaml.FrameworkElement;
-#elif NETSTANDARD
-using NativeView = System.Object;
+using PlatformView = Microsoft.UI.Xaml.FrameworkElement;
+#elif TIZEN
+using PlatformView = Tizen.NUI.BaseComponents.View;
+#elif (NETSTANDARD || !PLATFORM)
+using PlatformView = System.Object;
 #endif
 
 namespace Microsoft.Maui
@@ -36,11 +38,10 @@ namespace Microsoft.Maui
 		/// <inheritdoc/>
 		public IReadOnlyCollection<IWindowOverlayElement> WindowElements => _windowElements;
 
-		/// <inheritdoc/>
-		public NativeView? GraphicsView => _graphicsView;
+		public PlatformView? GraphicsView => _graphicsView;
 
 		/// <inheritdoc/>
-		public bool IsNativeViewInitialized { get; private set; }
+		public bool IsPlatformViewInitialized { get; private set; }
 
 		/// <inheritdoc/>
 		public bool DisableUITouchEventPassthrough
@@ -63,19 +64,20 @@ namespace Microsoft.Maui
 			set
 			{
 				_isVisible = value;
-				if (IsNativeViewInitialized)
+				if (IsPlatformViewInitialized)
 					Invalidate();
 			}
 		}
 
 		/// <inheritdoc/>
-		public float Density { get; internal set; } = 1;
+		public float Density => Window?.RequestDisplayDensity() ?? 1f;
 
-		/// <inheritdoc/>
+		/// <summary>
+		/// The event handler that is fired whenever the <see cref="WindowOverlay"/> is tapped.
+		/// </summary>
 		public event EventHandler<WindowOverlayTappedEventArgs>? Tapped;
 
-		/// <inheritdoc/>
-		public void Draw(ICanvas canvas, RectangleF dirtyRect)
+		public void Draw(ICanvas canvas, RectF dirtyRect)
 		{
 			if (!IsVisible)
 				return;
@@ -85,7 +87,7 @@ namespace Microsoft.Maui
 
 		public virtual bool Deinitialize()
 		{
-			DeinitializeNativeDependencies();
+			DeinitializePlatformDependencies();
 			return true;
 		}
 

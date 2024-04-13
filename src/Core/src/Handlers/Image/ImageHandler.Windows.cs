@@ -6,13 +6,22 @@ using WImage = Microsoft.UI.Xaml.Controls.Image;
 
 namespace Microsoft.Maui.Handlers
 {
-	public partial class ImageHandler : ViewHandler<IImage, Image>
+	public partial class ImageHandler : ViewHandler<IImage, WImage>
 	{
-		protected override Image CreateNativeView() => new Image();
+		protected override WImage CreatePlatformView() => new WImage();
 
-		protected override void DisconnectHandler(Image nativeView)
+		protected override void ConnectHandler(WImage platformView)
 		{
-			base.DisconnectHandler(nativeView);
+			platformView.ImageOpened += OnImageOpened;
+
+			base.ConnectHandler(platformView);
+		}
+
+		protected override void DisconnectHandler(WImage platformView)
+		{
+			platformView.ImageOpened -= OnImageOpened;
+
+			base.DisconnectHandler(platformView);
 			SourceLoader.Reset();
 		}
 
@@ -23,30 +32,38 @@ namespace Microsoft.Maui.Handlers
 		public static void MapBackground(IImageHandler handler, IImage image)
 		{
 			handler.UpdateValue(nameof(IViewHandler.ContainerView));
-			handler.GetWrappedNativeView()?.UpdateBackground(image);
+			handler.ToPlatform().UpdateBackground(image);
 		}
 
 		public static void MapAspect(IImageHandler handler, IImage image) =>
-			handler.TypedNativeView?.UpdateAspect(image);
+			handler.PlatformView?.UpdateAspect(image);
 
 		public static void MapIsAnimationPlaying(IImageHandler handler, IImage image) =>
-			handler.TypedNativeView?.UpdateIsAnimationPlaying(image);
+			handler.PlatformView?.UpdateIsAnimationPlaying(image);
 
 		public static void MapSource(IImageHandler handler, IImage image) =>
 			MapSourceAsync(handler, image).FireAndForget(handler);
 
-		public static Task MapSourceAsync(IImageHandler handler, IImage image)
-		{
-			if (handler.NativeView == null)
-				return Task.CompletedTask;
+		public static Task MapSourceAsync(IImageHandler handler, IImage image) =>
+			handler.SourceLoader.UpdateImageSourceAsync();
 
-			handler.TypedNativeView.Clear();
-			return handler.SourceLoader.UpdateImageSourceAsync();
+		void OnImageOpened(object sender, RoutedEventArgs e)
+		{
+			// Because this resolves from a task we should validate that the
+			// handler hasn't been disconnected
+			if (this.IsConnected())
+				UpdateValue(nameof(IImage.IsAnimationPlaying));
 		}
 
-		void OnSetImageSource(ImageSource? obj)
+		partial class ImageImageSourcePartSetter
 		{
-			NativeView.Source = obj;
+			public override void SetImageSource(ImageSource? platformImage)
+			{
+				if (Handler?.PlatformView is not WImage image)
+					return;
+
+				image.Source = platformImage;
+			}
 		}
 	}
 }

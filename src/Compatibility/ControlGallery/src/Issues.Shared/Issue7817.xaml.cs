@@ -14,7 +14,7 @@ using NUnit.Framework;
 using Microsoft.Maui.Controls.Compatibility.UITests;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if UITEST
 	[Category(UITestCategories.CarouselView)]
@@ -62,7 +62,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 				}
 				if (newValue != null)
 				{
-					if (!((Type)newValue).GetTypeInfo().IsEnum)
+					if (!((Type)newValue).IsEnum)
 						throw new ArgumentException("EnumPicker: EnumType property must be enumeration type");
 
 					picker.ItemsSource = Enum.GetValues((Type)newValue);

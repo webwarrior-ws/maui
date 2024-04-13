@@ -7,6 +7,7 @@ using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[Obsolete("Use Microsoft.Maui.Controls.Platform.Compatibility.SwitchCellRenderer instead")]
 	public class SwitchCellRenderer : CellRenderer
 	{
 		const string CellName = "Xamarin.SwitchCell";
@@ -46,6 +47,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			tvc.Cell = item;
 			tvc.PropertyChanged += HandlePropertyChanged;
 			tvc.AccessoryView = uiSwitch;
+#pragma warning disable CA1416, CA1422 // TODO: 'UITableViewCell.TextLabel' is unsupported on: 'ios' 14.0 and later
 			tvc.TextLabel.Text = boolCell.Text;
 
 			uiSwitch.On = boolCell.On;
@@ -114,6 +116,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			if (uiSwitch != null)
 				uiSwitch.Enabled = switchCell.IsEnabled;
 		}
+#pragma warning restore CA1416, CA1422
 
 		void UpdateOnColor(CellTableViewCell cell, SwitchCell switchCell)
 		{
@@ -123,7 +126,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				if (switchCell.OnColor == null)
 					uiSwitch.OnTintColor = _defaultOnColor;
 				else
-					uiSwitch.OnTintColor = switchCell.OnColor.ToUIColor();
+					uiSwitch.OnTintColor = switchCell.OnColor.ToPlatform();
 			}
 		}
 	}

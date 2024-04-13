@@ -1,22 +1,34 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Android.Widget;
-using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Handlers;
+using Microsoft.Maui.DeviceTests.Stubs;
 
 namespace Microsoft.Maui.DeviceTests
 {
 	public partial class StepperHandlerTests
 	{
-		LinearLayout GetNativeStepper(StepperHandler stepperHandler) =>
-			stepperHandler.NativeView;
-
-		double GetNativeValue(StepperHandler stepperHandler)
+		[Fact(DisplayName = "IsEnabled Initializes Correctly")]
+		public async Task IsEnabledInitializesCorrectly()
 		{
-			var nativeView = GetNativeStepper(stepperHandler);
-			var nativeButton = nativeView.GetChildAt(0);
+			var stepper = new StepperStub()
+			{
+				Minimum = 0,
+				Maximum = 50,
+				IsEnabled = false
+			};
 
-			if (nativeButton?.Tag is StepperHandlerHolder handlerHolder)
+			await ValidatePropertyInitValue(stepper, () => stepper.IsEnabled, GetNativeIsEnabled, stepper.IsEnabled);
+		}
+
+		LinearLayout GetNativeStepper(StepperHandler stepperHandler) =>
+			stepperHandler.PlatformView;
+
+		double GetPlatformValue(StepperHandler stepperHandler)
+		{
+			var platformView = GetNativeStepper(stepperHandler);
+			var platformButton = platformView.GetChildAt(0);
+
+			if (platformButton?.Tag is StepperHandlerHolder handlerHolder)
 				return handlerHolder.StepperHandler.VirtualView.Value;
 
 			return 0;
@@ -24,10 +36,10 @@ namespace Microsoft.Maui.DeviceTests
 
 		double GetNativeMaximum(StepperHandler stepperHandler)
 		{
-			var nativeView = GetNativeStepper(stepperHandler);
-			var nativeButton = nativeView.GetChildAt(0);
+			var platformView = GetNativeStepper(stepperHandler);
+			var platformButton = platformView.GetChildAt(0);
 
-			if (nativeButton?.Tag is StepperHandlerHolder handlerHolder)
+			if (platformButton?.Tag is StepperHandlerHolder handlerHolder)
 				return handlerHolder.StepperHandler.VirtualView.Maximum;
 
 			return 0;
@@ -35,23 +47,23 @@ namespace Microsoft.Maui.DeviceTests
 
 		double GetNativeMinimum(StepperHandler stepperHandler)
 		{
-			var nativeView = GetNativeStepper(stepperHandler);
-			var nativeButton = nativeView.GetChildAt(0);
+			var platformView = GetNativeStepper(stepperHandler);
+			var platformButton = platformView.GetChildAt(0);
 
-			if (nativeButton?.Tag is StepperHandlerHolder handlerHolder)
+			if (platformButton?.Tag is StepperHandlerHolder handlerHolder)
 				return handlerHolder.StepperHandler.VirtualView.Minimum;
 
 			return 0;
 		}
 
-		Task ValidateHasColor(IStepper stepper, Color color, Action action = null)
+		bool GetNativeIsEnabled(StepperHandler stepperHandler)
 		{
-			return InvokeOnMainThreadAsync(() =>
-			{
-				var nativeStepper = GetNativeStepper(CreateHandler(stepper));
-				action?.Invoke();
-				nativeStepper.AssertContainsColor(color);
-			});
+			var platformView = GetNativeStepper(stepperHandler);
+
+			var minimumButton = platformView.GetChildAt(0);
+			var maximumButton = platformView.GetChildAt(1);
+
+			return minimumButton.Enabled && maximumButton.Enabled;
 		}
 	}
 }

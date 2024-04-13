@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Hosting;
-using Microsoft.Maui.Internal;
 
 namespace Microsoft.Maui.HotReload
 {
@@ -14,11 +13,9 @@ namespace Microsoft.Maui.HotReload
 	{
 		static IMauiHandlersCollection? HandlerService;
 		//static IMauiHandlersServiceProvider? HandlerServiceProvider;
-		public static void Init(IMauiHandlersCollection handlerService)
+		public static void RegisterHandlers(IMauiHandlersCollection handlerService)
 		{
 			HandlerService = handlerService;
-			//HandlerServiceProvider = new MauiHandlersServiceProvider(handlerService);
-			IsEnabled = true;
 		}
 		public static void AddActiveView(IHotReloadableView view) => ActiveViews.Add(view);
 		public static void Reset()
@@ -27,22 +24,29 @@ namespace Microsoft.Maui.HotReload
 		}
 		public static bool IsEnabled { get; set; } = Debugger.IsAttached;
 
+		internal static bool IsSupported
+#if !NETSTANDARD
+			=> System.Reflection.Metadata.MetadataUpdater.IsSupported;
+#else
+			=> true;
+#endif
+
 		public static void Register(IHotReloadableView view, params object[] parameters)
 		{
-			if (!IsEnabled)
+			if (!IsSupported || !IsEnabled)
 				return;
 			currentViews[view] = parameters;
 		}
 
 		public static void UnRegister(IHotReloadableView view)
 		{
-			if (!IsEnabled)
+			if (!IsSupported || !IsEnabled)
 				return;
 			currentViews.Remove(view);
 		}
 		public static bool IsReplacedView(IHotReloadableView view, IView newView)
 		{
-			if (!IsEnabled)
+			if (!IsSupported || !IsEnabled)
 				return false;
 			if (view == null || newView == null)
 				return false;
@@ -53,7 +57,7 @@ namespace Microsoft.Maui.HotReload
 		}
 		public static IView GetReplacedView(IHotReloadableView view)
 		{
-			if (!IsEnabled)
+			if (!IsSupported || !IsEnabled)
 				return view;
 
 			var viewType = view.GetType();
@@ -71,14 +75,14 @@ namespace Microsoft.Maui.HotReload
 			catch (MissingMethodException)
 			{
 				Debug.WriteLine("You are using trying to HotReload a view that requires Parameters. Please call `HotReloadHelper.Register(this, params);` in the constructor;");
-				//TODO: Notifiy that we couldnt hot reload.
+				//TODO: Notify that we couldnt hot reload.
 				return view;
 			}
 			catch (Exception ex)
 			{
 				Debug.WriteLine($"Error Hotreloading type: {newViewType}");
 				Debug.WriteLine(ex);
-				//TODO: Notifiy that we couldnt hot reload.
+				//TODO: Notify that we couldnt hot reload.
 				return view;
 			}
 
@@ -86,17 +90,16 @@ namespace Microsoft.Maui.HotReload
 
 		static void TransferState(IHotReloadableView oldView, IView newView)
 		{
-
 			oldView.TransferState(newView);
 		}
 
 		static internal readonly WeakList<IHotReloadableView> ActiveViews = new WeakList<IHotReloadableView>();
-		static Dictionary<string, Type> replacedViews = new Dictionary<string, Type>();
+		static Dictionary<string, Type> replacedViews = new(StringComparer.Ordinal);
 		static Dictionary<IHotReloadableView, object[]> currentViews = new Dictionary<IHotReloadableView, object[]>();
-		static Dictionary<string, List<KeyValuePair<Type, Type>>> replacedHandlers = new Dictionary<string, List<KeyValuePair<Type, Type>>>();
+		static Dictionary<string, List<KeyValuePair<Type, Type>>> replacedHandlers = new(StringComparer.Ordinal);
 		public static void RegisterReplacedView(string oldViewType, Type newViewType)
 		{
-			if (!IsEnabled)
+			if (!IsSupported || !IsEnabled)
 				return;
 
 			Action<MethodInfo> executeStaticMethod = (method) =>
@@ -109,7 +112,7 @@ namespace Microsoft.Maui.HotReload
 				{
 					Debug.WriteLine($"Error calling {method.Name} on type: {newViewType}");
 					Debug.WriteLine(ex);
-					//TODO: Notifiy that we couldnt execute OnHotReload for the Method;
+					//TODO: Notify that we couldnt execute OnHotReload for the Method;
 				}
 			};
 
@@ -157,7 +160,7 @@ namespace Microsoft.Maui.HotReload
 
 		public static void TriggerReload()
 		{
-			List<IHotReloadableView?>? roots = null;
+			List<IHotReloadableView>? roots = null;
 			while (roots == null)
 			{
 				try
@@ -175,5 +178,14 @@ namespace Microsoft.Maui.HotReload
 				view!.Reload();
 			}
 		}
+		#region Metadata Update Handler
+		public static void UpdateApplication(Type[] types)
+		{
+			IsEnabled = true;
+			foreach (var t in types)
+				RegisterReplacedView(t.FullName ?? "", t);
+		}
+		public static void ClearCache(Type[] types) => TriggerReload();
+		#endregion
 	}
 }

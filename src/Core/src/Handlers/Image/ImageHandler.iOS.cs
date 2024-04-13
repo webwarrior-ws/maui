@@ -1,30 +1,15 @@
-﻿#nullable enable
-using System;
-using System.Threading.Tasks;
-using Microsoft.Maui.Graphics;
-using ObjCRuntime;
+﻿using System.Threading.Tasks;
 using UIKit;
 
 namespace Microsoft.Maui.Handlers
 {
 	public partial class ImageHandler : ViewHandler<IImage, UIImageView>
 	{
-		protected override UIImageView CreateNativeView() => new MauiImageView();
+		protected override UIImageView CreatePlatformView() => new MauiImageView(this);
 
-		protected override void ConnectHandler(UIImageView nativeView)
+		protected override void DisconnectHandler(UIImageView platformView)
 		{
-			base.ConnectHandler(nativeView);
-
-			if (NativeView is MauiImageView imageView)
-				imageView.WindowChanged += OnWindowChanged;
-		}
-
-		protected override void DisconnectHandler(UIImageView nativeView)
-		{
-			base.DisconnectHandler(nativeView);
-
-			if (NativeView is MauiImageView imageView)
-				imageView.WindowChanged -= OnWindowChanged;
+			base.DisconnectHandler(platformView);
 
 			SourceLoader.Reset();
 		}
@@ -37,36 +22,54 @@ namespace Microsoft.Maui.Handlers
 		{
 			handler.UpdateValue(nameof(IViewHandler.ContainerView));
 
-			handler.GetWrappedNativeView()?.UpdateBackground(image);
+			handler.ToPlatform().UpdateBackground(image);
 		}
 
 		public static void MapAspect(IImageHandler handler, IImage image) =>
-			handler.TypedNativeView?.UpdateAspect(image);
+			handler.PlatformView?.UpdateAspect(image);
 
 		public static void MapIsAnimationPlaying(IImageHandler handler, IImage image) =>
-			handler.TypedNativeView?.UpdateIsAnimationPlaying(image);
+			handler.PlatformView?.UpdateIsAnimationPlaying(image);
 
 		public static void MapSource(IImageHandler handler, IImage image) =>
 			MapSourceAsync(handler, image).FireAndForget(handler);
 
-		public static Task MapSourceAsync(IImageHandler handler, IImage image)
-		{
-			if (handler.NativeView == null)
-				return Task.CompletedTask;
+		public static async Task MapSourceAsync(IImageHandler handler, IImage image) =>
+			await handler.SourceLoader.UpdateImageSourceAsync();
 
-			handler.TypedNativeView.Clear();
-			return handler.SourceLoader.UpdateImageSourceAsync();
-		}
-
-		void OnSetImageSource(UIImage? obj)
+		public void OnWindowChanged()
 		{
-			NativeView.Image = obj;
-		}
-
-		void OnWindowChanged(object? sender, EventArgs e)
-		{
-			if (SourceLoader.SourceManager.IsResolutionDependent)
+			if (SourceLoader.SourceManager.RequiresReload(PlatformView))
 				UpdateValue(nameof(IImage.Source));
+		}
+
+		partial class ImageImageSourcePartSetter
+		{
+			public override void SetImageSource(UIImage? platformImage)
+			{
+				if (Handler?.PlatformView is not UIImageView imageView)
+					return;
+
+				if (platformImage?.Images is not null)
+				{
+					imageView.Image = platformImage.Images[0];
+
+					imageView.AnimationImages = platformImage.Images;
+					imageView.AnimationDuration = platformImage.Duration;
+				}
+				else
+				{
+					imageView.AnimationImages = null;
+					imageView.AnimationDuration = 0.0;
+
+					imageView.Image = platformImage;
+				}
+
+				Handler?.UpdateValue(nameof(IImage.IsAnimationPlaying));
+
+				if (Handler?.VirtualView is IImage image && image.Source is IStreamImageSource)
+					imageView.InvalidateMeasure(image);
+			}
 		}
 	}
 }

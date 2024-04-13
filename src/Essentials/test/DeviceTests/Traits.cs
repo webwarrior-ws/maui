@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using RuntimeDeviceType = Microsoft.Maui.Essentials.DeviceType;
+using Microsoft.Maui.Devices;
+using RuntimeDeviceType = Microsoft.Maui.Devices.DeviceType;
 
 namespace Microsoft.Maui.Essentials.DeviceTests
 {
@@ -59,6 +61,10 @@ namespace Microsoft.Maui.Essentials.DeviceTests
 			yield return $"{Hardware.Magnetometer}={FeatureSupport.ToExclude(HardwareSupport.HasMagnetometer)}";
 			yield return $"{Hardware.Battery}={FeatureSupport.ToExclude(HardwareSupport.HasBattery)}";
 			yield return $"{Hardware.Flash}={FeatureSupport.ToExclude(HardwareSupport.HasFlash)}";
+
+#if __ANDROID__
+			yield return $"{FileProvider}={FeatureSupport.ToExclude(OperatingSystem.IsAndroidVersionAtLeast(24))}";
+#endif
 
 			if (additionalFilters != null)
 			{

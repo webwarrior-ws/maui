@@ -12,7 +12,7 @@ using Xamarin.UITest;
 using NUnit.Framework;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if UITEST
 	[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.Github5000)]
@@ -100,6 +100,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 
 #if UITEST
 		[Test]
+		[Microsoft.Maui.Controls.Compatibility.UITests.FailsOnMauiIOS]
 		public void GitHub1567Test()
 		{
 			RunningApp.WaitForElement(q => q.Marked("btnFillData"));

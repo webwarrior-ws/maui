@@ -1,43 +1,43 @@
 using System;
 
-using NUnit.Framework;
+using Xunit;
 
 namespace Microsoft.Maui.Controls.Core.UnitTests
 {
-	[TestFixture]
+
 	public class TimePickerUnitTest : BaseTestFixture
 	{
-		[Test]
+		[Fact]
 		public void TestConstructor()
 		{
 			TimePicker picker = new TimePicker();
 
-			Assert.AreEqual(new TimeSpan(), picker.Time);
+			Assert.Equal(new TimeSpan(), picker.Time);
 		}
 
-		[Test]
+		[Fact]
 		public void TestTimeOutOfRange()
 		{
-			TimePicker picker = new TimePicker();
-
-			Assert.That(() => picker.Time = new TimeSpan(1000, 0, 0), Throws.ArgumentException);
-			Assert.AreEqual(picker.Time, new TimeSpan());
+			var picker = new TimePicker
+			{
+				Time = new TimeSpan(1000, 0, 0)
+			};
+			Assert.Equal(picker.Time, new TimeSpan());
 
 			picker.Time = new TimeSpan(8, 30, 0);
+			Assert.Equal(new TimeSpan(8, 30, 0), picker.Time);
 
-			Assert.AreEqual(new TimeSpan(8, 30, 0), picker.Time);
-
-			Assert.That(() => picker.Time = new TimeSpan(-1, 0, 0), Throws.ArgumentException);
-			Assert.AreEqual(new TimeSpan(8, 30, 0), picker.Time);
+			picker.Time = new TimeSpan(-1, 0, 0);
+			Assert.Equal(new TimeSpan(8, 30, 0), picker.Time);
 		}
 
-		[Test]
-		[Description("Issue #745")]
+		[Fact("Issue #745")]
 		public void ZeroTimeIsValid()
 		{
-			var picker = new TimePicker();
-
-			Assert.That(() => picker.Time = new TimeSpan(0, 0, 0), Throws.Nothing);
+			_ = new TimePicker
+			{
+				Time = new TimeSpan(0, 0, 0)
+			};
 		}
 	}
 }

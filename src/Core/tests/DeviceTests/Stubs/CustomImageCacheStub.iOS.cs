@@ -6,7 +6,7 @@ using UIKit;
 
 namespace Microsoft.Maui.DeviceTests.Stubs
 {
-	class CustomImageCacheStub
+	public class CustomImageCacheStub
 	{
 		readonly Dictionary<Color, (UIImage Image, int Count)> _cache = new Dictionary<Color, (UIImage, int)>();
 
@@ -25,7 +25,7 @@ namespace Microsoft.Maui.DeviceTests.Stubs
 			UIGraphics.BeginImageContextWithOptions(rect.Size, false, 1);
 			var context = UIGraphics.GetCurrentContext();
 
-			color.ToNative().SetFill();
+			color.ToPlatform().SetFill();
 			context.FillRect(rect);
 
 			var image = UIGraphics.GetImageFromCurrentImageContext();

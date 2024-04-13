@@ -1,3 +1,4 @@
+#nullable disable
 using CoreGraphics;
 using Foundation;
 using Microsoft.Maui.Graphics;
@@ -20,27 +21,28 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 		protected override (bool, Size) NeedsContentSizeUpdate(Size currentSize)
 		{
-			var size = Size.Zero;
-
-			if (NativeHandler?.VirtualView == null)
+			if (PlatformHandler?.VirtualView == null)
 			{
-				return (false, size);
+				return (false, currentSize);
 			}
 
-			var bounds = NativeHandler.VirtualView.Frame;
+			var bounds = PlatformHandler.VirtualView.Frame;
 
 			if (bounds.Width <= 0 || bounds.Height <= 0)
 			{
-				return (false, size);
+				return (false, currentSize);
 			}
 
-			var desiredBounds = NativeHandler.VirtualView.Measure(double.PositiveInfinity, bounds.Height);
+			var desiredBounds = PlatformHandler.VirtualView.Measure(double.PositiveInfinity, bounds.Height);
 
 			if (desiredBounds.Width == currentSize.Width)
 			{
 				// Nothing in the cell needs more room, so leave it as it is
-				return (false, size);
+				return (false, currentSize);
 			}
+
+			// Keep the current height in the updated content size
+			desiredBounds.Height = bounds.Height;
 
 			return (true, desiredBounds);
 		}

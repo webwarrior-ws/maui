@@ -16,7 +16,8 @@ using Color = Microsoft.Maui.Graphics.Color;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 {
-	public abstract class VisualElementRenderer<TElement> : FormsViewGroup, IVisualElementRenderer, IDisposedState,
+	[Obsolete("Use Microsoft.Maui.Controls.Handlers.Compatibility.VisualElementRenderer instead")]
+	public abstract class VisualElementRenderer<TElement> : Microsoft.Maui.MauiViewGroup, IVisualElementRenderer, IDisposedState,
 		IEffectControlProvider where TElement : VisualElement
 	{
 		readonly List<EventHandler<VisualElementChangedEventArgs>> _elementChangedHandlers = new List<EventHandler<VisualElementChangedEventArgs>>();
@@ -299,10 +300,10 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.Android
 
 		protected override void OnLayout(bool changed, int l, int t, int r, int b)
 		{
-			if (Element == null)
-				return;
-
-			UpdateLayout(((IElementController)Element).LogicalChildren);
+			if (Element is IElementController controller)
+			{
+				UpdateLayout(controller.LogicalChildren);
+			}
 		}
 
 		public override void Draw(Canvas canvas)

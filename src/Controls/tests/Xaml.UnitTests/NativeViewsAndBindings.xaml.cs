@@ -1,304 +1,319 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Core.UnitTests;
-using Microsoft.Maui.Controls.Internals;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls.Xaml.Internals;
 using NUnit.Framework;
+using NUnit.Framework.Internal;
+using static System.String;
 
-namespace Microsoft.Maui.Controls.Xaml.UnitTests
+namespace Microsoft.Maui.Controls.Xaml.UnitTests;
+
+public class MockNativeView
 {
-	public abstract class MockNativeView
+	public string Foo { get; set; }
+	public int Bar { get; set; }
+	public string Baz { get; set; }
+	public IList<MockNativeView> SubViews { get; set; } = new List<MockNativeView>();
+}
+
+public class MockNativeViewWrapper : View
+{
+	public MockNativeView NativeView { get; }
+
+	public MockNativeViewWrapper(MockNativeView nativeView)
 	{
-		public string Foo { get; set; }
-		public int Bar { get; set; }
-		public string Baz { get; set; }
+		nativeView.TransferbindablePropertiesToWrapper(this);
+		NativeView = nativeView;
 	}
 
-	public class MockUIView : MockNativeView
+	protected override void OnBindingContextChanged()
 	{
-		public IList<MockUIView> SubViews { get; set; }
+		NativeView.SetBindingContext(BindingContext, nv => nv.SubViews);
+		base.OnBindingContextChanged();
+	}
+}
+
+public static class MockNativeViewExtensions
+{
+	public static void SetBindingContext(this MockNativeView target, object bindingContext, Func<MockNativeView, IEnumerable<MockNativeView>> getChild = null) => NativeBindingHelpers.SetBindingContext(target, bindingContext, getChild);
+	public static void TransferbindablePropertiesToWrapper(this MockNativeView target, MockNativeViewWrapper wrapper) => NativeBindingHelpers.TransferBindablePropertiesToWrapper(target, wrapper);
+	public static void SetBinding(this MockNativeView target, string targetProperty, BindingBase binding) => NativeBindingHelpers.SetBinding(target, targetProperty, binding);
+	public static void SetBinding(this MockNativeView target, BindableProperty targetProperty, BindingBase binding) => NativeBindingHelpers.SetBinding(target, targetProperty, binding);
+	public static void SetValue(this MockNativeView target, BindableProperty targetProperty, object value) => NativeBindingHelpers.SetValue(target, targetProperty, value);
+}
+
+public static class NativeBindingHelpers
+{
+	public static void SetBinding<TNativeView>(TNativeView target, string targetProperty, BindingBase bindingBase, string updateSourceEventName = null) where TNativeView : class
+	{
+		var binding = bindingBase as Binding;
+		//This will allow setting bindings from Xaml by reusing the MarkupExtension
+		if (IsNullOrEmpty(updateSourceEventName) && binding != null && !IsNullOrEmpty(binding.UpdateSourceEventName))
+			updateSourceEventName = binding.UpdateSourceEventName;
+		INotifyPropertyChanged eventWrapper = null;
+		if (!IsNullOrEmpty(updateSourceEventName))
+			eventWrapper = new EventWrapper(target, targetProperty, updateSourceEventName);
+
+		SetBinding(target, targetProperty, bindingBase, eventWrapper);
 	}
 
-	class MockUIViewWrapper : View
+	public static void SetBinding<TNativeView>(TNativeView target, string targetProperty, BindingBase bindingBase, INotifyPropertyChanged propertyChanged) where TNativeView : class
 	{
-		public MockUIView NativeView { get; }
+		if (target == null)
+			throw new ArgumentNullException(nameof(target));
+		if (IsNullOrEmpty(targetProperty))
+			throw new ArgumentNullException(nameof(targetProperty));
 
-		public MockUIViewWrapper(MockUIView nativeView)
-		{
-			NativeView = nativeView;
-			nativeView.TransferbindablePropertiesToWrapper(this);
-		}
-
-		protected override void OnBindingContextChanged()
-		{
-			NativeView.SetBindingContext(BindingContext, nv => nv.SubViews);
-			base.OnBindingContextChanged();
-		}
-	}
-
-	public class MockAndroidView : MockNativeView
-	{
-		public IList<MockAndroidView> SubViews { get; set; }
-	}
-
-	class MockAndroidViewWrapper : View
-	{
-		public MockAndroidView NativeView { get; }
-
-		public MockAndroidViewWrapper(MockAndroidView nativeView)
-		{
-			NativeView = nativeView;
-			nativeView.TransferbindablePropertiesToWrapper(this);
-		}
-
-		protected override void OnBindingContextChanged()
-		{
-			NativeView.SetBindingContext(BindingContext, nv => nv.SubViews);
-			base.OnBindingContextChanged();
-		}
-	}
-
-	public static class MockNativeViewExtensions
-	{
-		public static View ToView(this MockUIView nativeView)
-		{
-			return new MockUIViewWrapper(nativeView);
-		}
-
-		public static void SetBinding(this MockUIView target, string targetProperty, BindingBase binding, string updateSourceEventName = null)
-		{
-			NativeBindingHelpers.SetBinding(target, targetProperty, binding, updateSourceEventName);
-		}
-
-		internal static void SetBinding(this MockUIView target, string targetProperty, BindingBase binding, INotifyPropertyChanged propertyChanged)
-		{
-			NativeBindingHelpers.SetBinding(target, targetProperty, binding, propertyChanged);
-		}
-
-		public static void SetBinding(this MockUIView target, BindableProperty targetProperty, BindingBase binding)
-		{
-			NativeBindingHelpers.SetBinding(target, targetProperty, binding);
-		}
-
-		public static void SetValue(this MockUIView target, BindableProperty targetProperty, object value)
-		{
-			NativeBindingHelpers.SetValue(target, targetProperty, value);
-		}
-
-		public static void SetBindingContext(this MockUIView target, object bindingContext, Func<MockUIView, IEnumerable<MockUIView>> getChild = null)
-		{
-			NativeBindingHelpers.SetBindingContext(target, bindingContext, getChild);
-		}
-
-		internal static void TransferbindablePropertiesToWrapper(this MockUIView target, MockUIViewWrapper wrapper)
-		{
-			NativeBindingHelpers.TransferBindablePropertiesToWrapper(target, wrapper);
-		}
-
-		public static View ToView(this MockAndroidView nativeView)
-		{
-			return new MockAndroidViewWrapper(nativeView);
-		}
-
-		public static void SetBinding(this MockAndroidView target, string targetProperty, BindingBase binding, string updateSourceEventName = null)
-		{
-			NativeBindingHelpers.SetBinding(target, targetProperty, binding, updateSourceEventName);
-		}
-
-		internal static void SetBinding(this MockAndroidView target, string targetProperty, BindingBase binding, INotifyPropertyChanged propertyChanged)
-		{
-			NativeBindingHelpers.SetBinding(target, targetProperty, binding, propertyChanged);
-		}
-
-		public static void SetBinding(this MockAndroidView target, BindableProperty targetProperty, BindingBase binding)
-		{
-			NativeBindingHelpers.SetBinding(target, targetProperty, binding);
-		}
-
-		public static void SetValue(this MockAndroidView target, BindableProperty targetProperty, object value)
-		{
-			NativeBindingHelpers.SetValue(target, targetProperty, value);
-		}
-
-		public static void SetBindingContext(this MockAndroidView target, object bindingContext, Func<MockAndroidView, IEnumerable<MockAndroidView>> getChild = null)
-		{
-			NativeBindingHelpers.SetBindingContext(target, bindingContext, getChild);
-		}
-
-		internal static void TransferbindablePropertiesToWrapper(this MockAndroidView target, MockAndroidViewWrapper wrapper)
-		{
-			NativeBindingHelpers.TransferBindablePropertiesToWrapper(target, wrapper);
-		}
-	}
-
-	public class MockIosNativeValueConverterService : INativeValueConverterService
-	{
-		public bool ConvertTo(object value, Type toType, out object nativeValue)
-		{
-			nativeValue = null;
-			if (typeof(MockUIView).IsInstanceOfType(value) && toType.IsAssignableFrom(typeof(View)))
+		var binding = bindingBase as Binding;
+		var proxy = BindableObjectProxy<TNativeView>.BindableObjectProxies.GetValue(target, (TNativeView key) => new BindableObjectProxy<TNativeView>(key));
+		BindableProperty bindableProperty = null;
+		propertyChanged ??= target as INotifyPropertyChanged;
+		var propertyType = target.GetType().GetProperty(targetProperty)?.PropertyType;
+		var defaultValue = target.GetType().GetProperty(targetProperty)?.GetMethod.Invoke(target, Array.Empty<object>());
+		bindableProperty = CreateBindableProperty<TNativeView>(targetProperty, propertyType, defaultValue);
+		if (binding != null && binding.Mode != BindingMode.OneWay && propertyChanged != null)
+			propertyChanged.PropertyChanged += (sender, e) =>
 			{
-				nativeValue = ((MockUIView)value).ToView();
-				return true;
+				if (e.PropertyName != targetProperty)
+					return;
+				SetValueFromNative(sender as TNativeView, targetProperty, bindableProperty);
+				//we need to keep the listener around he same time we have the proxy
+				proxy.NativeINPCListener = propertyChanged;
+			};
+
+		if (binding != null && binding.Mode != BindingMode.OneWay)
+			SetValueFromNative(target, targetProperty, bindableProperty);
+
+		proxy.SetBinding(bindableProperty, bindingBase);
+	}
+
+	static BindableProperty CreateBindableProperty<TNativeView>(string targetProperty, Type propertyType = null, object defaultValue = null) where TNativeView : class
+	{
+		propertyType ??= typeof(object);
+		defaultValue ??= (propertyType.IsValueType ? Activator.CreateInstance(propertyType) : null);
+		return BindableProperty.Create(
+			targetProperty,
+			propertyType,
+			typeof(BindableObjectProxy<TNativeView>),
+			defaultValue: defaultValue,
+			defaultBindingMode: BindingMode.Default,
+			propertyChanged: (bindable, oldValue, newValue) =>
+			{
+				TNativeView nativeView;
+				if ((bindable as BindableObjectProxy<TNativeView>).TargetReference.TryGetTarget(out nativeView))
+					SetNativeValue(nativeView, targetProperty, newValue);
 			}
+		);
+	}
+
+	static void SetNativeValue<TNativeView>(TNativeView target, string targetProperty, object newValue) where TNativeView : class
+	{
+		var mi = target.GetType().GetProperty(targetProperty)?.SetMethod;
+		if (mi == null)
+			throw new InvalidOperationException(Format("Native Binding on {0}.{1} failed due to missing or inaccessible property", target.GetType(), targetProperty));
+		mi.Invoke(target, new[] { newValue });
+	}
+
+	static void SetValueFromNative<TNativeView>(TNativeView target, string targetProperty, BindableProperty bindableProperty) where TNativeView : class
+	{
+		BindableObjectProxy<TNativeView> proxy;
+		if (!BindableObjectProxy<TNativeView>.BindableObjectProxies.TryGetValue(target, out proxy))
+			return;
+		SetValueFromRenderer(proxy, bindableProperty, target.GetType().GetProperty(targetProperty)?.GetMethod.Invoke(target, Array.Empty<object>()));
+	}
+
+	static void SetValueFromRenderer(BindableObject bindable, BindableProperty property, object value) => bindable.SetValueCore(property, value);
+
+	public static void SetBinding<TNativeView>(TNativeView target, BindableProperty targetProperty, BindingBase binding) where TNativeView : class
+	{
+		if (target == null)
+			throw new ArgumentNullException(nameof(target));
+		if (targetProperty == null)
+			throw new ArgumentNullException(nameof(targetProperty));
+		if (binding == null)
+			throw new ArgumentNullException(nameof(binding));
+
+		var proxy = BindableObjectProxy<TNativeView>.BindableObjectProxies.GetValue(target, (TNativeView key) => new BindableObjectProxy<TNativeView>(key));
+		proxy.BindingsBackpack.Add(new KeyValuePair<BindableProperty, BindingBase>(targetProperty, binding));
+	}
+
+	public static void SetValue<TNativeView>(TNativeView target, BindableProperty targetProperty, object value) where TNativeView : class
+	{
+		if (target == null)
+			throw new ArgumentNullException(nameof(target));
+		if (targetProperty == null)
+			throw new ArgumentNullException(nameof(targetProperty));
+
+		var proxy = BindableObjectProxy<TNativeView>.BindableObjectProxies.GetValue(target, (TNativeView key) => new BindableObjectProxy<TNativeView>(key));
+		proxy.ValuesBackpack.Add(new KeyValuePair<BindableProperty, object>(targetProperty, value));
+	}
+
+	public static void SetBindingContext<TNativeView>(TNativeView target, object bindingContext, Func<TNativeView, IEnumerable<TNativeView>> getChild = null) where TNativeView : class
+	{
+		if (target == null)
+			throw new ArgumentNullException(nameof(target));
+
+		var proxy = BindableObjectProxy<TNativeView>.BindableObjectProxies.GetValue(target, (TNativeView key) => new BindableObjectProxy<TNativeView>(key));
+		proxy.BindingContext = bindingContext;
+		if (getChild == null)
+			return;
+		var children = getChild(target);
+		if (children == null)
+			return;
+		foreach (var child in children)
+			if (child != null)
+				SetBindingContext(child, bindingContext, getChild);
+	}
+
+	public static void TransferBindablePropertiesToWrapper<TNativeView, TNativeWrapper>(TNativeView nativeView, TNativeWrapper wrapper)
+		where TNativeView : class
+		where TNativeWrapper : View
+	{
+		if (BindableObjectProxy<TNativeView>.BindableObjectProxies.TryGetValue(nativeView, out BindableObjectProxy<TNativeView> proxy))
+			proxy.TransferAttachedPropertiesTo(wrapper);
+	}
+
+	class EventWrapper : INotifyPropertyChanged
+	{
+		string TargetProperty { get; set; }
+		static readonly MethodInfo handlerinfo = typeof(EventWrapper).GetRuntimeMethods().Single(mi => mi.Name == "OnPropertyChanged" && mi.IsPublic == false);
+
+		public EventWrapper(object target, string targetProperty, string updateSourceEventName)
+		{
+			TargetProperty = targetProperty;
+			Delegate handlerDelegate;
+			EventInfo updateSourceEvent;
+			try
+			{
+				updateSourceEvent = target.GetType().GetRuntimeEvent(updateSourceEventName);
+				handlerDelegate = handlerinfo.CreateDelegate(updateSourceEvent.EventHandlerType, this);
+			}
+			catch (Exception)
+			{
+				throw new ArgumentException(Format("No declared or accessible event {0} on {1}", updateSourceEventName, target.GetType()), nameof(updateSourceEventName));
+			}
+			if (updateSourceEvent != null && handlerDelegate != null)
+				updateSourceEvent.AddEventHandler(target, handlerDelegate);
+		}
+
+		void OnPropertyChanged(object sender, EventArgs e) => PropertyChanged?.Invoke(sender, new PropertyChangedEventArgs(TargetProperty));
+
+		public event PropertyChangedEventHandler PropertyChanged;
+	}
+
+	class BindableObjectProxy<TNativeView> : BindableObject where TNativeView : class
+	{
+		public static ConditionalWeakTable<TNativeView, BindableObjectProxy<TNativeView>> BindableObjectProxies { get; } = new ConditionalWeakTable<TNativeView, BindableObjectProxy<TNativeView>>();
+		public WeakReference<TNativeView> TargetReference { get; set; }
+		public IList<KeyValuePair<BindableProperty, BindingBase>> BindingsBackpack { get; } = new List<KeyValuePair<BindableProperty, BindingBase>>();
+		public IList<KeyValuePair<BindableProperty, object>> ValuesBackpack { get; } = new List<KeyValuePair<BindableProperty, object>>();
+		public INotifyPropertyChanged NativeINPCListener;
+
+		public BindableObjectProxy(TNativeView target)
+		{
+			TargetReference = new WeakReference<TNativeView>(target);
+		}
+
+		public void TransferAttachedPropertiesTo(View wrapper)
+		{
+			foreach (var kvp in BindingsBackpack)
+				wrapper.SetBinding(kvp.Key, kvp.Value);
+			foreach (var kvp in ValuesBackpack)
+				wrapper.SetValue(kvp.Key, kvp.Value);
+		}
+	}
+}
+
+class MockNativeValueConverterService : INativeValueConverterService
+{
+	public bool ConvertTo(object value, Type toType, out object nativeValue)
+	{
+		nativeValue = null;
+		if (typeof(MockNativeView).IsInstanceOfType(value) && toType.IsAssignableFrom(typeof(View)))
+		{
+			nativeValue = new MockNativeViewWrapper((MockNativeView)value);
+			return true;
+		}
+		return false;
+	}
+}
+
+class MockNativeBindingService : INativeBindingService
+{
+	public bool TrySetBinding(object target, string propertyName, BindingBase binding)
+	{
+		var view = target as MockNativeView;
+		if (view == null)
 			return false;
-		}
+		view.SetBinding(propertyName, binding);
+		return true;
+
 	}
 
-	public class MockAndroidNativeValueConverterService : INativeValueConverterService
+	public bool TrySetBinding(object target, BindableProperty property, BindingBase binding)
 	{
-		public bool ConvertTo(object value, Type toType, out object nativeValue)
-		{
-			nativeValue = null;
-			if (typeof(MockAndroidView).IsInstanceOfType(value) && toType.IsAssignableFrom(typeof(View)))
-			{
-				nativeValue = ((MockAndroidView)value).ToView();
-				return true;
-			}
+		var view = target as MockNativeView;
+		if (view == null)
 			return false;
-		}
+		view.SetBinding(property, binding);
+		return true;
 	}
 
-	public class MockIosNativeBindingService : INativeBindingService
+	public bool TrySetValue(object target, BindableProperty property, object value)
 	{
-		public bool TrySetBinding(object target, string propertyName, BindingBase binding)
-		{
-			var view = target as MockUIView;
-			if (view == null)
-				return false;
-			if (target.GetType().GetProperty(propertyName)?.GetMethod == null)
-				return false;
-			view.SetBinding(propertyName, binding);
-			return true;
-		}
+		var view = target as MockNativeView;
+		if (view == null)
+			return false;
+		view.SetValue(property, value);
+		return true;
+	}
+}
 
-		public bool TrySetBinding(object target, BindableProperty property, BindingBase binding)
-		{
-			var view = target as MockUIView;
-			if (view == null)
-				return false;
-			view.SetBinding(property, binding);
-			return true;
-		}
+[XamlCompilation(XamlCompilationOptions.Skip)]
+public partial class NativeViewsAndBindings : ContentPage
+{
 
-		public bool TrySetValue(object target, BindableProperty property, object value)
-		{
-			var view = target as MockUIView;
-			if (view == null)
-				return false;
-			view.SetValue(property, value);
-			return true;
-		}
+	public NativeViewsAndBindings() => InitializeComponent();
+	public NativeViewsAndBindings(bool useCompiledXaml)
+	{
+		//this stub will be replaced at compile time
 	}
 
-	public class MockAndroidNativeBindingService : INativeBindingService
+	[TestFixture]
+	class Test
 	{
-		public bool TrySetBinding(object target, string propertyName, BindingBase binding)
+		[SetUp]
+		public void Setup()
 		{
-			var view = target as MockAndroidView;
-			if (view == null)
-				return false;
-			view.SetBinding(propertyName, binding);
-			return true;
+			AppInfo.SetCurrent(new Core.UnitTests.MockAppInfo());
+			DependencyService.Register<INativeValueConverterService, MockNativeValueConverterService>();
+			DependencyService.Register<INativeBindingService, MockNativeBindingService>();
 		}
 
-		public bool TrySetBinding(object target, BindableProperty property, BindingBase binding)
-		{
-			var view = target as MockAndroidView;
-			if (view == null)
-				return false;
-			view.SetBinding(property, binding);
-			return true;
-		}
+		[TearDown] public void TearDown() => AppInfo.SetCurrent(null);
 
-		public bool TrySetValue(object target, BindableProperty property, object value)
+		[Test]
+		public void NativeInContentView([Values(false)] bool useCompiledXaml)
 		{
-			var view = target as MockAndroidView;
-			if (view == null)
-				return false;
-			view.SetValue(property, value);
-			return true;
-		}
-	}
-
-	public partial class NativeViewsAndBindings : ContentPage
-	{
-		public NativeViewsAndBindings()
-		{
-			InitializeComponent();
-		}
-
-		public NativeViewsAndBindings(bool useCompiledXaml)
-		{
-			//this stub will be replaced at compile time
-		}
-
-		[TestFixture]
-		public class Tests
-		{
-			[SetUp]
-			public void SetUp()
+			var layout = new NativeViewsAndBindings(useCompiledXaml);
+			layout.BindingContext = new
 			{
-				Device.PlatformServices = new MockPlatformServices();
-			}
+				Baz = "Bound Value",
+				VerticalOption = LayoutOptions.EndAndExpand
+			};
+			var nativeView = layout.view0 as MockNativeView;
 
-			[TearDown]
-			public void TearDown()
-			{
-				Device.PlatformServices = null;
-			}
+			var wrapper = layout.stack.Children.First();
+			Assert.That(wrapper, Is.TypeOf<MockNativeViewWrapper>());
+			Assert.That(((MockNativeViewWrapper)wrapper).NativeView, Is.EqualTo(nativeView));
 
-			void SetUpPlatform(string platform)
-			{
-				((MockPlatformServices)Device.PlatformServices).RuntimePlatform = platform;
-				if (platform == Device.iOS)
-				{
-					DependencyService.Register<INativeValueConverterService, MockIosNativeValueConverterService>();
-					DependencyService.Register<INativeBindingService, MockIosNativeBindingService>();
-				}
-				else if (platform == Device.Android)
-				{
-					DependencyService.Register<INativeValueConverterService, MockAndroidNativeValueConverterService>();
-					DependencyService.Register<INativeBindingService, MockAndroidNativeBindingService>();
-				}
-			}
-
-			[TestCase(false, Device.iOS)]
-			[TestCase(false, Device.Android)]
-			//[TestCase(true)]
-			public void NativeInContentView(bool useCompiledXaml, string platform)
-			{
-				SetUpPlatform(platform);
-				var layout = new NativeViewsAndBindings(useCompiledXaml);
-				layout.BindingContext = new
-				{
-					Baz = "Bound Value",
-					VerticalOption = LayoutOptions.EndAndExpand
-				};
-				var view = layout.view0;
-				Assert.NotNull(view.Content);
-				MockNativeView nativeView = null;
-				if (platform == Device.iOS)
-				{
-					Assert.That(view.Content, Is.TypeOf<MockUIViewWrapper>());
-					Assert.That(((MockUIViewWrapper)view.Content).NativeView, Is.TypeOf<MockUIView>());
-					nativeView = ((MockUIViewWrapper)view.Content).NativeView;
-				}
-				else if (platform == Device.Android)
-				{
-					Assert.That(view.Content, Is.TypeOf<MockAndroidViewWrapper>());
-					Assert.That(((MockAndroidViewWrapper)view.Content).NativeView, Is.TypeOf<MockAndroidView>());
-					nativeView = ((MockAndroidViewWrapper)view.Content).NativeView;
-				}
-
-				Assert.AreEqual("foo", nativeView.Foo);
-				Assert.AreEqual(42, nativeView.Bar);
-				Assert.AreEqual("Bound Value", nativeView.Baz);
-				Assert.AreEqual(LayoutOptions.End, view.Content.GetValue(View.HorizontalOptionsProperty));
-				Assert.AreEqual(LayoutOptions.EndAndExpand, view.Content.GetValue(View.VerticalOptionsProperty));
-			}
+			Assert.AreEqual("foo", nativeView.Foo);
+			Assert.AreEqual(42, nativeView.Bar);
+			Assert.AreEqual("Bound Value", nativeView.Baz);
 		}
 	}
 }

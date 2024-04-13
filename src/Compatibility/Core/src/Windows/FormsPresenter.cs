@@ -1,7 +1,7 @@
 using System;
-using Microsoft.UI.Xaml;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
+using Microsoft.UI.Xaml;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
@@ -16,7 +16,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				if (ActualWidth > 0 && ActualHeight > 0 && DataContext != null)
 				{
 					var page = (Page)DataContext;
-					((Page)page.RealParent).ContainerArea = new Rectangle(0, 0, ActualWidth, ActualHeight);
+					((Page)page.RealParent).ContainerArea = new Rect(0, 0, ActualWidth, ActualHeight);
 				}
 			};
 		}

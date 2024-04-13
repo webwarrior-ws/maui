@@ -1,3 +1,4 @@
+#nullable disable
 #define DO_NOT_CHECK_FOR_BINDING_REUSE
 
 using System;
@@ -10,6 +11,7 @@ using Microsoft.Maui.Dispatching;
 namespace Microsoft.Maui.Controls.Internals
 {
 	//FIXME: need a better name for this, and share with Binding, so we can share more unittests
+	/// <include file="../../docs/Microsoft.Maui.Controls.Internals/TypedBindingBase.xml" path="Type[@FullName='Microsoft.Maui.Controls.Internals.TypedBindingBase']/Docs/*" />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	public abstract class TypedBindingBase : BindingBase
 	{
@@ -18,6 +20,7 @@ namespace Microsoft.Maui.Controls.Internals
 		object _source;
 		string _updateSourceEventName;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls.Internals/TypedBindingBase.xml" path="//Member[@MemberName='Converter']/Docs/*" />
 		public IValueConverter Converter
 		{
 			get { return _converter; }
@@ -28,6 +31,7 @@ namespace Microsoft.Maui.Controls.Internals
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls.Internals/TypedBindingBase.xml" path="//Member[@MemberName='ConverterParameter']/Docs/*" />
 		public object ConverterParameter
 		{
 			get { return _converterParameter; }
@@ -38,6 +42,7 @@ namespace Microsoft.Maui.Controls.Internals
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls.Internals/TypedBindingBase.xml" path="//Member[@MemberName='Source']/Docs/*" />
 		public object Source
 		{
 			get { return _source; }
@@ -80,11 +85,16 @@ namespace Microsoft.Maui.Controls.Internals
 
 			_handlers = new PropertyChangedProxy[handlers.Length];
 			for (var i = 0; i < handlers.Length; i++)
+			{
+				if (handlers[i] is null)
+					continue;
 				_handlers[i] = new PropertyChangedProxy(handlers[i].Item1, handlers[i].Item2, this);
+			}
 		}
 
 		readonly WeakReference<object> _weakSource = new WeakReference<object>(null);
 		readonly WeakReference<BindableObject> _weakTarget = new WeakReference<BindableObject>(null);
+		SetterSpecificity _specificity;
 		BindableProperty _targetProperty;
 
 		// Applies the binding to a previously set source and target.
@@ -104,20 +114,21 @@ namespace Microsoft.Maui.Controls.Internals
 #endif
 			object source;
 			if (_weakSource.TryGetTarget(out source) && source != null)
-				ApplyCore(source, target, _targetProperty, fromTarget);
+				ApplyCore(source, target, _targetProperty, fromTarget, _specificity);
 		}
 
 		// Applies the binding to a new source or target.
-		internal override void Apply(object context, BindableObject bindObj, BindableProperty targetProperty, bool fromBindingContextChanged = false)
+		internal override void Apply(object context, BindableObject bindObj, BindableProperty targetProperty, bool fromBindingContextChanged, SetterSpecificity specificity)
 		{
 			_targetProperty = targetProperty;
+			this._specificity = specificity;
 			var source = Source ?? Context ?? context;
 			var isApplied = IsApplied;
 
 			if (Source != null && isApplied && fromBindingContextChanged)
 				return;
 
-			base.Apply(source, bindObj, targetProperty, fromBindingContextChanged);
+			base.Apply(source, bindObj, targetProperty, fromBindingContextChanged, specificity);
 
 #if (!DO_NOT_CHECK_FOR_BINDING_REUSE)
 			BindableObject prevTarget;
@@ -131,7 +142,7 @@ namespace Microsoft.Maui.Controls.Internals
 			_weakSource.SetTarget(source);
 			_weakTarget.SetTarget(bindObj);
 
-			ApplyCore(source, bindObj, targetProperty);
+			ApplyCore(source, bindObj, targetProperty, false, specificity);
 		}
 
 		internal override BindingBase Clone()
@@ -140,7 +151,11 @@ namespace Microsoft.Maui.Controls.Internals
 			if (handlers != null)
 			{
 				for (var i = 0; i < _handlers.Length; i++)
+				{
+					if (_handlers[i] == null)
+						continue;
 					handlers[i] = new Tuple<Func<TSource, object>, string>(_handlers[i].PartGetter, _handlers[i].PropertyName);
+				}
 			}
 			return new TypedBinding<TSource, TProperty>(_getter, _setter, handlers)
 			{
@@ -190,7 +205,7 @@ namespace Microsoft.Maui.Controls.Internals
 		// ApplyCore is as slim as it should be:
 		// Setting  100000 values						: 17ms.
 		// ApplyCore  100000 (w/o INPC, w/o unnapply)	: 20ms.
-		internal void ApplyCore(object sourceObject, BindableObject target, BindableProperty property, bool fromTarget = false)
+		internal void ApplyCore(object sourceObject, BindableObject target, BindableProperty property, bool fromTarget, SetterSpecificity specificity)
 		{
 			var isTSource = sourceObject is TSource;
 			var mode = this.GetRealizedMode(property);
@@ -222,7 +237,7 @@ namespace Microsoft.Maui.Controls.Internals
 					BindingDiagnostics.SendBindingFailure(this, sourceObject, target, property, "Binding", BindingExpression.CannotConvertTypeErrorMessage, value, property.ReturnType);
 					return;
 				}
-				target.SetValueCore(property, value, SetValueFlags.ClearDynamicResource, BindableObject.SetValuePrivateFlags.Default | BindableObject.SetValuePrivateFlags.Converted);
+				target.SetValueCore(property, value, SetValueFlags.ClearDynamicResource, BindableObject.SetValuePrivateFlags.Default | BindableObject.SetValuePrivateFlags.Converted, specificity);
 				return;
 			}
 
@@ -244,29 +259,31 @@ namespace Microsoft.Maui.Controls.Internals
 			public Func<TSource, object> PartGetter { get; }
 			public string PropertyName { get; }
 			public BindingExpression.WeakPropertyChangedProxy Listener { get; }
-			WeakReference<INotifyPropertyChanged> _weakPart = new WeakReference<INotifyPropertyChanged>(null);
 			readonly BindingBase _binding;
 			PropertyChangedEventHandler handler;
+
+			~PropertyChangedProxy() => Listener?.Unsubscribe();
+
 			public INotifyPropertyChanged Part
 			{
 				get
 				{
-					INotifyPropertyChanged target;
-					if (_weakPart.TryGetTarget(out target))
+					if (Listener != null && Listener.TryGetSource(out var target))
 						return target;
 					return null;
 				}
 				set
 				{
-					if (Listener != null && Listener.Source.TryGetTarget(out var source) && ReferenceEquals(value, source))
+					if (Listener != null)
+					{
 						//Already subscribed
-						return;
+						if (Listener.TryGetSource(out var source) && ReferenceEquals(value, source))
+							return;
 
-					//clear out previous subscription
-					Listener?.Unsubscribe();
-
-					_weakPart.SetTarget(value);
-					Listener.SubscribeTo(value, handler);
+						//clear out previous subscription
+						Listener.Unsubscribe();
+						Listener.Subscribe(value, handler);
+					}
 				}
 			}
 
@@ -294,6 +311,8 @@ namespace Microsoft.Maui.Controls.Internals
 		{
 			for (var i = 0; i < _handlers.Length; i++)
 			{
+				if (_handlers[i] == null)
+					continue;
 				var part = _handlers[i].PartGetter(sourceObject);
 				if (part == null)
 					break;
@@ -307,7 +326,7 @@ namespace Microsoft.Maui.Controls.Internals
 		void Unsubscribe()
 		{
 			for (var i = 0; i < _handlers.Length; i++)
-				_handlers[i].Listener.Unsubscribe();
+				_handlers[i]?.Listener.Unsubscribe();
 		}
 	}
 }

@@ -56,12 +56,12 @@ namespace Microsoft.Maui.Layouts
 			return new Size(finalWidth, finalHeight);
 		}
 
-		public override Size ArrangeChildren(Rectangle bounds)
+		public override Size ArrangeChildren(Rect bounds)
 		{
 			var padding = AbsoluteLayout.Padding;
 
-			double top = padding.Top + bounds.Y;
-			double left = padding.Left + bounds.X;
+			double top = padding.Top + bounds.Top;
+			double left = padding.Left + bounds.Left;
 			double availableWidth = bounds.Width - padding.HorizontalThickness;
 			double availableHeight = bounds.Height - padding.VerticalThickness;
 
@@ -93,7 +93,10 @@ namespace Microsoft.Maui.Layouts
 					destination.Y = (availableHeight - destination.Height) * destination.Y;
 				}
 
-				child.Arrange(destination.Offset(left, top));
+				destination.X += left;
+				destination.Y += top;
+
+				child.Arrange(destination);
 			}
 
 			return new Size(availableWidth, availableHeight);
@@ -129,8 +132,8 @@ namespace Microsoft.Maui.Layouts
 		{
 			if (boundsValue < 0)
 			{
-				// If the child view doesn't have bounds set by the AbsoluteLayout, then we'll measure using the full constraint value
-				return constraint;
+				// If the child view doesn't have bounds set by the AbsoluteLayout, then we'll let it auto-size
+				return double.PositiveInfinity;
 			}
 
 			if (proportional)

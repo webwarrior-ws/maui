@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Linq;
 using Android.Graphics.Drawables;
 using Android.Util;
@@ -64,7 +65,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			{
 				return;
 			}
-			if (NativeVersion.IsAtLeast(Android.OS.BuildVersionCodes.M))
+			if (OperatingSystem.IsAndroidVersionAtLeast(23))
 			{
 				// We're looking for the foreground ripple effect, which is not available on older APIs
 				// Limiting this to Marshmallow and newer, because View.setForeground() is not available on lower APIs
@@ -90,7 +91,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 				}
 
 				var color = Color.FromUint((uint)value.Data);
-				var colorDrawable = new ColorDrawable(color.ToNative());
+				var colorDrawable = new ColorDrawable(color.ToPlatform());
 
 				var stateListDrawable = new StateListDrawable();
 				stateListDrawable.AddState(new[] { global::Android.Resource.Attribute.StateActivated }, colorDrawable);

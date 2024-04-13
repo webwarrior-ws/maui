@@ -1,6 +1,4 @@
-﻿#nullable enable
-
-using AndroidX.Core.View;
+﻿using AndroidX.Core.View;
 using AndroidX.Core.View.Accessibility;
 using AView = Android.Views.View;
 
@@ -19,7 +17,7 @@ namespace Microsoft.Maui.Controls.Platform
 
 		internal static void AddOrRemoveControlsAccessibilityDelegate(this View virtualView)
 		{
-			if (virtualView?.Handler?.NativeView is not AView view)
+			if (virtualView?.Handler?.PlatformView is not AView view)
 				return;
 
 			bool needsDelegate = virtualView.ControlsAccessibilityDelegateNeeded();

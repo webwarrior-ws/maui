@@ -1,14 +1,12 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
+using System.Threading.Tasks;
 using Android.Webkit;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Primitives;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Maui;
+using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Handlers;
 using static Android.Views.ViewGroup;
 using AWebView = Android.Webkit.WebView;
@@ -23,35 +21,47 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 		private AndroidWebKitWebViewManager? _webviewManager;
 		internal AndroidWebKitWebViewManager? WebviewManager => _webviewManager;
 
-		protected override AWebView CreateNativeView()
+		private ILogger? _logger;
+		internal ILogger Logger => _logger ??= Services!.GetService<ILogger<BlazorWebViewHandler>>() ?? NullLogger<BlazorWebViewHandler>.Instance;
+
+		protected override AWebView CreatePlatformView()
 		{
-			var aWebView = new AWebView(Context!)
+			Logger.CreatingAndroidWebkitWebView();
+
+#pragma warning disable CA1416, CA1412, CA1422 // Validate platform compatibility
+			var blazorAndroidWebView = new BlazorAndroidWebView(Context!)
 			{
 #pragma warning disable 618 // This can probably be replaced with LinearLayout(LayoutParams.MatchParent, LayoutParams.MatchParent); just need to test that theory
 				LayoutParameters = new Android.Widget.AbsoluteLayout.LayoutParams(LayoutParams.MatchParent, LayoutParams.MatchParent, 0, 0)
 #pragma warning restore 618
 			};
+#pragma warning restore CA1416, CA1412, CA1422 // Validate platform compatibility
 
-			AWebView.SetWebContentsDebuggingEnabled(enabled: true);
+			BlazorAndroidWebView.SetWebContentsDebuggingEnabled(enabled: DeveloperTools.Enabled);
 
-			if (aWebView.Settings != null)
+			if (blazorAndroidWebView.Settings != null)
 			{
-				aWebView.Settings.JavaScriptEnabled = true;
-				aWebView.Settings.DomStorageEnabled = true;
+				// To allow overriding UrlLoadingStrategy.OpenInWebView and open links in browser with a _blank target
+				blazorAndroidWebView.Settings.SetSupportMultipleWindows(true);
+
+				blazorAndroidWebView.Settings.JavaScriptEnabled = true;
+				blazorAndroidWebView.Settings.DomStorageEnabled = true;
 			}
 
-			_webViewClient = GetWebViewClient();
-			aWebView.SetWebViewClient(_webViewClient);
+			_webViewClient = new WebKitWebViewClient(this);
+			blazorAndroidWebView.SetWebViewClient(_webViewClient);
 
-			_webChromeClient = GetWebChromeClient();
-			aWebView.SetWebChromeClient(_webChromeClient);
+			_webChromeClient = new BlazorWebChromeClient();
+			blazorAndroidWebView.SetWebChromeClient(_webChromeClient);
 
-			return aWebView;
+			Logger.CreatedAndroidWebkitWebView();
+
+			return blazorAndroidWebView;
 		}
 
-		protected override void DisconnectHandler(AWebView nativeView)
+		protected override void DisconnectHandler(AWebView platformView)
 		{
-			nativeView.StopLoading();
+			platformView.StopLoading();
 
 			if (_webviewManager != null)
 			{
@@ -82,7 +92,7 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 			{
 				return;
 			}
-			if (NativeView == null)
+			if (PlatformView == null)
 			{
 				throw new InvalidOperationException($"Can't start {nameof(BlazorWebView)} without native web view instance.");
 			}
@@ -92,30 +102,63 @@ namespace Microsoft.AspNetCore.Components.WebView.Maui
 			var contentRootDir = Path.GetDirectoryName(HostPage!) ?? string.Empty;
 			var hostPageRelativePath = Path.GetRelativePath(contentRootDir, HostPage!);
 
-			var customFileProvider = VirtualView.CreateFileProvider(contentRootDir);
-			var mauiAssetFileProvider = new AndroidMauiAssetFileProvider(Context.Assets, contentRootDir);
-			IFileProvider fileProvider = customFileProvider == null
-				? mauiAssetFileProvider
-				: new CompositeFileProvider(customFileProvider, mauiAssetFileProvider);
+			Logger.CreatingFileProvider(contentRootDir, hostPageRelativePath);
 
-			_webviewManager = new AndroidWebKitWebViewManager(this, NativeView, Services!, ComponentsDispatcher, fileProvider, VirtualView.JSComponents, hostPageRelativePath);
+			var fileProvider = VirtualView.CreateFileProvider(contentRootDir);
+
+			_webviewManager = new AndroidWebKitWebViewManager(
+				PlatformView,
+				Services!,
+				new MauiDispatcher(Services!.GetRequiredService<IDispatcher>()),
+				fileProvider,
+				VirtualView.JSComponents,
+				contentRootDir,
+				hostPageRelativePath,
+				Logger);
+
+			StaticContentHotReloadManager.AttachToWebViewManagerIfEnabled(_webviewManager);
+
+			VirtualView.BlazorWebViewInitializing(new BlazorWebViewInitializingEventArgs());
+			VirtualView.BlazorWebViewInitialized(new BlazorWebViewInitializedEventArgs
+			{
+				WebView = PlatformView,
+			});
 
 			if (RootComponents != null)
 			{
 				foreach (var rootComponent in RootComponents)
 				{
+					Logger.AddingRootComponent(rootComponent.ComponentType?.FullName ?? string.Empty, rootComponent.Selector ?? string.Empty, rootComponent.Parameters?.Count ?? 0);
+
 					// Since the page isn't loaded yet, this will always complete synchronously
 					_ = rootComponent.AddToWebViewManagerAsync(_webviewManager);
 				}
 			}
 
-			_webviewManager.Navigate("/");
+			Logger.StartingInitialNavigation(VirtualView.StartPath);
+			_webviewManager.Navigate(VirtualView.StartPath);
 		}
 
-		protected virtual WebViewClient GetWebViewClient() =>
-			new WebKitWebViewClient(this);
+		internal IFileProvider CreateFileProvider(string contentRootDir)
+		{
+			return new AndroidMauiAssetFileProvider(Context.Assets, contentRootDir);
+		}
 
-		protected virtual WebChromeClient GetWebChromeClient() =>
-			new WebChromeClient();
+		/// <summary>
+		/// Calls the specified <paramref name="workItem"/> asynchronously and passes in the scoped services available to Razor components.
+		/// </summary>
+		/// <param name="workItem">The action to call.</param>
+		/// <returns>Returns a <see cref="Task"/> representing <c>true</c> if the <paramref name="workItem"/> was called, or <c>false</c> if it was not called because Blazor is not currently running.</returns>
+		/// <exception cref="ArgumentNullException">Thrown if <paramref name="workItem"/> is <c>null</c>.</exception>
+		public virtual async Task<bool> TryDispatchAsync(Action<IServiceProvider> workItem)
+		{
+			ArgumentNullException.ThrowIfNull(workItem);
+			if (_webviewManager is null)
+			{
+				return false;
+			}
+
+			return await _webviewManager.TryDispatchAsync(workItem);
+		}
 	}
 }

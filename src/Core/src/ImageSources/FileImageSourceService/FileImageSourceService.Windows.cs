@@ -40,16 +40,8 @@ namespace Microsoft.Maui
 			}
 		}
 
-		BitmapImage GetAppPackage(string filename)
+		static BitmapImage GetAppPackage(string filename)
 		{
-			var imageDirectory = Configuration?.GetImageDirectory();
-			if (!string.IsNullOrEmpty(imageDirectory))
-			{
-				var directory = Path.GetDirectoryName(filename);
-				if (string.IsNullOrEmpty(directory) || !Path.GetFullPath(directory).Equals(Path.GetFullPath(imageDirectory)))
-					filename = Path.Combine(imageDirectory, filename);
-			}
-
 			return new BitmapImage(new Uri("ms-appx:///" + filename));
 		}
 

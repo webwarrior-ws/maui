@@ -56,12 +56,12 @@ namespace Microsoft.Maui.DeviceTests
 				return new
 				{
 					ViewValue = editor.CharacterSpacing,
-					NativeViewValue = GetNativeCharacterSpacing(handler)
+					PlatformViewValue = GetNativeCharacterSpacing(handler)
 				};
 			});
 
 			Assert.Equal(xplatCharacterSpacing, values.ViewValue);
-			Assert.Equal(expectedValue, values.NativeViewValue, EmCoefficientPrecision);
+			Assert.Equal(expectedValue, values.PlatformViewValue, EmCoefficientPrecision);
 		}
 
 		[Fact(DisplayName = "Horizontal TextAlignment Initializes Correctly")]
@@ -80,13 +80,13 @@ namespace Microsoft.Maui.DeviceTests
 				return new
 				{
 					ViewValue = editorStub.HorizontalTextAlignment,
-					NativeViewValue = GetNativeHorizontalTextAlignment(handler)
+					PlatformViewValue = GetNativeHorizontalTextAlignment(handler)
 				};
 			});
 
 			Assert.Equal(xplatHorizontalTextAlignment, values.ViewValue);
 
-			(var gravity, var textAlignment) = values.NativeViewValue;
+			(var gravity, var textAlignment) = values.PlatformViewValue;
 
 			// Device Tests runner has RTL support enabled, so we expect TextAlignment values
 			// (If it didn't, we'd have to fall back to gravity)
@@ -96,21 +96,21 @@ namespace Microsoft.Maui.DeviceTests
 		}
 
 		static AppCompatEditText GetNativeEditor(EditorHandler editorHandler) =>
-			(AppCompatEditText)editorHandler.NativeView;
+			(AppCompatEditText)editorHandler.PlatformView;
 
 		string GetNativeText(EditorHandler editorHandler) =>
 			GetNativeEditor(editorHandler).Text;
 
-		static void SetNativeText(EditorHandler editorHandler, string text) =>
+		internal static void SetNativeText(EditorHandler editorHandler, string text) =>
 			GetNativeEditor(editorHandler).Text = text;
 
-		static int GetCursorStartPosition(EditorHandler editorHandler)
+		internal static int GetCursorStartPosition(EditorHandler editorHandler)
 		{
 			var control = GetNativeEditor(editorHandler);
 			return control.SelectionStart;
 		}
 
-		static void UpdateCursorStartPosition(EditorHandler editorHandler, int position)
+		internal static void UpdateCursorStartPosition(EditorHandler editorHandler, int position)
 		{
 			var control = GetNativeEditor(editorHandler);
 			control.SetSelection(position);
@@ -127,6 +127,9 @@ namespace Microsoft.Maui.DeviceTests
 			!GetNativeEditor(editorHandler).Focusable;
 
 		bool GetNativeIsTextPredictionEnabled(EditorHandler editorHandler) =>
+			GetNativeEditor(editorHandler).InputType.HasFlag(InputTypes.TextFlagAutoCorrect);
+
+		bool GetNativeIsSpellCheckEnabled(EditorHandler editorHandler) =>
 			!GetNativeEditor(editorHandler).InputType.HasFlag(InputTypes.TextFlagNoSuggestions);
 
 		double GetNativeCharacterSpacing(EditorHandler editorHandler)
@@ -154,6 +157,12 @@ namespace Microsoft.Maui.DeviceTests
 			return (textView.Gravity, textView.TextAlignment);
 		}
 
+		GravityFlags GetNativeVerticalTextAlignment(EditorHandler editorHandler) =>
+			GetNativeEditor(editorHandler).Gravity & GravityFlags.VerticalGravityMask;
+
+		GravityFlags GetNativeVerticalTextAlignment(TextAlignment textAlignment) =>
+			textAlignment.ToVerticalGravityFlags();
+
 		bool GetNativeIsNumericKeyboard(EditorHandler editorHandler)
 		{
 			var textView = GetNativeEditor(editorHandler);
@@ -168,7 +177,7 @@ namespace Microsoft.Maui.DeviceTests
 			var textView = GetNativeEditor(editorHandler);
 			var inputTypes = textView.InputType;
 
-			return inputTypes.HasFlag(InputTypes.ClassText) && inputTypes.HasFlag(InputTypes.TextFlagCapSentences) && inputTypes.HasFlag(InputTypes.TextFlagNoSuggestions);
+			return inputTypes.HasFlag(InputTypes.ClassText) && inputTypes.HasFlag(InputTypes.TextFlagCapSentences) && inputTypes.HasFlag(InputTypes.TextFlagAutoComplete);
 		}
 
 		bool GetNativeIsEmailKeyboard(EditorHandler editorHandler)
@@ -200,7 +209,7 @@ namespace Microsoft.Maui.DeviceTests
 			var textView = GetNativeEditor(editorHandler);
 			var inputTypes = textView.InputType;
 
-			return inputTypes.HasFlag(InputTypes.ClassText) && inputTypes.HasFlag(InputTypes.TextFlagCapSentences) && !inputTypes.HasFlag(InputTypes.TextFlagNoSuggestions);
+			return inputTypes.HasFlag(InputTypes.ClassText) && inputTypes.HasFlag(InputTypes.TextFlagCapSentences) && inputTypes.HasFlag(InputTypes.TextFlagAutoComplete);
 		}
 
 		int GetNativeCursorPosition(EditorHandler editorHandler)
@@ -208,7 +217,17 @@ namespace Microsoft.Maui.DeviceTests
 			var textView = GetNativeEditor(editorHandler);
 
 			if (textView != null)
-				return textView.SelectionEnd;
+				return textView.SelectionStart;
+
+			return -1;
+		}
+
+		int GetNativeSelectionLength(EditorHandler editorHandler)
+		{
+			var textView = GetNativeEditor(editorHandler);
+
+			if (textView != null)
+				return textView.SelectionEnd - textView.SelectionStart;
 
 			return -1;
 		}

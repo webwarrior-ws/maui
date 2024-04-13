@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Drawing;
 using CoreGraphics;
 using Microsoft.Maui.Controls.Platform;
@@ -7,6 +8,7 @@ using UIKit;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[Obsolete("Use Microsoft.Maui.Controls.Handlers.Compatibility.FrameRenderer instead")]
 	public class FrameRenderer : VisualElementRenderer<Frame>, ITabStop
 	{
 		UIView _actualView;
@@ -56,8 +58,9 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 		public override void TraitCollectionDidChange(UITraitCollection previousTraitCollection)
 		{
+#pragma warning disable CA1422 // Validate platform compatibility
 			base.TraitCollectionDidChange(previousTraitCollection);
-			// Make sure the control adheres to changes in UI theme
+#pragma warning restore CA1422 // Validate platform compatibility			// Make sure the control adheres to changes in UI theme
 			if (Forms.IsiOS13OrNewer && previousTraitCollection?.UserInterfaceStyle != TraitCollection.UserInterfaceStyle)
 				SetupLayer();
 		}
@@ -131,7 +134,10 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 		public override void LayoutSubviews()
 		{
 			if (_previousSize != Bounds.Size)
+			{
 				SetNeedsDisplay();
+				this.UpdateBackgroundLayer();
+			}
 
 			base.LayoutSubviews();
 		}

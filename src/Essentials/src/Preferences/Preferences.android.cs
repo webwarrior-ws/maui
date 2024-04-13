@@ -4,13 +4,13 @@ using Android.App;
 using Android.Content;
 using Android.Preferences;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.Storage
 {
-	public static partial class Preferences
+	class PreferencesImplementation : IPreferences
 	{
-		static readonly object locker = new object();
+		readonly object locker = new object();
 
-		static bool PlatformContainsKey(string key, string sharedName)
+		public bool ContainsKey(string key, string sharedName)
 		{
 			lock (locker)
 			{
@@ -21,7 +21,7 @@ namespace Microsoft.Maui.Essentials
 			}
 		}
 
-		static void PlatformRemove(string key, string sharedName)
+		public void Remove(string key, string sharedName)
 		{
 			lock (locker)
 			{
@@ -33,7 +33,7 @@ namespace Microsoft.Maui.Essentials
 			}
 		}
 
-		static void PlatformClear(string sharedName)
+		public void Clear(string sharedName)
 		{
 			lock (locker)
 			{
@@ -45,8 +45,10 @@ namespace Microsoft.Maui.Essentials
 			}
 		}
 
-		static void PlatformSet<T>(string key, T value, string sharedName)
+		public void Set<T>(string key, T value, string sharedName)
 		{
+			Preferences.CheckIsSupportedType<T>();
+
 			lock (locker)
 			{
 				using (var sharedPreferences = GetSharedPreferences(sharedName))
@@ -79,6 +81,9 @@ namespace Microsoft.Maui.Essentials
 							case float f:
 								editor.PutFloat(key, f);
 								break;
+							case DateTime dt:
+								editor.PutLong(key, dt.ToBinary());
+								break;
 						}
 					}
 					editor.Apply();
@@ -86,7 +91,7 @@ namespace Microsoft.Maui.Essentials
 			}
 		}
 
-		static T PlatformGet<T>(string key, T defaultValue, string sharedName)
+		public T Get<T>(string key, T defaultValue, string sharedName)
 		{
 			lock (locker)
 			{
@@ -121,7 +126,7 @@ namespace Microsoft.Maui.Essentials
 									if (!double.TryParse(savedDouble, NumberStyles.Number | NumberStyles.AllowExponent, CultureInfo.InvariantCulture, out var outDouble))
 									{
 										var maxString = Convert.ToString(double.MaxValue, CultureInfo.InvariantCulture);
-										outDouble = savedDouble.Equals(maxString) ? double.MaxValue : double.MinValue;
+										outDouble = savedDouble.Equals(maxString, StringComparison.Ordinal) ? double.MaxValue : double.MinValue;
 									}
 
 									value = outDouble;
@@ -133,6 +138,10 @@ namespace Microsoft.Maui.Essentials
 							case string s:
 								// the case when the string is not null
 								value = sharedPreferences.GetString(key, s);
+								break;
+							case DateTime dt:
+								var encodedValue = sharedPreferences.GetLong(key, dt.ToBinary());
+								value = DateTime.FromBinary(encodedValue);
 								break;
 						}
 					}
@@ -146,11 +155,15 @@ namespace Microsoft.Maui.Essentials
 		{
 			var context = Application.Context;
 
+#pragma warning disable CA1416 // Validate platform compatibility
+#pragma warning disable CA1422 // Validate platform compatibility
 			return string.IsNullOrWhiteSpace(sharedName) ?
 #pragma warning disable CS0618 // Type or member is obsolete
 				PreferenceManager.GetDefaultSharedPreferences(context) :
 #pragma warning restore CS0618 // Type or member is obsolete
 					context.GetSharedPreferences(sharedName, FileCreationMode.Private);
+#pragma warning restore CA1422 // Validate platform compatibility
+#pragma warning restore CA1416 // Validate platform compatibility
 		}
 	}
 }

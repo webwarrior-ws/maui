@@ -10,7 +10,7 @@ using Xamarin.UITest;
 using NUnit.Framework;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if UITEST
 	[Category(UITestCategories.CollectionView)]
@@ -24,8 +24,6 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 		protected override void Init()
 		{
 #if APP
-			Device.SetFlags(new List<string>(Device.Flags ?? new List<string>()) { "CollectionView_Experimental" });
-
 			PushAsync(new GalleryPages.CollectionViewGalleries.GroupingGalleries.ObservableGrouping());
 #endif
 		}

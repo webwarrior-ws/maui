@@ -1,8 +1,10 @@
+#nullable disable
 using System;
 using System.Globalization;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/TemplateBinding.xml" path="Type[@FullName='Microsoft.Maui.Controls.TemplateBinding']/Docs/*" />
 	[Obsolete("Use Binding.Source=RelativeBindingSource.TemplatedParent")]
 	public sealed class TemplateBinding : BindingBase
 	{
@@ -13,10 +15,12 @@ namespace Microsoft.Maui.Controls
 		BindingExpression _expression;
 		string _path;
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/TemplateBinding.xml" path="//Member[@MemberName='.ctor'][1]/Docs/*" />
 		public TemplateBinding()
 		{
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/TemplateBinding.xml" path="//Member[@MemberName='.ctor']/Docs/*" />
 		public TemplateBinding(string path, BindingMode mode = BindingMode.Default, IValueConverter converter = null, object converterParameter = null, string stringFormat = null)
 		{
 			if (path == null)
@@ -32,6 +36,7 @@ namespace Microsoft.Maui.Controls
 			StringFormat = stringFormat;
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/TemplateBinding.xml" path="//Member[@MemberName='Converter']/Docs/*" />
 		public IValueConverter Converter
 		{
 			get { return _converter; }
@@ -43,6 +48,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/TemplateBinding.xml" path="//Member[@MemberName='ConverterParameter']/Docs/*" />
 		public object ConverterParameter
 		{
 			get { return _converterParameter; }
@@ -54,6 +60,7 @@ namespace Microsoft.Maui.Controls
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/TemplateBinding.xml" path="//Member[@MemberName='Path']/Docs/*" />
 		public string Path
 		{
 			get { return _path; }
@@ -76,13 +83,13 @@ namespace Microsoft.Maui.Controls
 			_expression.Apply(fromTarget);
 		}
 
-		internal override async void Apply(object newContext, BindableObject bindObj, BindableProperty targetProperty, bool fromBindingContextChanged = false)
+		internal override async void Apply(object newContext, BindableObject bindObj, BindableProperty targetProperty, bool fromBindingContextChanged, SetterSpecificity specificity)
 		{
 			var view = bindObj as Element;
 			if (view == null)
 				throw new InvalidOperationException();
 
-			base.Apply(newContext, bindObj, targetProperty, fromBindingContextChanged);
+			base.Apply(newContext, bindObj, targetProperty, fromBindingContextChanged, specificity);
 
 			Element templatedParent = await TemplateUtilities.FindTemplatedParentAsync(view);
 			ApplyInner(templatedParent, bindObj, targetProperty);
@@ -90,7 +97,12 @@ namespace Microsoft.Maui.Controls
 
 		internal override BindingBase Clone()
 		{
-			return new TemplateBinding(Path, Mode) { Converter = Converter, ConverterParameter = ConverterParameter, StringFormat = StringFormat };
+			var clone = new TemplateBinding(Path, Mode) { Converter = Converter, ConverterParameter = ConverterParameter, StringFormat = StringFormat };
+
+			if (DebuggerHelper.DebuggerIsAttached && VisualDiagnostics.GetSourceInfo(this) is SourceInfo info)
+				VisualDiagnostics.RegisterSourceInfo(clone, info.SourceUri, info.LineNumber, info.LinePosition);
+
+			return clone;
 		}
 
 		internal override object GetSourceValue(object value, Type targetPropertyType)
@@ -122,7 +134,7 @@ namespace Microsoft.Maui.Controls
 			if (_expression == null && templatedParent != null)
 				_expression = new BindingExpression(this, SelfPath);
 
-			_expression?.Apply(templatedParent, bindableObject, targetProperty);
+			_expression?.Apply(templatedParent, bindableObject, targetProperty, SetterSpecificity.FromBinding);
 		}
 
 		BindingExpression GetBindingExpression(string path)

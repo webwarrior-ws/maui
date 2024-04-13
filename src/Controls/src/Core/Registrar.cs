@@ -1,15 +1,19 @@
+#nullable disable
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls.StyleSheets;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/InitializationFlags.xml" path="Type[@FullName='Microsoft.Maui.Controls.InitializationFlags']/Docs/*" />
 	[Flags]
 	public enum InitializationFlags : long
 	{
+		/// <include file="../../docs/Microsoft.Maui.Controls/InitializationFlags.xml" path="//Member[@MemberName='DisableCss']/Docs/*" />
 		DisableCss = 1 << 0,
 		SkipRenderers = 1 << 1,
 	}
@@ -22,7 +26,7 @@ namespace Microsoft.Maui.Controls.Internals
 	{
 		readonly Dictionary<Type, Dictionary<Type, (Type target, short priority)>> _handlers = new Dictionary<Type, Dictionary<Type, (Type target, short priority)>>();
 		static Type _defaultVisualType = typeof(VisualMarker.DefaultVisual);
-		static Type _materialVisualType = typeof(VisualMarker.MaterialVisual);
+		//static Type _materialVisualType = typeof(VisualMarker.MaterialVisual);
 
 		static Type[] _defaultVisualRenderers = new[] { _defaultVisualType };
 
@@ -79,6 +83,8 @@ namespace Microsoft.Maui.Controls.Internals
 			if (handlerType == null)
 				return null;
 
+			Registrar.CheckIfRendererIsCompatibilityRenderer(handlerType);
+
 			object handler = DependencyResolver.ResolveOrCreate(handlerType);
 
 			return (TRegistrable)handler;
@@ -94,6 +100,8 @@ namespace Microsoft.Maui.Controls.Internals
 			else
 			{
 				Type handlerType = GetHandlerType(type, visual?.GetType() ?? _defaultVisualType);
+				Registrar.CheckIfRendererIsCompatibilityRenderer(handlerType);
+
 				if (handlerType != null)
 					returnValue = (TRegistrable)DependencyResolver.ResolveOrCreate(handlerType, source, visual?.GetType(), args);
 			}
@@ -143,8 +151,8 @@ namespace Microsoft.Maui.Controls.Internals
 			if (_handlers.TryGetValue(viewType, out Dictionary<Type, (Type target, short priority)> visualRenderers))
 				if (visualRenderers.TryGetValue(visualType, out (Type target, short priority) specificTypeRenderer))
 					return specificTypeRenderer.target;
-				else if (visualType == _materialVisualType)
-					VisualMarker.MaterialCheck();
+			//else if (visualType == _materialVisualType)
+			//	VisualMarker.MaterialCheck();
 
 			if (visualType != _defaultVisualType && visualRenderers != null)
 				if (visualRenderers.TryGetValue(_defaultVisualType, out (Type target, short priority) specificTypeRenderer))
@@ -184,7 +192,7 @@ namespace Microsoft.Maui.Controls.Internals
 					if (visualRenderers.TryGetValue(_defaultVisualType, out handlerType))
 						return true;
 
-				viewType = viewType.GetTypeInfo().BaseType;
+				viewType = viewType.BaseType;
 			}
 
 			handlerType = (null, 0);
@@ -208,7 +216,7 @@ namespace Microsoft.Maui.Controls.Internals
 					  visualRenderers.ContainsKey(_defaultVisualType)))
 				{
 					// get RenderWith attribute for just this type, do not inherit attributes from base types
-					var attribute = viewType.GetTypeInfo().GetCustomAttributes<RenderWithAttribute>(false).FirstOrDefault();
+					var attribute = viewType.GetCustomAttributes<RenderWithAttribute>(false).FirstOrDefault();
 					if (attribute == null)
 					{
 						// TODO this doesn't appear to do anything. Register just returns as a NOOP if the renderer is null
@@ -221,7 +229,7 @@ namespace Microsoft.Maui.Controls.Internals
 						if (specificTypeRenderer.Name.StartsWith("_", StringComparison.Ordinal))
 						{
 							// TODO: Remove attribute2 once renderer names have been unified across all platforms
-							var attribute2 = specificTypeRenderer.GetTypeInfo().GetCustomAttribute<RenderWithAttribute>();
+							var attribute2 = specificTypeRenderer.GetCustomAttribute<RenderWithAttribute>();
 							if (attribute2 != null)
 							{
 								for (int i = 0; i < attribute2.SupportedVisuals.Length; i++)
@@ -241,7 +249,7 @@ namespace Microsoft.Maui.Controls.Internals
 							{
 								Register(viewType, null, new[] { visualType }); // Cache this result so we don't work through this chain again
 
-								viewType = viewType.GetTypeInfo().BaseType;
+								viewType = viewType.BaseType;
 								continue;
 							}
 						}
@@ -250,11 +258,12 @@ namespace Microsoft.Maui.Controls.Internals
 					}
 				}
 
-				viewType = viewType.GetTypeInfo().BaseType;
+				viewType = viewType.BaseType;
 			}
 		}
 	}
 
+	/// <include file="../../docs/Microsoft.Maui.Controls.Internals/Registrar.xml" path="Type[@FullName='Microsoft.Maui.Controls.Internals.Registrar' and position()=1]/Docs/*" />
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	public static class Registrar
 	{
@@ -263,21 +272,24 @@ namespace Microsoft.Maui.Controls.Internals
 			Registered = new Registrar<IRegisterable>();
 		}
 
-		internal static Dictionary<string, Type> Effects { get; } = new Dictionary<string, Type>();
+		internal static Dictionary<string, Type> Effects { get; } = new(StringComparer.Ordinal);
 
 		internal static Dictionary<string, IList<StylePropertyAttribute>> StyleProperties => LazyStyleProperties.Value;
 
 		static bool DisableCSS = false;
 		static readonly Lazy<Dictionary<string, IList<StylePropertyAttribute>>> LazyStyleProperties = new Lazy<Dictionary<string, IList<StylePropertyAttribute>>>(LoadStyleSheets);
 
+		/// <include file="../../docs/Microsoft.Maui.Controls.Internals/Registrar.xml" path="//Member[@MemberName='ExtraAssemblies']/Docs/*" />
 		public static IEnumerable<Assembly> ExtraAssemblies { get; set; }
 
+		/// <include file="../../docs/Microsoft.Maui.Controls.Internals/Registrar.xml" path="//Member[@MemberName='Registered']/Docs/*" />
 		public static Registrar<IRegisterable> Registered { get; internal set; }
 
 		//typeof(ExportRendererAttribute);
 		//typeof(ExportCellAttribute);
 		//typeof(ExportImageSourceHandlerAttribute);
 		//TODO this is no longer used?
+		/// <include file="../../docs/Microsoft.Maui.Controls.Internals/Registrar.xml" path="//Member[@MemberName='RegisterRenderers']/Docs/*" />
 		public static void RegisterRenderers(HandlerAttribute[] attributes)
 		{
 			var length = attributes.Length;
@@ -298,6 +310,7 @@ namespace Microsoft.Maui.Controls.Internals
 			RendererToHandlerShim = handlerShim;
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls.Internals/Registrar.xml" path="//Member[@MemberName='RegisterStylesheets']/Docs/*" />
 		public static void RegisterStylesheets(InitializationFlags flags)
 		{
 			if ((flags & InitializationFlags.DisableCss) == InitializationFlags.DisableCss)
@@ -306,10 +319,10 @@ namespace Microsoft.Maui.Controls.Internals
 
 		static Dictionary<string, IList<StylePropertyAttribute>> LoadStyleSheets()
 		{
-			var properties = new Dictionary<string, IList<StylePropertyAttribute>>();
+			var properties = new Dictionary<string, IList<StylePropertyAttribute>>(StringComparer.Ordinal);
 			if (DisableCSS)
 				return properties;
-			var assembly = typeof(StylePropertyAttribute).GetTypeInfo().Assembly;
+			var assembly = typeof(StylePropertyAttribute).Assembly;
 			var styleAttributes = assembly.GetCustomAttributesSafe(typeof(StylePropertyAttribute));
 			var stylePropertiesLength = styleAttributes?.Length ?? 0;
 			for (var i = 0; i < stylePropertiesLength; i++)
@@ -345,6 +358,7 @@ namespace Microsoft.Maui.Controls.Internals
 			}
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls.Internals/Registrar.xml" path="//Member[@MemberName='RegisterEffects']/Docs/*" />
 		public static void RegisterEffects(string resolutionName, ExportEffectAttribute[] effectAttributes)
 		{
 			var exportEffectsLength = effectAttributes.Length;
@@ -360,19 +374,28 @@ namespace Microsoft.Maui.Controls.Internals
 			Effects[resolutionName + "." + id] = effectType;
 		}
 
-		public static void RegisterAll(Type[] attrTypes)
+		/// <include file="../../docs/Microsoft.Maui.Controls.Internals/Registrar.xml" path="//Member[@MemberName='RegisterAll'][1]/Docs/*" />
+		[Obsolete]
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+		public static void RegisterAll(Type[] attrTypes, IFontRegistrar fontRegistrar = null)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 		{
-			RegisterAll(attrTypes, default(InitializationFlags));
+			RegisterAll(attrTypes, default(InitializationFlags), fontRegistrar);
 		}
 
-		public static void RegisterAll(Type[] attrTypes, InitializationFlags flags)
+		/// <include file="../../docs/Microsoft.Maui.Controls.Internals/Registrar.xml" path="//Member[@MemberName='RegisterAll'][2]/Docs/*" />
+		[Obsolete]
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+		public static void RegisterAll(Type[] attrTypes, InitializationFlags flags, IFontRegistrar fontRegistrar = null)
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 		{
 			RegisterAll(
-				Device.GetAssemblies(),
-				Device.PlatformServices.GetType().GetTypeInfo().Assembly,
+				AppDomain.CurrentDomain.GetAssemblies(),
+				Device.DefaultRendererAssembly,
 				attrTypes,
 				flags,
-				null);
+				null,
+				fontRegistrar);
 		}
 
 		internal static void RegisterAll(
@@ -380,21 +403,26 @@ namespace Microsoft.Maui.Controls.Internals
 			Assembly defaultRendererAssembly,
 			Type[] attrTypes,
 			InitializationFlags flags,
-			Action<(Type handler, Type target)> viewRegistered)
+			Action<(Type handler, Type target)> viewRegistered,
+			IFontRegistrar fontRegistrar = null)
 		{
 			Profile.FrameBegin();
-
 
 			if (ExtraAssemblies != null)
 				assemblies = assemblies.Union(ExtraAssemblies).ToArray();
 
-			int indexOfExecuting = Array.IndexOf(assemblies, defaultRendererAssembly);
-
-			if (indexOfExecuting > 0)
+			if (defaultRendererAssembly != null)
 			{
-				assemblies[indexOfExecuting] = assemblies[0];
-				assemblies[0] = defaultRendererAssembly;
+				int indexOfExecuting = Array.IndexOf(assemblies, defaultRendererAssembly);
+				if (indexOfExecuting > 0)
+				{
+					assemblies[indexOfExecuting] = assemblies[0];
+					assemblies[0] = defaultRendererAssembly;
+				}
 			}
+
+			if (fontRegistrar == null)
+				fontRegistrar = Application.Current?.FindMauiContext()?.Services?.GetService<IFontRegistrar>();
 
 			// Don't use LINQ for performance reasons
 			// Naive implementation can easily take over a second to run
@@ -418,7 +446,7 @@ namespace Microsoft.Maui.Controls.Internals
 						var attribute = a as HandlerAttribute;
 						if (attribute == null && (a is ExportFontAttribute fa))
 						{
-							CompatServiceProvider.RegisterFont(fa.FontFileName, fa.Alias, assembly);
+							fontRegistrar?.Register(fa.FontFileName, fa.Alias, assembly);
 						}
 						else
 						{
@@ -442,6 +470,17 @@ namespace Microsoft.Maui.Controls.Internals
 			DependencyService.Initialize(assemblies);
 
 			Profile.FrameEnd();
+		}
+
+		internal static void CheckIfRendererIsCompatibilityRenderer(Type rendererType)
+		{
+			if (typeof(IRegisterable).IsAssignableFrom(rendererType))
+				return;
+
+			if (typeof(IElementHandler).IsAssignableFrom(rendererType))
+			{
+				throw new InvalidOperationException($"{rendererType} will work with AddHandler. Please use AddHandler instead of AddCompatibilityRenderer.");
+			}
 		}
 	}
 }

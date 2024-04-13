@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -5,6 +6,7 @@ using Microsoft.Maui.Controls.Xaml;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/TypeTypeConverter.xml" path="Type[@FullName='Microsoft.Maui.Controls.TypeTypeConverter']/Docs/*" />
 	[ProvideCompiled("Microsoft.Maui.Controls.XamlC.TypeTypeConverter")]
 	public sealed class TypeTypeConverter : TypeConverter, IExtendedTypeConverter
 	{

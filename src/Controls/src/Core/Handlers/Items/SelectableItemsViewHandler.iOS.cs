@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Foundation;
@@ -21,12 +22,12 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 		public static void MapSelectedItem(SelectableItemsViewHandler<TItemsView> handler, SelectableItemsView itemsView)
 		{
-			(handler.Controller as SelectableItemsViewController<TItemsView>)?.UpdateNativeSelection();
+			(handler.Controller as SelectableItemsViewController<TItemsView>)?.UpdatePlatformSelection();
 		}
 
 		public static void MapSelectedItems(SelectableItemsViewHandler<TItemsView> handler, SelectableItemsView itemsView)
 		{
-			(handler.Controller as SelectableItemsViewController<TItemsView>)?.UpdateNativeSelection();
+			(handler.Controller as SelectableItemsViewController<TItemsView>)?.UpdatePlatformSelection();
 		}
 
 		public static void MapSelectionMode(SelectableItemsViewHandler<TItemsView> handler, SelectableItemsView itemsView)

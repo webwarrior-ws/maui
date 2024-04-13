@@ -1,4 +1,8 @@
-﻿using Microsoft.Maui.Hosting;
+﻿using System.Collections.Generic;
+using System.Reflection;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.DeviceTests;
+using Microsoft.Maui.Hosting;
 using Microsoft.Maui.LifecycleEvents;
 using Microsoft.Maui.TestUtils.DeviceTests.Runners;
 
@@ -6,35 +10,18 @@ namespace Microsoft.Maui.MauiBlazorWebView.DeviceTests
 {
 	public static class MauiProgram
 	{
-#if __ANDROID__
-		public static Android.Content.Context CurrentContext { get; private set; }
+#if ANDROID
+		public static Android.Content.Context CurrentContext => MauiProgramDefaults.DefaultContext;
+#elif WINDOWS
+		public static Microsoft.UI.Xaml.Window CurrentWindow => MauiProgramDefaults.DefaultWindow;
 #endif
-		public static MauiApp CreateMauiApp()
-		{
-			var x = MauiApp.CreateBuilder();
-			x.ConfigureLifecycleEvents(life =>
-			{
-#if __ANDROID__
-				life.AddAndroid(android =>
-				{
-					android.OnCreate((a, b) => CurrentContext = a);
-				});
-#endif
-			});
 
-			x.ConfigureTests(new TestOptions
+		public static IApplication DefaultTestApp => MauiProgramDefaults.DefaultTestApp;
+
+		public static MauiApp CreateMauiApp() =>
+			MauiProgramDefaults.CreateMauiApp(new List<Assembly>()
 			{
-				Assemblies =
-				{
-					typeof(MauiProgram).Assembly
-				},
-			})
-			.UseHeadlessRunner(new HeadlessRunnerOptions
-			{
-				RequiresUIContext = true,
-			})
-			.UseVisualRunner();
-			return x.Build();
-		}
+				typeof(MauiProgram).Assembly
+			});
 	}
 }

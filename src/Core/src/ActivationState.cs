@@ -22,6 +22,12 @@ namespace Microsoft.Maui
 		{
 			LaunchActivatedEventArgs = launchActivatedEventArgs;
 		}
+#elif TIZEN
+		public ActivationState(IMauiContext context, Tizen.Applications.Bundle? savedInstance)
+			: this(context, GetPersistedState(savedInstance))
+		{
+			SavedInstance = savedInstance;
+		}
 #endif
 
 		public ActivationState(IMauiContext context)
@@ -44,10 +50,12 @@ namespace Microsoft.Maui
 		public Android.OS.Bundle? SavedInstance { get; }
 #elif WINDOWS
 		public UI.Xaml.LaunchActivatedEventArgs? LaunchActivatedEventArgs { get; }
+#elif TIZEN
+		public Tizen.Applications.Bundle? SavedInstance { get; }
 #endif
 
 #if __ANDROID__
-		static IPersistedState GetPersistedState(Android.OS.Bundle? state)
+		static PersistedState GetPersistedState(Android.OS.Bundle? state)
 		{
 			var dict = new PersistedState();
 
@@ -56,14 +64,16 @@ namespace Microsoft.Maui
 			{
 				foreach (var k in keyset)
 				{
+#pragma warning disable 618 // TODO: one day use the API 33+ version: https://developer.android.com/reference/kotlin/android/os/BaseBundle?hl=en#get
 					dict[k] = state?.Get(k)?.ToString();
+#pragma warning restore 618
 				}
 			}
 
 			return dict;
 		}
 #elif __IOS__
-		static IPersistedState GetPersistedState(Foundation.NSDictionary[]? states)
+		static PersistedState GetPersistedState(Foundation.NSDictionary[]? states)
 		{
 			var state = new PersistedState();
 
@@ -82,6 +92,22 @@ namespace Microsoft.Maui
 			}
 
 			return state;
+		}
+#elif TIZEN
+		static PersistedState GetPersistedState(Tizen.Applications.Bundle? state)
+		{
+			var dict = new PersistedState();
+
+			var keyset = state?.Keys;
+			if (keyset != null)
+			{
+				foreach (var k in keyset)
+				{
+					dict[k] = state?.GetItem<string>(k);
+				}
+			}
+
+			return dict;
 		}
 #endif
 	}

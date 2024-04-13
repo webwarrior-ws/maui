@@ -6,15 +6,16 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Text;
 using Microsoft.Graphics.Canvas.UI.Xaml;
+using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Storage;
 using WImageSource = Microsoft.UI.Xaml.Media.ImageSource;
 
 namespace Microsoft.Maui
 {
 	public partial class FontImageSourceService
 	{
-		const float BaseLogicalDpi = 96.0f;
-
 		public override Task<IImageSourceServiceResult<WImageSource>?> GetImageSourceAsync(IImageSource imageSource, float scale = 1, CancellationToken cancellationToken = default) =>
 			GetImageSourceAsync((IFontImageSource)imageSource, scale, cancellationToken);
 
@@ -25,13 +26,21 @@ namespace Microsoft.Maui
 
 			try
 			{
+				// TODO: The DPI not working as the view is not respecting the
+				//       value, so just reset to 1 to keep the correct size.
+				//       https://github.com/dotnet/maui/issues/1000
+				scale = 1;
+
 				// TODO: use a cached way
 				var image = RenderImageSource(imageSource, scale);
 
 				if (image == null)
 					throw new InvalidOperationException("Unable to generate font image.");
 
-				var result = new ImageSourceServiceResult(image, true);
+				// TODO: The DPI not working as the view is not respecting the
+				//       value, so mark this image as non-resolution-dependent.
+				//       https://github.com/dotnet/maui/issues/1000
+				var result = new ImageSourceServiceResult(image, false);
 
 				return FromResult(result);
 			}
@@ -49,9 +58,10 @@ namespace Microsoft.Maui
 		{
 			// TODO: The DPI not working as the view is not respecting the
 			//       value, so just reset to 1 to keep the correct size.
+			//       https://github.com/dotnet/maui/issues/1000
 			scale = 1;
 
-			var dpi = scale * BaseLogicalDpi;
+			var dpi = scale * DeviceDisplay.BaseLogicalDpi;
 
 			var fontFamily = GetFontSource(imageSource);
 			var fontSize = (float)imageSource.Font.Size;
@@ -106,11 +116,23 @@ namespace Microsoft.Maui
 
 				foreach (var family in allFamilies)
 				{
-					if (family.Contains(source))
+					if (family.Contains(source, StringComparison.Ordinal))
 					{
 						fontSource = family;
 						break;
 					}
+				}
+			}
+
+			// unpackaged apps can't load files using packaged schemes
+			if (!AppInfoUtils.IsPackagedApp)
+			{
+				var fontUri = new Uri(fontSource, UriKind.RelativeOrAbsolute);
+			
+				var path = fontUri.AbsolutePath.TrimStart('/');
+				if (FileSystemUtils.TryGetAppPackageFileUri(path, out var uri))
+				{
+					fontSource = uri + fontUri.Fragment;
 				}
 			}
 

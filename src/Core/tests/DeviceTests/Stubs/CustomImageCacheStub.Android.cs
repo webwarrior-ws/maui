@@ -4,7 +4,7 @@ using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.DeviceTests.Stubs
 {
-	class CustomImageCacheStub
+	public class CustomImageCacheStub
 	{
 		readonly Dictionary<Color, (ColorDrawable Drawable, int Count)> _cache = new Dictionary<Color, (ColorDrawable, int)>();
 
@@ -18,7 +18,7 @@ namespace Microsoft.Maui.DeviceTests.Stubs
 				return cacheItem.Drawable;
 			}
 
-			var drawable = new ColorDrawable(color.ToNative());
+			var drawable = new ColorDrawable(color.ToPlatform());
 			_cache[color] = (drawable, 1);
 			return drawable;
 		}
@@ -30,7 +30,7 @@ namespace Microsoft.Maui.DeviceTests.Stubs
 				if (cacheItem.Count == 1)
 					_cache.Remove(color);
 				else
-					_cache[color] = (cacheItem.Drawable, cacheItem.Count + 1);
+					_cache[color] = (cacheItem.Drawable, cacheItem.Count - 1);
 			}
 		}
 	}

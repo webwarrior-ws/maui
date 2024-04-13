@@ -55,7 +55,15 @@ namespace Microsoft.Maui.Controls.MSBuild.UnitTests
 				}";
 		}
 
-		const string TargetFramework = "net6.0";
+		static string GetTfm()
+		{
+			// Returns something like `.NET 6.0.1`
+			var fd = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
+			if (Version.TryParse(System.Text.RegularExpressions.Regex.Match(fd, @"\d+\.\d+\.\d+")?.Value, out var version))
+				return $"net{version.Major}.{version.Minor}";
+			return "net7.0";
+		}
+
 		string testDirectory;
 		string tempDirectory;
 		string intermediateDirectory;
@@ -64,35 +72,23 @@ namespace Microsoft.Maui.Controls.MSBuild.UnitTests
 		public void SetUp()
 		{
 			testDirectory = TestContext.CurrentContext.TestDirectory;
-			tempDirectory = IOPath.Combine(testDirectory, "temp", TestContext.CurrentContext.Test.Name);
-			intermediateDirectory = IOPath.Combine(tempDirectory, "obj", "Debug", TargetFramework);
+			tempDirectory = IOPath.Combine(testDirectory, "temp",
+				TestContext.CurrentContext.Test.Name
+					.Replace('"', '_')
+					.Replace('(', '_')
+					.Replace(')', '_'));
+			intermediateDirectory = IOPath.Combine(tempDirectory, "obj", "Debug", GetTfm());
 			Directory.CreateDirectory(tempDirectory);
 
 			//copy _Directory.Build.[props|targets] in test/
 			var props = IOPath.Combine(testDirectory, "..", "..", "..", "MSBuild", "_Directory.Build.props");
 			var targets = IOPath.Combine(testDirectory, "..", "..", "..", "MSBuild", "_Directory.Build.targets");
+
 			if (!File.Exists(props))
 			{
 				//NOTE: VSTS may be running tests in a staging directory, so we can use an environment variable to find the source
 				//https://docs.microsoft.com/en-us/vsts/build-release/concepts/definitions/build/variables?view=vsts&tabs=batch#buildsourcesdirectory
-				var sourcesDirectory = Environment.GetEnvironmentVariable("BUILD_SOURCESDIRECTORY");
-				if (!string.IsNullOrEmpty(sourcesDirectory))
-				{
-					props = IOPath.Combine(sourcesDirectory, "Microsoft.Maui.Controls.Xaml.UnitTests", "MSBuild", "_Directory.Build.props");
-					targets = IOPath.Combine(sourcesDirectory, "Microsoft.Maui.Controls.Xaml.UnitTests", "MSBuild", "_Directory.Build.targets");
-
-					if (!File.Exists(props))
-						Assert.Fail("Unable to find _Directory.Build.props at path: " + props);
-				}
-				else
-					Assert.Fail("Unable to find _Directory.Build.props at path: " + props);
-
-				Directory.CreateDirectory(IOPath.Combine(testDirectory, "..", "..", "..", "..", ".nuspec"));
-				foreach (var file in Directory.GetFiles(IOPath.Combine(sourcesDirectory, ".nuspec"), "*.targets"))
-					File.Copy(file, IOPath.Combine(testDirectory, "..", "..", "..", "..", ".nuspec", IOPath.GetFileName(file)), true);
-				foreach (var file in Directory.GetFiles(IOPath.Combine(sourcesDirectory, ".nuspec"), "*.props"))
-					File.Copy(file, IOPath.Combine(testDirectory, "..", "..", "..", "..", ".nuspec", IOPath.GetFileName(file)), true);
-				File.Copy(IOPath.Combine(sourcesDirectory, "Directory.Build.props"), IOPath.Combine(testDirectory, "..", "..", "..", "..", "Directory.Build.props"), true);
+				Assert.Fail("Unable to find _Directory.Build.props at path: " + props);
 			}
 
 			File.Copy(props, IOPath.Combine(tempDirectory, "Directory.Build.props"), true);
@@ -134,11 +130,10 @@ namespace Microsoft.Maui.Controls.MSBuild.UnitTests
 
 			var propertyGroup = NewElement("PropertyGroup");
 			project.WithAttribute("Sdk", "Microsoft.NET.Sdk");
-			propertyGroup.Add(NewElement("TargetFramework").WithValue(TargetFramework));
+			propertyGroup.Add(NewElement("TargetFramework").WithValue(GetTfm()));
 			//NOTE: we don't want SDK-style projects to auto-add files, tests should be able to control this
 			propertyGroup.Add(NewElement("EnableDefaultCompileItems").WithValue("False"));
 			propertyGroup.Add(NewElement("EnableDefaultEmbeddedResourceItems").WithValue("False"));
-			propertyGroup.Add(NewElement("_MauiBuildTasksLocation").WithValue($"{testDirectory}\\"));
 			project.Add(propertyGroup);
 
 			var itemGroup = NewElement("ItemGroup");
@@ -268,21 +263,28 @@ namespace Microsoft.Maui.Controls.MSBuild.UnitTests
 
 		// Tests the MauiXamlCValidateOnly=True MSBuild property
 		[Test]
-		public void ValidateOnly()
+		public void ValidateOnly([Values("Debug", "Release", "ReleaseProd")] string configuration)
 		{
 			var project = NewProject();
 			project.Add(AddFile("MainPage.xaml", "MauiXaml", Xaml.MainPage));
 			var projectFile = IOPath.Combine(tempDirectory, "test.csproj");
 			project.Save(projectFile);
-			Build(projectFile, additionalArgs: "-p:MauiXamlCValidateOnly=True");
+			intermediateDirectory = IOPath.Combine(tempDirectory, "obj", configuration, GetTfm());
+			Build(projectFile, additionalArgs: $"-c {configuration}");
 
 			var testDll = IOPath.Combine(intermediateDirectory, "test.dll");
 			AssertExists(testDll, nonEmpty: true);
-			using (var assembly = AssemblyDefinition.ReadAssembly(testDll))
+			using var assembly = AssemblyDefinition.ReadAssembly(testDll);
+			var resources = assembly.MainModule.Resources.OfType<EmbeddedResource>().Select(e => e.Name).ToArray();
+			if (configuration == "Debug")
 			{
 				// XAML files should remain as EmbeddedResource
-				var resources = assembly.MainModule.Resources.OfType<EmbeddedResource>().Select(e => e.Name).ToArray();
 				CollectionAssert.Contains(resources, "test.MainPage.xaml");
+			}
+			else
+			{
+				// XAML files should *not* remain as EmbeddedResource
+				CollectionAssert.DoesNotContain(resources, "test.MainPage.xaml");
 			}
 		}
 
@@ -291,7 +293,7 @@ namespace Microsoft.Maui.Controls.MSBuild.UnitTests
 		public void ValidateOnly_WithErrors()
 		{
 			var project = NewProject();
-			project.Add(AddFile("MainPage.xaml", "MauiXaml", Xaml.MainPage.Replace("</ContentPage>", "<NotARealThing/></ContentPage>")));
+			project.Add(AddFile("MainPage.xaml", "MauiXaml", Xaml.MainPage.Replace("</ContentPage>", "<NotARealThing/></ContentPage>", StringComparison.Ordinal)));
 			var projectFile = IOPath.Combine(tempDirectory, "test.csproj");
 			project.Save(projectFile);
 
@@ -492,7 +494,7 @@ namespace Microsoft.Maui.Controls.MSBuild.UnitTests
 			var projectFile = IOPath.Combine(tempDirectory, "test.csproj");
 			project.Save(projectFile);
 			var log = Build(projectFile, verbosity: "diagnostic");
-			Assert.IsTrue(log.Contains("Target \"XamlC\" skipped"), "XamlC should be skipped if there are no .xaml files.");
+			Assert.IsTrue(log.Contains("Target \"XamlC\" skipped", StringComparison.Ordinal), "XamlC should be skipped if there are no .xaml files.");
 		}
 	}
 }

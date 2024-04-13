@@ -1,9 +1,10 @@
 ﻿#nullable enable
 using System;
+using System.Diagnostics.CodeAnalysis;
 using CoreAnimation;
 using CoreGraphics;
 using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Graphics.Native;
+using Microsoft.Maui.Graphics.Platform;
 using ObjCRuntime;
 using UIKit;
 
@@ -12,7 +13,7 @@ namespace Microsoft.Maui.Platform
 	public class MauiCALayer : CALayer
 	{
 		CGRect _bounds;
-
+		[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "IShape is a non-NSObject in MAUI.")]
 		IShape? _shape;
 
 		UIColor? _backgroundColor;
@@ -90,7 +91,7 @@ namespace Microsoft.Maui.Platform
 			if (solidPaint.Color == null)
 				SetDefaultBackgroundColor();
 			else
-				_backgroundColor = solidPaint.Color.ToNative();
+				_backgroundColor = solidPaint.Color.ToPlatform();
 
 			_background = null;
 
@@ -145,7 +146,7 @@ namespace Microsoft.Maui.Platform
 		{
 			_strokeColor = solidPaint.Color == null
 				? UIColor.Clear
-				: solidPaint.Color.ToNative();
+				: solidPaint.Color.ToPlatform();
 
 			_stroke = null;
 
@@ -311,7 +312,8 @@ namespace Microsoft.Maui.Platform
 			if (IsBorderDashed())
 				ctx.SetLineDash(_strokeDashOffset * _strokeThickness, _strokeDash);
 
-			ctx.SetLineWidth(_strokeThickness);
+			// The Stroke is inner and we are clipping the outer, for that reason, we use the double to get the correct value.
+			ctx.SetLineWidth(2 * _strokeThickness);
 
 			ctx.SetLineCap(_strokeLineCap);
 			ctx.SetLineJoin(_strokeLineJoin);

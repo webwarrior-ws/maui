@@ -1,20 +1,21 @@
 using System.ComponentModel;
 using System.Linq;
+using Microsoft.Maui.Controls.Platform;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Shapes;
 using WBrush = Microsoft.UI.Xaml.Media.Brush;
 using WColor = Windows.UI.Color;
-using WGrid = Microsoft.UI.Xaml.Controls.Grid;
 using WEllipse = Microsoft.UI.Xaml.Shapes.Ellipse;
+using WGrid = Microsoft.UI.Xaml.Controls.Grid;
 using WRectangle = Microsoft.UI.Xaml.Shapes.Rectangle;
 using WSolidColorBrush = Microsoft.UI.Xaml.Media.SolidColorBrush;
 using WVisualStateManager = Microsoft.UI.Xaml.VisualStateManager;
-using Microsoft.Maui.Controls.Platform;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class SwitchRenderer : ViewRenderer<Switch, ToggleSwitch>
 	{
 		const string ToggleSwitchCommonStates = "CommonStates";
@@ -202,7 +203,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 								if (!Element.ThumbColor.IsDefault())
 								{
-									var brush = Element.ThumbColor.ToNative();
+									var brush = Element.ThumbColor.ToPlatform();
 									brush.Opacity = _originalThumbOnBrush.Opacity;
 									frame.Value = brush;
 								}
@@ -221,7 +222,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 					_originalThumbOnBrush = thumb.Fill;
 
 				if (!Element.ThumbColor.IsDefault())
-					thumb.Fill = Element.ThumbColor.ToNative();
+					thumb.Fill = Element.ThumbColor.ToPlatform();
 				else
 					thumb.Fill = _originalThumbOnBrush;
 			}

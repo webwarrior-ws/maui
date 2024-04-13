@@ -1,12 +1,12 @@
 
 #pragma warning disable CS8305
 
+using Microsoft.Maui.Controls.Platform;
+using Microsoft.Maui.Controls.Shapes;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Hosting;
-using Microsoft.Maui.Controls.Shapes;
 using WRectangleGeometry = Microsoft.UI.Xaml.Media.RectangleGeometry;
-using Microsoft.Maui.Controls.Platform;
 
 #if UWP_18362
 using WVector2 = System.Numerics.Vector2;
@@ -18,7 +18,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 	{
 		public static void Clip(this FrameworkElement frameworkElement, Geometry geometry)
 		{
-			var wGeometry = geometry.ToNative();
+			var wGeometry = geometry.ToPlatform();
 
 			if (wGeometry is WRectangleGeometry wRectangleGeometry && frameworkElement.Clip != wRectangleGeometry)
 				frameworkElement.Clip = wRectangleGeometry;

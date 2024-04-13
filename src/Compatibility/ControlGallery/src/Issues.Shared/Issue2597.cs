@@ -1,12 +1,13 @@
 ﻿using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 
 #if UITEST
 using Xamarin.UITest;
 using NUnit.Framework;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if UITEST
 	[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.Github5000)]
@@ -45,7 +46,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 			};
 
 			// Accomodate iPhone status bar.
-			Padding = Device.RuntimePlatform == Device.iOS ? new Thickness(10, 20, 10, 5) : new Thickness(10, 0, 10, 5);
+			Padding = DeviceInfo.Platform == DevicePlatform.iOS ? new Thickness(10, 20, 10, 5) : new Thickness(10, 0, 10, 5);
 
 			// Build the page.
 			Content = new StackLayout
@@ -67,6 +68,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 #if UITEST
 		[Test]
 		[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.UwpIgnore)]
+		[Compatibility.UITests.FailsOnMauiIOS]
 		public void Issue2597Test()
 		{
 #if __IOS__

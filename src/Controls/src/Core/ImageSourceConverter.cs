@@ -1,9 +1,13 @@
+#nullable disable
 using System;
 using System.ComponentModel;
 using System.Globalization;
+using Microsoft.Maui.Controls.Xaml;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/ImageSourceConverter.xml" path="Type[@FullName='Microsoft.Maui.Controls.ImageSourceConverter']/Docs/*" />
+	[ProvideCompiled("Microsoft.Maui.Controls.XamlC.ImageSourceTypeConverter")]
 	public sealed class ImageSourceConverter : TypeConverter
 	{
 		public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
@@ -14,6 +18,7 @@ namespace Microsoft.Maui.Controls
 
 		public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
 		{
+			// IMPORTANT! Update ImageSourceDesignTypeConverter.IsValid if making changes here
 			var strValue = value?.ToString();
 			if (strValue != null)
 				return Uri.TryCreate(strValue, UriKind.Absolute, out Uri uri) && uri.Scheme != "file" ? ImageSource.FromUri(uri) : ImageSource.FromFile(strValue);

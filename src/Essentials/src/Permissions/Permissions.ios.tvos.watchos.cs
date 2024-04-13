@@ -4,26 +4,44 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using CoreLocation;
 using Foundation;
+using Microsoft.Maui.Devices.Sensors;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.ApplicationModel
 {
 	public static partial class Permissions
 	{
+		/// <summary>
+		/// Checks if the key specified in <paramref name="usageKey"/> is declared in the application's <c>Info.plist</c> file.
+		/// </summary>
+		/// <param name="usageKey">The key to check for declaration in the <c>Info.plist</c> file.</param>
+		/// <returns><see langword="true"/> when the key is declared, otherwise <see langword="false"/>.</returns>
 		public static bool IsKeyDeclaredInInfoPlist(string usageKey) =>
 			NSBundle.MainBundle.InfoDictionary.ContainsKey(new NSString(usageKey));
 
+		/// <summary>
+		/// Gets or sets the timeout that is used when the location permission is requested.
+		/// </summary>
 		public static TimeSpan LocationTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
+		/// <summary>
+		/// Represents the platform-specific abstract base class for all permissions on this platform.
+		/// </summary>
 		public abstract class BasePlatformPermission : BasePermission
 		{
+			/// <summary>
+			/// Gets the required entries that need to be present in the application's <c>Info.plist</c> file for this permission.
+			/// </summary>
 			protected virtual Func<IEnumerable<string>> RequiredInfoPlistKeys { get; }
 
+			/// <inheritdoc/>
 			public override Task<PermissionStatus> CheckStatusAsync() =>
 				Task.FromResult(PermissionStatus.Granted);
 
+			/// <inheritdoc/>
 			public override Task<PermissionStatus> RequestAsync() =>
 				Task.FromResult(PermissionStatus.Granted);
 
+			/// <inheritdoc/>
 			public override void EnsureDeclared()
 			{
 				if (RequiredInfoPlistKeys == null)
@@ -41,6 +59,7 @@ namespace Microsoft.Maui.Essentials
 				}
 			}
 
+			/// <inheritdoc/>
 			public override bool ShouldShowRationale() => false;
 
 			internal void EnsureMainThread()
@@ -50,11 +69,18 @@ namespace Microsoft.Maui.Essentials
 			}
 		}
 
+		/// <summary>
+		/// Represents permission to access events.
+		/// </summary>
 		public partial class EventPermissions : BasePlatformPermission
 		{
 		}
 
 		public partial class Battery : BasePlatformPermission
+		{
+		}
+
+		public partial class Bluetooth : BasePlatformPermission
 		{
 		}
 
@@ -88,9 +114,11 @@ namespace Microsoft.Maui.Essentials
 
 		public partial class LocationWhenInUse : BasePlatformPermission
 		{
+			/// <inheritdoc/>
 			protected override Func<IEnumerable<string>> RequiredInfoPlistKeys =>
 				() => new string[] { "NSLocationWhenInUseUsageDescription" };
 
+			/// <inheritdoc/>
 			public override Task<PermissionStatus> CheckStatusAsync()
 			{
 				EnsureDeclared();
@@ -98,6 +126,7 @@ namespace Microsoft.Maui.Essentials
 				return Task.FromResult(GetLocationStatus(true));
 			}
 
+			/// <inheritdoc/>
 			public override async Task<PermissionStatus> RequestAsync()
 			{
 				EnsureDeclared();
@@ -108,7 +137,11 @@ namespace Microsoft.Maui.Essentials
 
 				EnsureMainThread();
 
+#pragma warning disable CA1416 // https://github.com/xamarin/xamarin-macios/issues/14619
+#pragma warning disable CA1422 // Validate platform compatibility
 				return await RequestLocationAsync(true, lm => lm.RequestWhenInUseAuthorization());
+#pragma warning restore CA1422 // Validate platform compatibility
+#pragma warning restore CA1416
 			}
 
 			internal static PermissionStatus GetLocationStatus(bool whenInUse)
@@ -116,7 +149,11 @@ namespace Microsoft.Maui.Essentials
 				if (!CLLocationManager.LocationServicesEnabled)
 					return PermissionStatus.Disabled;
 
+#pragma warning disable CA1416 // TODO: CLLocationManager.Status has [UnsupportedOSPlatform("ios14.0")], [UnsupportedOSPlatform("macos11.0")], [UnsupportedOSPlatform("tvos14.0")], [UnsupportedOSPlatform("watchos7.0")]
+#pragma warning disable CA1422 // Validate platform compatibility
 				var status = CLLocationManager.Status;
+#pragma warning restore CA1422 // Validate platform compatibility
+#pragma warning restore CA1416
 
 				return status switch
 				{
@@ -172,6 +209,7 @@ namespace Microsoft.Maui.Essentials
 									}
 									catch (Exception ex)
 									{
+										// TODO change this to Logger?
 										Debug.WriteLine($"Exception processing location permission: {ex.Message}");
 										tcs?.TrySetException(ex);
 									}
@@ -186,9 +224,9 @@ namespace Microsoft.Maui.Essentials
 						}
 
 						del.AuthorizationStatusChanged -= LocationAuthCallback;
-						tcs.TrySetResult(GetLocationStatus(whenInUse));
 						locationManager?.Dispose();
 						locationManager = null;
+						tcs.TrySetResult(GetLocationStatus(whenInUse));
 					}
 					catch (Exception ex)
 					{
@@ -230,6 +268,10 @@ namespace Microsoft.Maui.Essentials
 		{
 		}
 
+		public partial class NearbyWifiDevices : BasePlatformPermission
+		{
+		}
+
 		public partial class NetworkState : BasePlatformPermission
 		{
 		}
@@ -239,6 +281,14 @@ namespace Microsoft.Maui.Essentials
 		}
 
 		public partial class Photos : BasePlatformPermission
+		{
+		}
+
+		public partial class PhotosAddOnly : BasePlatformPermission
+		{
+		}
+
+		public partial class PostNotifications : BasePlatformPermission
 		{
 		}
 

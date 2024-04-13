@@ -7,10 +7,13 @@ using System.Threading.Tasks;
 using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.Bugzilla, 22246, "Entry in Grid nested in ViewCell isn't expanding", PlatformAffected.WinPhone, NavigationBehavior.PushModalAsync)]
+	#if UITEST
+	[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.TableView)]
+	#endif
 	public class Issue22246Bz : ContentPage
 	{
 		public Issue22246Bz()

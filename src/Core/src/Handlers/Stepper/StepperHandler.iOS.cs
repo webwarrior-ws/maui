@@ -7,51 +7,69 @@ namespace Microsoft.Maui.Handlers
 {
 	public partial class StepperHandler : ViewHandler<IStepper, UIStepper>
 	{
-		protected override UIStepper CreateNativeView()
+		readonly StepperProxy _proxy = new();
+
+		protected override UIStepper CreatePlatformView()
 		{
 			return new UIStepper(RectangleF.Empty);
 		}
 
-		protected override void ConnectHandler(UIStepper nativeView)
+		protected override void ConnectHandler(UIStepper platformView)
 		{
-			base.ConnectHandler(nativeView);
+			base.ConnectHandler(platformView);
 
-			nativeView.ValueChanged += OnValueChanged;
+			_proxy.Connect(VirtualView, platformView);
 		}
 
-		protected override void DisconnectHandler(UIStepper nativeView)
+		protected override void DisconnectHandler(UIStepper platformView)
 		{
-			base.DisconnectHandler(nativeView);
+			base.DisconnectHandler(platformView);
 
-			nativeView.ValueChanged -= OnValueChanged;
+			_proxy.Disconnect(platformView);
 		}
 
-		public static void MapMinimum(StepperHandler handler, IStepper stepper)
+		public static void MapMinimum(IStepperHandler handler, IStepper stepper)
 		{
-			handler.NativeView?.UpdateMinimum(stepper);
+			handler.PlatformView?.UpdateMinimum(stepper);
 		}
 
-		public static void MapMaximum(StepperHandler handler, IStepper stepper)
+		public static void MapMaximum(IStepperHandler handler, IStepper stepper)
 		{
-			handler.NativeView?.UpdateMaximum(stepper);
+			handler.PlatformView?.UpdateMaximum(stepper);
 		}
 
-		public static void MapIncrement(StepperHandler handler, IStepper stepper)
+		public static void MapIncrement(IStepperHandler handler, IStepper stepper)
 		{
-			handler.NativeView?.UpdateIncrement(stepper);
+			handler.PlatformView?.UpdateIncrement(stepper);
 		}
 
-		public static void MapValue(StepperHandler handler, IStepper stepper)
+		public static void MapValue(IStepperHandler handler, IStepper stepper)
 		{
-			handler.NativeView?.UpdateValue(stepper);
+			handler.PlatformView?.UpdateValue(stepper);
 		}
 
-		void OnValueChanged(object? sender, EventArgs e)
+		class StepperProxy
 		{
-			if (NativeView == null || VirtualView == null)
-				return;
+			WeakReference<IStepper>? _virtualView;
 
-			VirtualView.Value = NativeView.Value;
+			IStepper? VirtualView => _virtualView is not null && _virtualView.TryGetTarget(out var v) ? v : null;
+
+			public void Connect(IStepper virtualView, UIStepper platformView)
+			{
+				_virtualView = new(virtualView);
+				platformView.ValueChanged += OnValueChanged;
+			}
+
+			public void Disconnect(UIStepper platformView)
+			{
+				platformView.ValueChanged -= OnValueChanged;
+			}
+
+			void OnValueChanged(object? sender, EventArgs e)
+			{
+				if (VirtualView is IStepper virtualView && sender is UIStepper platformView)
+					virtualView.Value = platformView.Value;
+			}
 		}
 	}
 }

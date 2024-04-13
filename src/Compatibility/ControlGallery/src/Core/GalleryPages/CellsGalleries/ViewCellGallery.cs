@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
+namespace Microsoft.Maui.Controls.ControlGallery
 {
 	public class ViewCellGallery : ContentPage
 	{
@@ -34,7 +35,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
 	{
 		public UrlImageViewCellListPage()
 		{
-			if (Device.RuntimePlatform == Device.iOS && Device.Idiom == TargetIdiom.Tablet)
+			if (DeviceInfo.Platform == DevicePlatform.iOS && DeviceInfo.Idiom == DeviceIdiom.Tablet)
 				Padding = new Thickness(0, 0, 0, 60);
 
 			var stringToImageSourceConverter = new GenericValueConverter(

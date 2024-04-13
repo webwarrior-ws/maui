@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Maui.ApplicationModel;
 using Xunit;
 
 namespace Microsoft.Maui.Essentials.DeviceTests
 {
+	[Category("AppActions")]
 	public class AppActions_Tests
 	{
 		[Fact]
@@ -14,8 +16,8 @@ namespace Microsoft.Maui.Essentials.DeviceTests
 
 #if __ANDROID__
 			expectSupported = OperatingSystem.IsAndroidVersionAtLeast(25);
-#elif __IOS__
-			expectSupported = Platform.HasOSVersion(9, 0);
+#elif __IOS__ || WINDOWS
+			expectSupported = true;
 #endif
 
 			Assert.Equal(expectSupported, AppActions.IsSupported);

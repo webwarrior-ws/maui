@@ -1,88 +1,121 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Foundation;
+using LinkPresentation;
 using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Graphics.Native;
-using ObjCRuntime;
+using Microsoft.Maui.Graphics.Platform;
 using UIKit;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.ApplicationModel.DataTransfer
 {
-	public static partial class Share
+	partial class ShareImplementation : IShare
 	{
-		static Task PlatformRequestAsync(ShareTextRequest request)
+		async Task PlatformRequestAsync(ShareTextRequest request)
 		{
+			var src = new TaskCompletionSource<bool>();
 			var items = new List<NSObject>();
 			if (!string.IsNullOrWhiteSpace(request.Text))
 			{
-				items.Add(new ShareActivityItemSource(new NSString(request.Text), request.Title));
+				items.Add(GetShareItem(new NSString(request.Text), request.Title));
 			}
 
 			if (!string.IsNullOrWhiteSpace(request.Uri))
 			{
-				items.Add(new ShareActivityItemSource(NSUrl.FromString(request.Uri), request.Title));
+				items.Add(GetShareItem(NSUrl.FromString(request.Uri), request.Title));
 			}
 
-			var activityController = new UIActivityViewController(items.ToArray(), null);
+			var activityController = new UIActivityViewController(items.ToArray(), null)
+			{
+				CompletionWithItemsHandler = (a, b, c, d) =>
+				{
+					src.TrySetResult(true);
+				},
+			};
 
-			var vc = Platform.GetCurrentViewController();
+			var vc = WindowStateManager.Default.GetCurrentUIViewController(true);
 
 			if (activityController.PopoverPresentationController != null)
 			{
 				activityController.PopoverPresentationController.SourceView = vc.View;
 
-				if (request.PresentationSourceBounds != Rectangle.Zero || Platform.HasOSVersion(13, 0))
+				if (request.PresentationSourceBounds != Rect.Zero || OperatingSystem.IsIOSVersionAtLeast(13, 0))
 					activityController.PopoverPresentationController.SourceRect = request.PresentationSourceBounds.AsCGRect();
 			}
 
-			return vc.PresentViewControllerAsync(activityController, true);
+			await vc.PresentViewControllerAsync(activityController, true);
+			await src.Task;
 		}
 
-		static Task PlatformRequestAsync(ShareMultipleFilesRequest request)
+		Task PlatformRequestAsync(ShareFileRequest request) =>
+			PlatformRequestAsync((ShareMultipleFilesRequest)request);
+
+		async Task PlatformRequestAsync(ShareMultipleFilesRequest request)
 		{
+			var src = new TaskCompletionSource<bool>();
 			var items = new List<NSObject>();
 
-			var hasTitel = !string.IsNullOrWhiteSpace(request.Title);
 			foreach (var file in request.Files)
 			{
 				var fileUrl = NSUrl.FromFilename(file.FullPath);
-				if (hasTitel)
-					items.Add(new ShareActivityItemSource(fileUrl, request.Title)); // Share with title (subject)
-				else
-					items.Add(fileUrl); // No title specified
+				items.Add(GetShareItem(fileUrl, request.Title));
 			}
 
-			var activityController = new UIActivityViewController(items.ToArray(), null);
+			var activityController = new UIActivityViewController(items.ToArray(), null)
+			{
+				CompletionWithItemsHandler = (a, b, c, d) =>
+				{
+					src.TrySetResult(true);
+				}
+			};
 
-			var vc = Platform.GetCurrentViewController();
+			var vc = WindowStateManager.Default.GetCurrentUIViewController();
 
 			if (activityController.PopoverPresentationController != null)
 			{
 				activityController.PopoverPresentationController.SourceView = vc.View;
 
-				if (request.PresentationSourceBounds != Rectangle.Zero || Platform.HasOSVersion(13, 0))
+				if (request.PresentationSourceBounds != Rect.Zero || OperatingSystem.IsIOSVersionAtLeast(13, 0))
 					activityController.PopoverPresentationController.SourceRect = request.PresentationSourceBounds.AsCGRect();
 			}
 
-			return vc.PresentViewControllerAsync(activityController, true);
+			await vc.PresentViewControllerAsync(activityController, true);
+			await src.Task;
 		}
+
+		NSObject GetShareItem(NSString obj, string title)
+			=> new ShareActivityItemSource(obj, string.IsNullOrWhiteSpace(title) ? obj : title);
+
+		NSObject GetShareItem(NSObject obj, string title)
+			=> string.IsNullOrWhiteSpace(title)
+				? obj
+				: new ShareActivityItemSource(obj, title);
 	}
 
 	class ShareActivityItemSource : UIActivityItemSource
 	{
 		readonly NSObject item;
-		readonly string subject;
+		readonly string title;
 
-		internal ShareActivityItemSource(NSObject item, string subject)
+		internal ShareActivityItemSource(NSObject item, string title)
 		{
 			this.item = item;
-			this.subject = subject;
+			this.title = title;
 		}
 
 		public override NSObject GetItemForActivity(UIActivityViewController activityViewController, NSString activityType) => item;
 
 		public override NSObject GetPlaceholderData(UIActivityViewController activityViewController) => item;
 
-		public override string GetSubjectForActivity(UIActivityViewController activityViewController, NSString activityType) => subject;
+		public override LPLinkMetadata GetLinkMetadata(UIActivityViewController activityViewController)
+		{
+			var meta = new LPLinkMetadata();
+			if (!string.IsNullOrWhiteSpace(title))
+				meta.Title = title;
+			if (item is NSUrl url)
+				meta.Url = url;
+
+			return meta;
+		}
 	}
 }

@@ -2,12 +2,14 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.ApplicationModel.Communication
 {
-	public static partial class Contacts
+	class ContactsImplementation : IContacts
 	{
-		static Task<Contact> PlatformPickContactAsync() => throw ExceptionUtils.NotSupportedOrImplementedException;
+		public Task<Contact> PickContactAsync() =>
+			throw ExceptionUtils.NotSupportedOrImplementedException;
 
-		static Task<IEnumerable<Contact>> PlatformGetAllAsync(CancellationToken cancellationToken) => throw ExceptionUtils.NotSupportedOrImplementedException;
+		public Task<IEnumerable<Contact>> GetAllAsync(CancellationToken cancellationToken) =>
+			throw ExceptionUtils.NotSupportedOrImplementedException;
 	}
 }

@@ -8,6 +8,7 @@ using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Controls.PlatformConfiguration;
 using Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 
 #if UITEST
@@ -16,11 +17,14 @@ using NUnit.Framework;
 using Xamarin.UITest;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.Github, 1675, "Bottom Tabbed Page Basic Test", PlatformAffected.All)]
+#if UITEST
+	[Category(Compatibility.UITests.UITestCategories.ManualReview)]
+#endif
 	public class BottomTabbedPageTests : TestTabbedPage
 	{
 		Label pageCountLabel = null;
@@ -223,7 +227,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 					},
 			};
 
-			if (Device.RuntimePlatform == Device.Android)
+			if (DeviceInfo.Platform == DevicePlatform.Android)
 			{
 				layout.Children.Insert(1, btnChangeBarItemColorText);
 				layout.Children.Insert(2, btnChangeBarSelectedItemColorText);

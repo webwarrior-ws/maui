@@ -1,9 +1,11 @@
+#nullable disable
 using System;
 using System.ComponentModel;
 using System.Globalization;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/UriTypeConverter.xml" path="Type[@FullName='Microsoft.Maui.Controls.UriTypeConverter']/Docs/*" />
 	[Xaml.ProvideCompiled("Microsoft.Maui.Controls.XamlC.UriTypeConverter")]
 	public class UriTypeConverter : TypeConverter
 	{

@@ -2,7 +2,7 @@ using System;
 using Microsoft.Maui.Graphics;
 using AbsoluteLayoutFlags = Microsoft.Maui.Layouts.AbsoluteLayoutFlags;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
+namespace Microsoft.Maui.Controls.ControlGallery
 {
 	internal class LayeredViewContainer<T> : ViewContainer<T>
 		where T : View
@@ -19,9 +19,9 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
 
 			layout.Children.Add(hiddenButton);
 			AbsoluteLayout.SetLayoutFlags(hiddenButton, AbsoluteLayoutFlags.All);
-			AbsoluteLayout.SetLayoutBounds(hiddenButton, new Rectangle(0, 0, 1, 1));
+			AbsoluteLayout.SetLayoutBounds(hiddenButton, new Rect(0, 0, 1, 1));
 			layout.Children.Add(view);
-			AbsoluteLayout.SetLayoutBounds(view, new Rectangle(0, 0, 1, 1));
+			AbsoluteLayout.SetLayoutBounds(view, new Rect(0, 0, 1, 1));
 			AbsoluteLayout.SetLayoutFlags(view, AbsoluteLayoutFlags.All);
 
 			var hiddenLabel = new Label

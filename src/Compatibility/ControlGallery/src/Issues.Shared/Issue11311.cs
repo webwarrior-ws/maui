@@ -7,7 +7,7 @@ using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Graphics;
 using NUnit.Framework;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	[Issue(IssueTracker.None, 11311, "[Regression] CollectionView NSRangeException", PlatformAffected.iOS)]
 	public class Issue11311 : TestTabbedPage
@@ -16,8 +16,6 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 
 		protected override void Init()
 		{
-			Device.SetFlags(new[] { "Markup_Experimental" });
-
 			Children.Add(FirstPage());
 			Children.Add(CollectionViewPage());
 		}
@@ -121,6 +119,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 
 #if UITEST
 		[Test]
+		[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.TabbedPage)]
 		public void CollectionViewWithFooterShouldNotCrashOnDisplay()
 		{
 			// If this hasn't already crashed, the test is passing

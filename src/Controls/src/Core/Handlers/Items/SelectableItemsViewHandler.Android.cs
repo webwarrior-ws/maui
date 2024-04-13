@@ -1,4 +1,5 @@
-﻿using Microsoft.Maui.Controls.Platform;
+﻿#nullable disable
+using Microsoft.Maui.Controls.Platform;
 
 namespace Microsoft.Maui.Controls.Handlers.Items
 {
@@ -8,12 +9,12 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 		protected override SelectableItemsViewAdapter<TItemsView, IItemsViewSource> CreateAdapter() => new(VirtualView);
 
 		public static void MapSelectedItem(SelectableItemsViewHandler<TItemsView> handler, SelectableItemsView itemsView)
-			=> handler.NativeView.UpdateSelection(itemsView);
+			=> handler.PlatformView.UpdateSelection(itemsView);
 
 		public static void MapSelectedItems(SelectableItemsViewHandler<TItemsView> handler, SelectableItemsView itemsView)
-			=> handler.NativeView.UpdateSelection(itemsView);
+			=> handler.PlatformView.UpdateSelection(itemsView);
 
 		public static void MapSelectionMode(SelectableItemsViewHandler<TItemsView> handler, SelectableItemsView itemsView)
-			=> handler.NativeView.UpdateSelection(itemsView);
+			=> handler.PlatformView.UpdateSelection(itemsView);
 	}
 }

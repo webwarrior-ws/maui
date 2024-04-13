@@ -1,44 +1,44 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using Foundation;
-using ObjCRuntime;
 using UIKit;
-using RectangleF = CoreGraphics.CGRect;
 
 namespace Microsoft.Maui.Platform
 {
 	public class MauiTimePicker : NoCaretField
 	{
-		readonly Action _dateSelected;
+		[UnconditionalSuppressMessage("Memory", "MEM0002", Justification = "Proven safe in test: MemoryTests.HandlerDoesNotLeak")]
 		readonly UIDatePicker _picker;
 
+#if !MACCATALYST
+		readonly MauiDoneAccessoryViewProxy _proxy;
 		public MauiTimePicker(Action dateSelected)
+#else
+		public MauiTimePicker()
+#endif
 		{
 			BorderStyle = UITextBorderStyle.RoundedRect;
 
 			_picker = new UIDatePicker { Mode = UIDatePickerMode.Time, TimeZone = new NSTimeZone("UTC") };
-			_dateSelected = dateSelected;
 
-			if (NativeVersion.IsAtLeast(14))
+#if !MACCATALYST
+			_proxy = new(dateSelected);
+#endif
+
+			if (OperatingSystem.IsIOSVersionAtLeast(14))
 			{
 				_picker.PreferredDatePickerStyle = UIDatePickerStyle.Wheels;
 			}
 
-			var width = UIScreen.MainScreen.Bounds.Width;
-			var toolbar = new UIToolbar(new RectangleF(0, 0, width, 44)) { BarStyle = UIBarStyle.Default, Translucent = true };
-			var spacer = new UIBarButtonItem(UIBarButtonSystemItem.FlexibleSpace);
-
-			var doneButton = new UIBarButtonItem(UIBarButtonSystemItem.Done, (o, a) =>
-			{
-				_dateSelected?.Invoke();
-			});
-
-			toolbar.SetItems(new[] { spacer, doneButton }, false);
-
 			InputView = _picker;
-			InputAccessoryView = toolbar;
+
+#if !MACCATALYST
+			InputAccessoryView = new MauiDoneAccessoryView(_proxy.OnDateSelected);
+
+			InputAccessoryView.AutoresizingMask = UIViewAutoresizing.FlexibleHeight;
+#endif
 
 			InputView.AutoresizingMask = UIViewAutoresizing.FlexibleHeight;
-			InputAccessoryView.AutoresizingMask = UIViewAutoresizing.FlexibleHeight;
 
 			InputAssistantItem.LeadingBarButtonGroups = null;
 			InputAssistantItem.TrailingBarButtonGroups = null;
@@ -46,6 +46,31 @@ namespace Microsoft.Maui.Platform
 			AccessibilityTraits = UIAccessibilityTrait.Button;
 		}
 
-		public NSDate Date => _picker.Date;
+		public UIDatePicker Picker => _picker;
+
+		public NSDate Date => Picker.Date;
+
+		public void UpdateTime(TimeSpan time)
+		{
+			_picker.Date = new DateTime(1, 1, 1, time.Hours, time.Minutes, time.Seconds).ToNSDate();
+		}
+
+#if !MACCATALYST
+		[Obsolete("Use MauiTimePicker constructor instead.")]
+		public event EventHandler? DateSelected
+		{
+			add { }
+			remove { }
+		}
+
+		class MauiDoneAccessoryViewProxy
+		{
+			readonly Action _dateSelected;
+
+			public MauiDoneAccessoryViewProxy(Action dateSelected) => _dateSelected = dateSelected;
+
+			public void OnDateSelected() => _dateSelected();
+		}
+#endif
 	}
 }

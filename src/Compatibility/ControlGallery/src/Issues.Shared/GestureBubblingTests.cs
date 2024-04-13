@@ -13,7 +13,7 @@ using Xamarin.UITest.Queries;
 using Microsoft.Maui.Controls.Compatibility.UITests;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	// This is similar to the test for 35477, but tests all of the basic controls to make sure that they all exhibit
 	// the same behavior across all the platforms. The question is whether tapping a control inside of a frame
@@ -35,10 +35,16 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 		static NavigationPage NavigationPage;
 
 #if UITEST
+		[Microsoft.Maui.Controls.Compatibility.UITests.FailsOnMauiIOS] // on iOS only menuItem=Slider, frameShouldRegisterTap=False fails
 		[Test, TestCaseSource(nameof(TestCases))]
 		[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.UwpIgnore)]
 		public void VerifyTapBubbling(string menuItem, bool frameShouldRegisterTap)
 		{
+			if (menuItem == "Frame" && frameShouldRegisterTap)
+			{
+				Assert.Ignore("FailsOnMauiAndroid");
+			}
+			
 			var results = RunningApp.WaitForElement(q => q.Marked(menuItem));
 
 			if (results.Length > 1)
@@ -159,8 +165,8 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 			{
 				var layout = BuildMenu().Content as Layout;
 				var result =
-					from Layout element in layout.InternalChildren
-					from Button button in element.InternalChildren
+					from Layout element in layout
+					from Button button in element
 					let text = button.Text
 					// UwpIgnore
 #if WINDOWS

@@ -1,20 +1,24 @@
-﻿using System;
-#if __IOS__ || MACCATALYST
-using NativeImage = UIKit.UIImage;
-using NativeImageView = UIKit.UIImageView;
-using NativeView = UIKit.UIButton;
+﻿#if __IOS__ || MACCATALYST
+using PlatformImage = UIKit.UIImage;
+using PlatformImageView = UIKit.UIImageView;
+using PlatformView = UIKit.UIButton;
 #elif MONOANDROID
-using NativeImage = Android.Graphics.Drawables.Drawable;
-using NativeImageView = Android.Widget.ImageView;
-using NativeView = AndroidX.AppCompat.Widget.AppCompatImageButton;
+using PlatformImage = Android.Graphics.Drawables.Drawable;
+using PlatformImageView = Android.Widget.ImageView;
+using PlatformView = Google.Android.Material.ImageView.ShapeableImageView;
 #elif WINDOWS
-using NativeImage = Microsoft.UI.Xaml.Media.ImageSource;
-using NativeImageView = Microsoft.UI.Xaml.Controls.Image;
-using NativeView = Microsoft.UI.Xaml.FrameworkElement;
-#elif NETSTANDARD || (NET6_0 && !IOS && !ANDROID)
-using NativeImage = System.Object;
-using NativeImageView = System.Object;
-using NativeView = System.Object;
+using System;
+using PlatformImage = Microsoft.UI.Xaml.Media.ImageSource;
+using PlatformImageView = Microsoft.UI.Xaml.Controls.Image;
+using PlatformView = Microsoft.UI.Xaml.Controls.Button;
+#elif TIZEN
+using PlatformImage = Microsoft.Maui.Platform.MauiImageSource;
+using PlatformImageView = Tizen.UIExtensions.NUI.Image;
+using PlatformView = Microsoft.Maui.Platform.MauiImageButton;
+#elif (NETSTANDARD || !PLATFORM) || (NET6_0_OR_GREATER && !IOS && !ANDROID && !TIZEN)
+using PlatformImage = System.Object;
+using PlatformImageView = System.Object;
+using PlatformView = System.Object;
 #endif
 
 namespace Microsoft.Maui.Handlers
@@ -22,37 +26,64 @@ namespace Microsoft.Maui.Handlers
 	public partial class ImageButtonHandler : IImageButtonHandler
 	{
 		public static IPropertyMapper<IImage, IImageHandler> ImageMapper = new PropertyMapper<IImage, IImageHandler>(ImageHandler.Mapper);
+
 		public static IPropertyMapper<IImageButton, IImageButtonHandler> Mapper = new PropertyMapper<IImageButton, IImageButtonHandler>(ImageMapper)
 		{
-#if WINDOWS
+			[nameof(IButtonStroke.StrokeThickness)] = MapStrokeThickness,
+			[nameof(IButtonStroke.StrokeColor)] = MapStrokeColor,
+			[nameof(IButtonStroke.CornerRadius)] = MapCornerRadius,
+			[nameof(IImageButton.Padding)] = MapPadding,
+#if ANDROID || WINDOWS
 			[nameof(IImageButton.Background)] = MapBackground,
 #endif
 		};
 
+		public static CommandMapper<IImageButton, IImageButtonHandler> CommandMapper = new(ViewHandler.ViewCommandMapper)
+		{
+		};
+
 		ImageSourcePartLoader? _imageSourcePartLoader;
-		public ImageSourcePartLoader SourceLoader =>
-			_imageSourcePartLoader ??= new ImageSourcePartLoader(this, () => VirtualView, OnSetImageSource);
 
-		public ImageButtonHandler() : base(Mapper)
+		public virtual ImageSourcePartLoader SourceLoader =>
+			_imageSourcePartLoader ??= new ImageSourcePartLoader(new ImageButtonImageSourcePartSetter(this));
+
+		public ImageButtonHandler() : base(Mapper, CommandMapper)
 		{
 		}
 
-		public ImageButtonHandler(IPropertyMapper mapper) : base(mapper ?? Mapper)
+		public ImageButtonHandler(IPropertyMapper? mapper)
+			: base(mapper ?? Mapper, CommandMapper)
 		{
 		}
 
-		IImageButton IImageButtonHandler.TypedVirtualView => VirtualView;
+		public ImageButtonHandler(IPropertyMapper? mapper, CommandMapper? commandMapper)
+			: base(mapper ?? Mapper, commandMapper ?? CommandMapper)
+		{
+		}
 
-		IImage IImageHandler.TypedVirtualView => VirtualView;
+		IImageButton IImageButtonHandler.VirtualView => VirtualView;
 
-		NativeImageView IImageHandler.TypedNativeView =>
+		IImage IImageHandler.VirtualView => VirtualView;
+
+		PlatformImageView IImageHandler.PlatformView =>
 #if __IOS__
-			NativeView.ImageView;
+			PlatformView.ImageView;
 #elif WINDOWS
-			NativeView.GetContent<NativeImageView>() ?? throw new InvalidOperationException("ImageButton did not contain an Image element.");
+			PlatformView.GetContent<PlatformImageView>() ?? throw new InvalidOperationException("ImageButton did not contain an Image element.");
 #else
-			NativeView;
+			PlatformView;
 #endif
+
+		PlatformView IImageButtonHandler.PlatformView => PlatformView;
+
 		ImageSourcePartLoader IImageHandler.SourceLoader => SourceLoader;
+
+		partial class ImageButtonImageSourcePartSetter : ImageSourcePartSetter<IImageButtonHandler>
+		{
+			public ImageButtonImageSourcePartSetter(IImageButtonHandler handler)
+				: base(handler)
+			{
+			}
+		}
 	}
 }

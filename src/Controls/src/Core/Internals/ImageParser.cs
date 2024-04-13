@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -6,24 +7,29 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Maui.Controls.Internals
 {
+	/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFDecoderFormatException.xml" path="Type[@FullName='Microsoft.Maui.Controls.Internals.GIFDecoderFormatException']/Docs/*" />
 	public class GIFDecoderFormatException : Exception
 	{
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFDecoderFormatException.xml" path="//Member[@MemberName='.ctor'][1]/Docs/*" />
 		public GIFDecoderFormatException()
 		{
 			;
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFDecoderFormatException.xml" path="//Member[@MemberName='.ctor'][2]/Docs/*" />
 		public GIFDecoderFormatException(string message) : base(message)
 		{
 			;
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFDecoderFormatException.xml" path="//Member[@MemberName='.ctor'][3]/Docs/*" />
 		public GIFDecoderFormatException(string message, Exception innerException) : base(message, innerException)
 		{
 			;
 		}
 	}
 
+	/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFDecoderStreamReader.xml" path="Type[@FullName='Microsoft.Maui.Controls.Internals.GIFDecoderStreamReader']/Docs/*" />
 	public class GIFDecoderStreamReader
 	{
 		Stream _stream;
@@ -31,11 +37,13 @@ namespace Microsoft.Maui.Controls.Internals
 		int _currentBlockSize;
 		byte[] _blockBuffer = new byte[256];
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFDecoderStreamReader.xml" path="//Member[@MemberName='.ctor']/Docs/*" />
 		public GIFDecoderStreamReader(Stream stream)
 		{
 			_stream = stream;
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFDecoderStreamReader.xml" path="//Member[@MemberName='CurrentPosition']/Docs/*" />
 		public long CurrentPosition
 		{
 			get
@@ -48,27 +56,32 @@ namespace Microsoft.Maui.Controls.Internals
 			}
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFDecoderStreamReader.xml" path="//Member[@MemberName='CurrentBlockBuffer']/Docs/*" />
 		public byte[] CurrentBlockBuffer
 		{
 			get { return _blockBuffer; }
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFDecoderStreamReader.xml" path="//Member[@MemberName='CurrentBlockSize']/Docs/*" />
 		public int CurrentBlockSize
 		{
 			get { return _currentBlockSize; }
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFDecoderStreamReader.xml" path="//Member[@MemberName='Read']/Docs/*" />
 		public int Read()
 		{
 			_currentPosition++;
 			return _stream.ReadByte();
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFDecoderStreamReader.xml" path="//Member[@MemberName='ReadShort']/Docs/*" />
 		public int ReadShort()
 		{
 			return Read() | (Read() << 8);
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFDecoderStreamReader.xml" path="//Member[@MemberName='ReadString']/Docs/*" />
 		public string ReadString(int length)
 		{
 			var buffer = new StringBuilder(length);
@@ -79,6 +92,7 @@ namespace Microsoft.Maui.Controls.Internals
 			return buffer.ToString();
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFDecoderStreamReader.xml" path="//Member[@MemberName='ReadAsync']/Docs/*" />
 		public async Task<int> ReadAsync(byte[] buffer, int toRead)
 		{
 			int totalBytesRead = 0;
@@ -102,6 +116,7 @@ namespace Microsoft.Maui.Controls.Internals
 			return totalBytesRead;
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFDecoderStreamReader.xml" path="//Member[@MemberName='ReadBlockAsync']/Docs/*" />
 		public async Task<int> ReadBlockAsync()
 		{
 			_currentBlockSize = Read();
@@ -116,6 +131,7 @@ namespace Microsoft.Maui.Controls.Internals
 			return bytesRead;
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFDecoderStreamReader.xml" path="//Member[@MemberName='SkipBlockAsync']/Docs/*" />
 		public async Task SkipBlockAsync()
 		{
 			_currentBlockSize = Read();
@@ -136,6 +152,7 @@ namespace Microsoft.Maui.Controls.Internals
 		}
 	}
 
+	/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFColorTable.xml" path="Type[@FullName='Microsoft.Maui.Controls.Internals.GIFColorTable']/Docs/*" />
 	public class GIFColorTable
 	{
 		int[] _colorTable = new int[256];
@@ -151,11 +168,13 @@ namespace Microsoft.Maui.Controls.Internals
 			_size = size;
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFColorTable.xml" path="//Member[@MemberName='Data']/Docs/*" />
 		public int[] Data
 		{
 			get { return _colorTable; }
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFColorTable.xml" path="//Member[@MemberName='SetTransparency']/Docs/*" />
 		public void SetTransparency(int transparencyIndex)
 		{
 			Debug.Assert(transparencyIndex < _colorTable.Length);
@@ -167,6 +186,7 @@ namespace Microsoft.Maui.Controls.Internals
 			_transparencyIndex = transparencyIndex;
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFColorTable.xml" path="//Member[@MemberName='ResetTransparency']/Docs/*" />
 		public void ResetTransparency()
 		{
 			if (_transparencyIndex != -1)
@@ -176,6 +196,7 @@ namespace Microsoft.Maui.Controls.Internals
 			}
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFColorTable.xml" path="//Member[@MemberName='CreateColorTableAsync']/Docs/*" />
 		public static async Task<GIFColorTable> CreateColorTableAsync(GIFDecoderStreamReader stream, short size)
 		{
 			var colorTable = new GIFColorTable(size);
@@ -204,6 +225,7 @@ namespace Microsoft.Maui.Controls.Internals
 		}
 	}
 
+	/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFHeader.xml" path="Type[@FullName='Microsoft.Maui.Controls.Internals.GIFHeader']/Docs/*" />
 	public class GIFHeader
 	{
 		GIFHeader()
@@ -211,22 +233,31 @@ namespace Microsoft.Maui.Controls.Internals
 			;
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFHeader.xml" path="//Member[@MemberName='TypeIdentifier']/Docs/*" />
 		public string TypeIdentifier { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFHeader.xml" path="//Member[@MemberName='Version']/Docs/*" />
 		public string Version { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFHeader.xml" path="//Member[@MemberName='Width']/Docs/*" />
 		public int Width { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFHeader.xml" path="//Member[@MemberName='Height']/Docs/*" />
 		public int Height { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFHeader.xml" path="//Member[@MemberName='BackgroundColorIndex']/Docs/*" />
 		public int BackgroundColorIndex { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFHeader.xml" path="//Member[@MemberName='BackgroundColor']/Docs/*" />
 		public int BackgroundColor { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFHeader.xml" path="//Member[@MemberName='GlobalColorTable']/Docs/*" />
 		public GIFColorTable GlobalColorTable { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFHeader.xml" path="//Member[@MemberName='PixelAspectRatio']/Docs/*" />
 		public int PixelAspectRatio { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFHeader.xml" path="//Member[@MemberName='IsGIFHeader']/Docs/*" />
 		public bool IsGIFHeader
 		{
 			get
@@ -235,6 +266,7 @@ namespace Microsoft.Maui.Controls.Internals
 			}
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFHeader.xml" path="//Member[@MemberName='CreateHeaderAsync']/Docs/*" />
 		public static async Task<GIFHeader> CreateHeaderAsync(GIFDecoderStreamReader stream, bool skipTypeIdentifier = false)
 		{
 			GIFHeader header = new GIFHeader();
@@ -285,6 +317,7 @@ namespace Microsoft.Maui.Controls.Internals
 		}
 	}
 
+	/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmap.xml" path="Type[@FullName='Microsoft.Maui.Controls.Internals.GIFBitmap']/Docs/*" />
 	public class GIFBitmap
 	{
 		public enum DisposeMethod
@@ -314,26 +347,37 @@ namespace Microsoft.Maui.Controls.Internals
 			public int Height { get; }
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmap.xml" path="//Member[@MemberName='Data']/Docs/*" />
 		public int[] Data { get; set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmap.xml" path="//Member[@MemberName='DataPosition']/Docs/*" />
 		public long DataPosition { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmap.xml" path="//Member[@MemberName='Bounds']/Docs/*" />
 		public GIFBitmap.Rect Bounds { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmap.xml" path="//Member[@MemberName='Dispose']/Docs/*" />
 		public DisposeMethod Dispose { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmap.xml" path="//Member[@MemberName='BackgroundColor']/Docs/*" />
 		public int BackgroundColor { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmap.xml" path="//Member[@MemberName='IsTransparent']/Docs/*" />
 		public bool IsTransparent { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmap.xml" path="//Member[@MemberName='TransparencyIndex']/Docs/*" />
 		public int TransparencyIndex { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmap.xml" path="//Member[@MemberName='IsInterlaced']/Docs/*" />
 		public bool IsInterlaced { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmap.xml" path="//Member[@MemberName='Delay']/Docs/*" />
 		public int Delay { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmap.xml" path="//Member[@MemberName='LoopCount']/Docs/*" />
 		public int LoopCount { get; private set; }
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmap.xml" path="//Member[@MemberName='ColorTable']/Docs/*" />
 		public GIFColorTable ColorTable { get; private set; }
 
 		class GIFBlockCodes
@@ -503,6 +547,7 @@ namespace Microsoft.Maui.Controls.Internals
 			}
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmap.xml" path="//Member[@MemberName='CreateBitmapAsync']/Docs/*" />
 		public static async Task<GIFBitmap> CreateBitmapAsync(GIFDecoderStreamReader stream, GIFHeader header, GIFBitmapDecoder decoder, GIFBitmap previousBitmap, bool ignoreImageData = false)
 		{
 			GIFBitmap currentBitmap = null;
@@ -546,6 +591,7 @@ namespace Microsoft.Maui.Controls.Internals
 		}
 	}
 
+	/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmapDecoder.xml" path="Type[@FullName='Microsoft.Maui.Controls.Internals.GIFBitmapDecoder']/Docs/*" />
 	public class GIFBitmapDecoder
 	{
 		short[] _prefix;
@@ -595,6 +641,7 @@ namespace Microsoft.Maui.Controls.Internals
 			}
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmapDecoder.xml" path="//Member[@MemberName='Compose']/Docs/*" />
 		public void Compose(GIFHeader header, GIFBitmap currentBitmap, GIFBitmap previousBitmap)
 		{
 			int[] bitmapData = null;
@@ -682,6 +729,7 @@ namespace Microsoft.Maui.Controls.Internals
 			currentBitmap.Data = bitmapData;
 		}
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFBitmapDecoder.xml" path="//Member[@MemberName='DecodeAsync']/Docs/*" />
 		public async Task DecodeAsync(GIFDecoderStreamReader stream, int width, int height)
 		{
 			int pixelCount = width * height;
@@ -804,12 +852,14 @@ namespace Microsoft.Maui.Controls.Internals
 		}
 	}
 
+	/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFImageParser.xml" path="Type[@FullName='Microsoft.Maui.Controls.Internals.GIFImageParser']/Docs/*" />
 	public abstract class GIFImageParser
 	{
 		protected abstract void StartParsing();
 		protected abstract void AddBitmap(GIFHeader header, GIFBitmap bitmap, bool ignoreImageData);
 		protected abstract void FinishedParsing();
 
+		/// <include file="../../../docs/Microsoft.Maui.Controls.Internals/GIFImageParser.xml" path="//Member[@MemberName='ParseAsync']/Docs/*" />
 		public async Task ParseAsync(Stream stream, bool skipTypeIdentifier = false, bool ignoreImageData = false)
 		{
 			if (stream != null)

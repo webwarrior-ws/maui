@@ -8,12 +8,13 @@ using Xamarin.UITest;
 using NUnit.Framework;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if UITEST
 	[Category(UITestCategories.Bugzilla)]
 	[Category(UITestCategories.Cells)]
 	[Category(UITestCategories.UwpIgnore)]
+	[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.TableView)]
 #endif
 
 	[Preserve(AllMembers = true)]
@@ -58,6 +59,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 		}
 #if UITEST
 		[Test]
+		[Compatibility.UITests.FailsOnMauiIOS]
 		public void TappedWorksForEntryAndSwithCellTest()
 		{
 			RunningApp.Tap(q => q.Marked("blahblah"));

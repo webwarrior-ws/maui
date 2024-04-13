@@ -36,11 +36,15 @@ else
     item = Xcode(desiredXcode);
 
 Console.WriteLine("Selected version: {0}", item.Version);
-item.XcodeSelect();
+item.XcodeSelect() 
+        .SimulatorRuntime(SimRuntime.iOS)
+       // .SimulatorRuntime(SimRuntime.watchOS)
+     //   .SimulatorRuntime(SimRuntime.visionOS);
+        .SimulatorRuntime(SimRuntime.tvOS);
 
 LogInstalledXcodes();
 
-var appleSdkOverride = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "Library", "Preferences", "Xamarin", "Settings.plist");
+var appleSdkOverride = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Preferences", "Xamarin", "Settings.plist");
 Item("Override Apple SDK Settings")
     .Condition(item => !File.Exists(appleSdkOverride) || GetSettingValue(appleSdkOverride, "AppleSdkRoot") != GetSelectedXcodePath())
     .Action(item =>

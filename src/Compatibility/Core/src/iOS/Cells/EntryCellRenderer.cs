@@ -9,9 +9,10 @@ using RectangleF = CoreGraphics.CGRect;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 {
+	[Obsolete("Use Microsoft.Maui.Controls.Platform.Compatibility.EntryCellRenderer instead")]
 	public class EntryCellRenderer : CellRenderer
 	{
-		static readonly Color DefaultTextColor = ColorExtensions.LabelColor.ToColor();
+		static readonly Color DefaultTextColor = Maui.Platform.ColorExtensions.LabelColor.ToColor();
 
 		[Preserve(Conditional = true)]
 		public EntryCellRenderer()
@@ -89,15 +90,17 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 			var cell = (EntryCellTableViewCell)sender;
 			var model = (EntryCell)cell.Cell;
 
-			model.Text = cell.TextField.Text;
+			model
+				.SetValue(EntryCell.TextProperty, cell.TextField.Text, specificity: SetterSpecificity.FromHandler);
 		}
 
 		static void UpdateHorizontalTextAlignment(EntryCellTableViewCell cell, EntryCell entryCell)
 		{
 			IViewController viewController = entryCell.Parent as View;
-			cell.TextField.TextAlignment = entryCell.HorizontalTextAlignment.ToNativeTextAlignment(viewController?.EffectiveFlowDirection ?? default(EffectiveFlowDirection));
+			cell.TextField.TextAlignment = entryCell.HorizontalTextAlignment.ToPlatformTextAlignment(viewController?.EffectiveFlowDirection ?? default(EffectiveFlowDirection));
 		}
 
+#pragma warning disable CA1416, CA1422  // TODO: 'UITableViewCell.TextLabel' is unsupported on: 'ios' 14.0 and later
 		static void UpdateIsEnabled(EntryCellTableViewCell cell, EntryCell entryCell)
 		{
 			cell.UserInteractionEnabled = entryCell.IsEnabled;
@@ -118,7 +121,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 
 		static void UpdateLabelColor(EntryCellTableViewCell cell, EntryCell entryCell)
 		{
-			cell.TextLabel.TextColor = entryCell.LabelColor.ToUIColor(DefaultTextColor);
+			cell.TextLabel.TextColor = entryCell.LabelColor.ToPlatform(DefaultTextColor);
 		}
 
 		static void UpdatePlaceholder(EntryCellTableViewCell cell, EntryCell entryCell)
@@ -160,6 +163,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.iOS
 				// Centers TextField Content  (iOS6)
 				TextField.VerticalAlignment = UIControlContentVerticalAlignment.Center;
 			}
+#pragma warning restore CA1416, CA1422
 
 			public event EventHandler TextFieldTextChanged;
 

@@ -5,7 +5,7 @@ using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Graphics;
 using AbsoluteLayoutFlags = Microsoft.Maui.Layouts.AbsoluteLayoutFlags;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if UITEST
 	[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.Bugzilla)]
@@ -26,8 +26,8 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 			{
 			};
 			cPx.ClassId = "weather";
-			cPx.Layout(new Rectangle(0, 0, 480, 768));
-			absLayout.Children.Add(cPx, new Rectangle(cPx.X, cPx.Y, cPx.Width, cPx.Height), AbsoluteLayoutFlags.None);
+			cPx.Layout(new Rect(0, 0, 480, 768));
+			absLayout.Children.Add(cPx, new Rect(cPx.X, cPx.Y, cPx.Width, cPx.Height), AbsoluteLayoutFlags.None);
 			absLayout.LowerChild(cPx);
 			PushAsync(new ContentPage { Content = absLayout });
 		}

@@ -8,8 +8,12 @@ using UIKit;
 
 namespace Microsoft.Maui
 {
+
+	/// <inheritdoc/>
 	public partial class EmbeddedFontLoader
 	{
+
+		/// <inheritdoc/>
 		public string? LoadFont(EmbeddedFont font)
 		{
 			try
@@ -45,11 +49,12 @@ namespace Microsoft.Maui
 				if (uiFont != null)
 					return name;
 
-				throw new NSErrorException(error);
+				// we know error is not null, the NotNullWhen attr is missing in the iOS bindings, ref: https://github.com/xamarin/xamarin-macios/pull/20050
+				throw new NSErrorException(error!);
 			}
 			catch (Exception ex)
 			{
-				_logger?.LogWarning(ex, "Unable register font {Font} with the system.", font.FontName);
+				_serviceProvider?.CreateLogger<EmbeddedFontLoader>()?.LogWarning(ex, "Unable register font {Font} with the system.", font.FontName);
 			}
 
 			return null;

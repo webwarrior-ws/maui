@@ -1,14 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Microsoft.Maui.Graphics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Markup;
+using WBrush = Microsoft.UI.Xaml.Media.Brush;
 using WEllipse = Microsoft.UI.Xaml.Shapes.Ellipse;
 using WRectangle = Microsoft.UI.Xaml.Shapes.Rectangle;
 using WShape = Microsoft.UI.Xaml.Shapes.Shape;
-using WBrush = Microsoft.UI.Xaml.Media.Brush;
-using Microsoft.Maui.Graphics;
-using System;
 
 namespace Microsoft.Maui.Platform
 {
@@ -40,9 +40,9 @@ namespace Microsoft.Maui.Platform
 				return;
 
 			if (_indicatorView.IndicatorColor is SolidPaint solidPaint)
-				_fillColor = solidPaint?.ToNative();
+				_fillColor = solidPaint?.ToPlatform();
 			if (_indicatorView.SelectedIndicatorColor is SolidPaint selectedSolidPaint)
-				_selectedColor = selectedSolidPaint.ToNative();
+				_selectedColor = selectedSolidPaint.ToPlatform();
 			var position = _indicatorView.Position;
 			int i = 0;
 			foreach (var item in Items)
@@ -66,7 +66,7 @@ namespace Microsoft.Maui.Platform
 				for (int i = 0; i < indicatorCount; i++)
 				{
 					var shape = CreateIndicator(i, position);
-					
+
 					if (shape != null)
 					{
 						indicators.Add(shape);
@@ -78,7 +78,7 @@ namespace Microsoft.Maui.Platform
 			ItemsSource = _dots;
 		}
 
-		ItemsPanelTemplate GetItemsPanelTemplate()
+		static ItemsPanelTemplate GetItemsPanelTemplate()
 		{
 			var itemsPanelTemplateXaml =
 				$@"<ItemsPanelTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
@@ -117,7 +117,7 @@ namespace Microsoft.Maui.Platform
 				};
 			}
 			shape.Tag = i;
-			shape.PointerPressed += (s,e) =>
+			shape.PointerPressed += (s, e) =>
 			{
 				if (_indicatorView == null)
 					return;

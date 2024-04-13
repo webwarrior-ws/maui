@@ -2,7 +2,7 @@
 using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Graphics;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
+namespace Microsoft.Maui.Controls.ControlGallery
 {
 	class RadioButtonCoreGalleryPage : CoreGalleryPage<RadioButton>
 	{
@@ -11,17 +11,6 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
 		protected override void InitializeElement(RadioButton element)
 		{
 			element.Content = "RadioButton";
-		}
-
-		protected override void Initialize()
-		{
-			base.Initialize();
-		}
-
-		protected override void OnDisappearing()
-		{
-			Device.SetFlags(new List<string>());
-			base.OnDisappearing();
 		}
 
 		protected override void Build(StackLayout stackLayout)

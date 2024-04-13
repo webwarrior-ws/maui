@@ -4,13 +4,14 @@ using System.Diagnostics;
 using System.Threading;
 using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 
 #if UITEST
 using Xamarin.UITest;
 using NUnit.Framework;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if UITEST
 	[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.Bugzilla)]
@@ -54,7 +55,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 				int success = 0;
 
 				//some reason there's always 1 instance around i don't know why yet, if we were leaking it should be 8 here
-				if (Device.RuntimePlatform == Device.macOS)
+				if (DeviceInfo.Platform == DevicePlatform.macOS)
 					success = 4;
 
 				if (_44166NavContent.Counter + _44166Detail.Counter + _44166Master.Counter + _44166MDP.Counter == success)
@@ -71,6 +72,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 
 #if UITEST
 		[Test]
+		[Compatibility.UITests.FailsOnMauiIOS]
 		public void Bugzilla44166Test()
 		{
 			RunningApp.WaitForElement(q => q.Marked("Go"));

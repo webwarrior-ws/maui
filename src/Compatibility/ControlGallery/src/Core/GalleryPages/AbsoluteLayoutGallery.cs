@@ -6,10 +6,11 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 using AbsoluteLayoutFlags = Microsoft.Maui.Layouts.AbsoluteLayoutFlags;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
+namespace Microsoft.Maui.Controls.ControlGallery
 {
 	[Preserve(AllMembers = true)]
 	internal class AbsolutePositioningExplorationViewModel : INotifyPropertyChanged
@@ -80,16 +81,16 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
 			}
 		}
 
-		public Rectangle Rectangle
+		public Rect Rectangle
 		{
-			get { return new Rectangle(RectangleX, RectangleY, RectangleWidth, RectangleHeight); }
+			get { return new Rect(RectangleX, RectangleY, RectangleWidth, RectangleHeight); }
 		}
 	}
 	public class AbsoluteLayoutGallery : ContentPage
 	{
 		public AbsoluteLayoutGallery()
 		{
-			if (Device.RuntimePlatform == Device.iOS && Device.Idiom == TargetIdiom.Tablet)
+			if (DeviceInfo.Platform == DevicePlatform.iOS && DeviceInfo.Idiom == DeviceIdiom.Tablet)
 				Padding = new Thickness(0, 0, 0, 60);
 
 			BindingContext = new AbsolutePositioningExplorationViewModel();
@@ -116,17 +117,17 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
 				}
 			};
 
-			grid.Children.Add(new Label { Text = "X:", VerticalTextAlignment = TextAlignment.Center }, 0, 0);
-			grid.Children.Add(xSlider, 1, 0);
+			grid.Add(new Label { Text = "X:", VerticalTextAlignment = TextAlignment.Center }, 0, 0);
+			grid.Add(xSlider, 1, 0);
 
-			grid.Children.Add(new Label { Text = "Y:", VerticalTextAlignment = TextAlignment.Center }, 0, 1);
-			grid.Children.Add(ySlider, 1, 1);
+			grid.Add(new Label { Text = "Y:", VerticalTextAlignment = TextAlignment.Center }, 0, 1);
+			grid.Add(ySlider, 1, 1);
 
-			grid.Children.Add(new Label { Text = "Width:", VerticalTextAlignment = TextAlignment.Center }, 0, 2);
-			grid.Children.Add(widthSlider, 1, 2);
+			grid.Add(new Label { Text = "Width:", VerticalTextAlignment = TextAlignment.Center }, 0, 2);
+			grid.Add(widthSlider, 1, 2);
 
-			grid.Children.Add(new Label { Text = "Height:", VerticalTextAlignment = TextAlignment.Center }, 0, 3);
-			grid.Children.Add(heightSlider, 1, 3);
+			grid.Add(new Label { Text = "Height:", VerticalTextAlignment = TextAlignment.Center }, 0, 3);
+			grid.Add(heightSlider, 1, 3);
 
 			absLayout.Children.Add(rect);
 

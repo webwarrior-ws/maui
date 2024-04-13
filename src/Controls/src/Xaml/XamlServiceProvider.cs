@@ -112,9 +112,15 @@ namespace Microsoft.Maui.Controls.Xaml.Internals
 	{
 		readonly object[] objectAndParents;
 		readonly object targetProperty;
-		readonly INameScope scope;
+		readonly INameScope[] scopes;
 
+		[Obsolete("Use the other ctor")]
 		public SimpleValueTargetProvider(object[] objectAndParents, object targetProperty, INameScope scope)
+			: this(objectAndParents, targetProperty, new INameScope[] { scope }, false)
+		{
+		}
+
+		public SimpleValueTargetProvider(object[] objectAndParents, object targetProperty, INameScope[] scopes, bool notused)
 		{
 			if (objectAndParents == null)
 				throw new ArgumentNullException(nameof(objectAndParents));
@@ -123,7 +129,7 @@ namespace Microsoft.Maui.Controls.Xaml.Internals
 
 			this.objectAndParents = objectAndParents;
 			this.targetProperty = targetProperty;
-			this.scope = scope;
+			this.scopes = scopes;
 		}
 
 		IEnumerable<object> IProvideParentValues.ParentObjects => objectAndParents;
@@ -133,8 +139,10 @@ namespace Microsoft.Maui.Controls.Xaml.Internals
 		public object FindByName(string name)
 		{
 			object value;
-			if ((value = scope?.FindByName(name)) != null)
-				return value;
+			if (scopes != null)
+				foreach (var scope in scopes)
+					if ((value = scope?.FindByName(name)) != null)
+						return value;
 
 			for (var i = 0; i < objectAndParents.Length; i++)
 			{
@@ -191,23 +199,6 @@ namespace Microsoft.Maui.Controls.Xaml.Internals
 
 		Type Resolve(string qualifiedTypeName, IServiceProvider serviceProvider, out XamlParseException exception)
 		{
-			exception = null;
-			var split = qualifiedTypeName.Split(':');
-			if (split.Length > 2)
-				return null;
-
-			string prefix, name;
-			if (split.Length == 2)
-			{
-				prefix = split[0];
-				name = split[1];
-			}
-			else
-			{
-				prefix = "";
-				name = split[0];
-			}
-
 			IXmlLineInfo xmlLineInfo = null;
 			if (serviceProvider != null)
 			{
@@ -215,14 +206,8 @@ namespace Microsoft.Maui.Controls.Xaml.Internals
 					xmlLineInfo = lineInfoProvider.XmlLineInfo;
 			}
 
-			var namespaceuri = namespaceResolver.LookupNamespace(prefix);
-			if (namespaceuri == null)
-			{
-				exception = new XamlParseException($"No xmlns declaration for prefix \"{prefix}\"", xmlLineInfo);
-				return null;
-			}
-
-			return getTypeFromXmlName(new XmlType(namespaceuri, name, null), xmlLineInfo, currentAssembly, out exception);
+			var xmlType = TypeArgumentsParser.ParseSingle(qualifiedTypeName, namespaceResolver, xmlLineInfo);
+			return getTypeFromXmlName(xmlType, xmlLineInfo, currentAssembly, out exception);
 		}
 
 		internal delegate Type GetTypeFromXmlName(XmlType xmlType, IXmlLineInfo xmlInfo, Assembly currentAssembly, out XamlParseException exception);
@@ -263,7 +248,7 @@ namespace Microsoft.Maui.Controls.Xaml.Internals
 
 	public class XmlNamespaceResolver : IXmlNamespaceResolver
 	{
-		readonly Dictionary<string, string> namespaces = new Dictionary<string, string>();
+		readonly Dictionary<string, string> namespaces = new Dictionary<string, string>(StringComparer.Ordinal);
 
 		public IDictionary<string, string> GetNamespacesInScope(XmlNamespaceScope scope) => throw new NotImplementedException();
 

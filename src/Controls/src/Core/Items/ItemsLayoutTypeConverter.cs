@@ -1,9 +1,11 @@
+#nullable disable
 using System;
 using System.ComponentModel;
 using System.Globalization;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../../docs/Microsoft.Maui.Controls/ItemsLayoutTypeConverter.xml" path="Type[@FullName='Microsoft.Maui.Controls.ItemsLayoutTypeConverter']/Docs/*" />
 	public class ItemsLayoutTypeConverter : TypeConverter
 	{
 		public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)

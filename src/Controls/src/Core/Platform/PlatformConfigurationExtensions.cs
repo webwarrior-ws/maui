@@ -1,15 +1,18 @@
+#nullable disable
 #if __IOS__ || MACCATALYST
 using CurrentPlatform = Microsoft.Maui.Controls.PlatformConfiguration.iOS;
 #elif __ANDROID__
 using CurrentPlatform = Microsoft.Maui.Controls.PlatformConfiguration.Android;
 #elif WINDOWS
 using CurrentPlatform = Microsoft.Maui.Controls.PlatformConfiguration.Windows;
-#elif NETSTANDARD
-using NativeView = System.Object;
+#elif TIZEN
+using CurrentPlatform = Microsoft.Maui.Controls.PlatformConfiguration.Tizen;
+#elif (NETSTANDARD || !PLATFORM)
+using PlatformView = System.Object;
 #endif
 
 
-#if !NETSTANDARD
+#if !(NETSTANDARD || !PLATFORM)
 namespace Microsoft.Maui.Controls.Platform
 {
 	public static class PlatformConfigurationExtensions

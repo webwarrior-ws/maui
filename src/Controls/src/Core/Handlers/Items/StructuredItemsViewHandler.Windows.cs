@@ -1,10 +1,14 @@
-﻿using System;
+﻿#nullable disable
+using System;
+using System.ComponentModel;
+using Microsoft.Maui.Controls.Platform;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using WASDKApp = Microsoft.UI.Xaml.Application;
+using WListView = Microsoft.UI.Xaml.Controls.ListView;
+using WScrollMode = Microsoft.UI.Xaml.Controls.ScrollMode;
 using WSetter = Microsoft.UI.Xaml.Setter;
 using WStyle = Microsoft.UI.Xaml.Style;
-using Microsoft.Maui.Controls.Platform;
-using WScrollMode = Microsoft.UI.Xaml.Controls.ScrollMode;
-using WASDKApp = Microsoft.UI.Xaml.Application;
 
 namespace Microsoft.Maui.Controls.Handlers.Items
 {
@@ -12,8 +16,49 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 	{
 		View _currentHeader;
 		View _currentFooter;
+		WeakNotifyPropertyChangedProxy _layoutPropertyChangedProxy;
+		PropertyChangedEventHandler _layoutPropertyChanged;
+
+		~StructuredItemsViewHandler() => _layoutPropertyChangedProxy?.Unsubscribe();
 
 		protected override IItemsLayout Layout { get => ItemsView?.ItemsLayout; }
+
+		protected override void ConnectHandler(ListViewBase platformView)
+		{
+			base.ConnectHandler(platformView);
+
+			if (Layout is not null)
+			{
+				_layoutPropertyChanged ??= LayoutPropertyChanged;
+				_layoutPropertyChangedProxy = new WeakNotifyPropertyChangedProxy(Layout, _layoutPropertyChanged);
+			}
+			else if (_layoutPropertyChangedProxy is not null)
+			{
+				_layoutPropertyChangedProxy.Unsubscribe();
+				_layoutPropertyChangedProxy = null;
+			}
+		}
+
+		protected override void DisconnectHandler(ListViewBase platformView)
+		{
+			base.DisconnectHandler(platformView);
+
+			if (_layoutPropertyChangedProxy is not null)
+			{
+				_layoutPropertyChangedProxy.Unsubscribe();
+				_layoutPropertyChangedProxy = null;
+			}
+		}
+
+		void LayoutPropertyChanged(object sender, PropertyChangedEventArgs e)
+		{
+			if (e.PropertyName == GridItemsLayout.SpanProperty.PropertyName)
+				UpdateItemsLayoutSpan();
+			else if (e.PropertyName == GridItemsLayout.HorizontalItemSpacingProperty.PropertyName || e.PropertyName == GridItemsLayout.VerticalItemSpacingProperty.PropertyName)
+				UpdateItemsLayoutItemSpacing();
+			else if (e.PropertyName == LinearItemsLayout.ItemSpacingProperty.PropertyName)
+				UpdateItemsLayoutItemSpacing();
+		}
 
 		public static void MapHeaderTemplate(StructuredItemsViewHandler<TItemsView> handler, StructuredItemsView itemsView)
 		{
@@ -32,7 +77,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 		public static void MapItemSizingStrategy(StructuredItemsViewHandler<TItemsView> handler, StructuredItemsView itemsView)
 		{
-			
+
 		}
 
 		protected override ListViewBase SelectListViewBase()
@@ -192,8 +237,9 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 			var style = new WStyle(typeof(GridViewItem));
 
-			style.Setters.Add(new WSetter(GridViewItem.MarginProperty, margin));
-			style.Setters.Add(new WSetter(GridViewItem.PaddingProperty, WinUIHelpers.CreateThickness(0)));
+			style.Setters.Add(new WSetter(FrameworkElement.MarginProperty, margin));
+			style.Setters.Add(new WSetter(Control.PaddingProperty, WinUIHelpers.CreateThickness(0)));
+			style.Setters.Add(new WSetter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
 
 			return style;
 		}
@@ -205,8 +251,10 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 			var style = new WStyle(typeof(ListViewItem));
 
-			style.Setters.Add(new WSetter(ListViewItem.MarginProperty, margin));
-			style.Setters.Add(new WSetter(GridViewItem.PaddingProperty, WinUIHelpers.CreateThickness(0)));
+			style.Setters.Add(new WSetter(FrameworkElement.MinHeightProperty, 0));
+			style.Setters.Add(new WSetter(FrameworkElement.MarginProperty, margin));
+			style.Setters.Add(new WSetter(Control.PaddingProperty, WinUIHelpers.CreateThickness(0)));
+			style.Setters.Add(new WSetter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
 
 			return style;
 		}
@@ -218,9 +266,40 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 			var style = new WStyle(typeof(ListViewItem));
 
-			style.Setters.Add(new WSetter(ListViewItem.PaddingProperty, padding));
+			style.Setters.Add(new WSetter(FrameworkElement.MinWidthProperty, 0));
+			style.Setters.Add(new WSetter(Control.PaddingProperty, padding));
+			style.Setters.Add(new WSetter(Control.VerticalContentAlignmentProperty, VerticalAlignment.Stretch));
 
 			return style;
+		}
+
+		void UpdateItemsLayoutSpan()
+		{
+			if (ListViewBase is FormsGridView formsGridView)
+			{
+				formsGridView.Span = ((GridItemsLayout)Layout).Span;
+			}
+		}
+
+		void UpdateItemsLayoutItemSpacing()
+		{
+			if (ListViewBase is FormsGridView formsGridView && Layout is GridItemsLayout gridLayout)
+			{
+				formsGridView.ItemContainerStyle = GetItemContainerStyle(gridLayout);
+			}
+
+			if (Layout is LinearItemsLayout linearItemsLayout)
+			{
+				switch (ListViewBase)
+				{
+					case FormsListView formsListView:
+						formsListView.ItemContainerStyle = GetVerticalItemContainerStyle(linearItemsLayout);
+						break;
+					case WListView listView:
+						listView.ItemContainerStyle = GetHorizontalItemContainerStyle(linearItemsLayout);
+						break;
+				}
+			}
 		}
 	}
 }

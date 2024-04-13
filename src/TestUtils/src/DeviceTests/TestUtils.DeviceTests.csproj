@@ -1,10 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <Import Project="$(MauiNuSpecDirectory)Microsoft.Maui.Core.props" />
-  <Import Project="$(MauiNuSpecDirectory)Microsoft.Maui.Controls.DefaultItems.props" />
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;$(MauiPlatformsNoMacCat)</TargetFrameworks>
+    <TargetFrameworks>$(MauiDeviceTestsPlatforms)</TargetFrameworks>
     <TargetPlatformMinVersion Condition="$(TargetFramework.Contains('-windows'))">10.0.17763.0</TargetPlatformMinVersion>
     <SingleProject>true</SingleProject>
     <RootNamespace>Microsoft.Maui.TestUtils.DeviceTests</RootNamespace>
@@ -13,17 +10,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="xunit.runner.utility" Version="2.4.1" />
+    <PackageReference Include="xunit" Version="2.5.1" />
+    <PackageReference Include="xunit.runner.utility" Version="2.5.1" />
     <PackageReference Include="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21558.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Core\src\Core-net6.csproj" />
-    <ProjectReference Include="..\..\..\Essentials\src\Essentials-net6.csproj" />
+    <ProjectReference Include="..\..\..\Core\src\Core.csproj" />
+    <ProjectReference Include="..\..\..\Essentials\src\Essentials.csproj" />
   </ItemGroup>
 
-  <Import Project="$(MauiNuSpecDirectory)Microsoft.Maui.Core.targets" />
-  <Import Project="$(MauiNuSpecDirectory)Microsoft.Maui.Controls.MultiTargeting.targets" />
+  <Import Project="$(MauiSrcDirectory)Maui.InTree.props" Condition=" '$(UseMaui)' != 'true' " />
+  <Import Project="$(MauiSrcDirectory)MultiTargeting.targets" />
 
 </Project>

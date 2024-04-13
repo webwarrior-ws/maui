@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.Linq;
 using CoreGraphics;
@@ -11,15 +12,17 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 		where TItemsView : ItemsView
 		where TViewController : ItemsViewController<TItemsView>
 	{
+		readonly WeakReference<TViewController> _viewController;
+
 		public ItemsViewLayout ItemsViewLayout { get; }
-		public TViewController ViewController { get; }
+		public TViewController ViewController => _viewController.TryGetTarget(out var vc) ? vc : null;
 
 		protected float PreviousHorizontalOffset, PreviousVerticalOffset;
 
 		public ItemsViewDelegator(ItemsViewLayout itemsViewLayout, TViewController itemsViewController)
 		{
 			ItemsViewLayout = itemsViewLayout;
-			ViewController = itemsViewController;
+			_viewController = new(itemsViewController);
 		}
 
 		public override void Scrolled(UIScrollView scrollView)
@@ -44,8 +47,12 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 				LastVisibleItemIndex = lastVisibleItemIndex
 			};
 
-			var itemsView = ViewController.ItemsView;
-			var source = ViewController.ItemsSource;
+			var viewController = ViewController;
+			if (viewController is null)
+				return;
+
+			var itemsView = viewController.ItemsView;
+			var source = viewController.ItemsSource;
 			itemsView.SendScrolled(itemsViewScrolledEventArgs);
 
 			PreviousHorizontalOffset = (float)contentOffsetX;
@@ -101,24 +108,30 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 		public override void CellDisplayingEnded(UICollectionView collectionView, UICollectionViewCell cell, NSIndexPath indexPath)
 		{
-			if (ItemsViewLayout.ScrollDirection == UICollectionViewScrollDirection.Horizontal)
+			if (cell is TemplatedCell templatedCell &&
+				(templatedCell.PlatformHandler?.VirtualView as View)?.BindingContext is object bindingContext)
 			{
-				var actualWidth = collectionView.ContentSize.Width - collectionView.Bounds.Size.Width;
-				if (collectionView.ContentOffset.X >= actualWidth || collectionView.ContentOffset.X < 0)
-					return;
-			}
-			else
-			{
-				var actualHeight = collectionView.ContentSize.Height - collectionView.Bounds.Size.Height;
+				// We want to unbind a cell that is no longer present in the items source. Unfortunately
+				// it's too expensive to check directly, so let's check that the current binding context
+				// matches the item at a given position.
 
-				if (collectionView.ContentOffset.Y >= actualHeight || collectionView.ContentOffset.Y < 0)
-					return;
+				var itemsSource = ViewController?.ItemsSource;
+				if (itemsSource is null ||
+					!itemsSource.IsIndexPathValid(indexPath) ||
+					!Equals(itemsSource[indexPath], bindingContext))
+				{
+					templatedCell.Unbind();
+				}
 			}
 		}
 
 		protected virtual (bool VisibleItems, NSIndexPath First, NSIndexPath Center, NSIndexPath Last) GetVisibleItemsIndexPath()
 		{
-			var indexPathsForVisibleItems = ViewController.CollectionView.IndexPathsForVisibleItems.OrderBy(x => x.Row).ToList();
+			var collectionView = ViewController?.CollectionView;
+			if (collectionView is null)
+				return default;
+
+			var indexPathsForVisibleItems = collectionView.IndexPathsForVisibleItems.OrderBy(x => x.Row).ToList();
 
 			var visibleItems = indexPathsForVisibleItems.Count > 0;
 			NSIndexPath firstVisibleItemIndex = null, centerItemIndex = null, lastVisibleItemIndex = null;
@@ -126,7 +139,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 			if (visibleItems)
 			{
 				firstVisibleItemIndex = indexPathsForVisibleItems.First();
-				centerItemIndex = GetCenteredIndexPath(ViewController.CollectionView);
+				centerItemIndex = GetCenteredIndexPath(collectionView);
 				lastVisibleItemIndex = indexPathsForVisibleItems.Last();
 			}
 
@@ -165,7 +178,7 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 		public override CGSize GetSizeForItem(UICollectionView collectionView, UICollectionViewLayout layout, NSIndexPath indexPath)
 		{
-			return ViewController.GetSizeForItem(indexPath);
+			return ViewController?.GetSizeForItem(indexPath) ?? CGSize.Empty;
 		}
 	}
 }

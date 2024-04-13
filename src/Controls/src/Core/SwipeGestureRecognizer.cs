@@ -1,8 +1,10 @@
+#nullable disable
 using System;
 using System.Windows.Input;
 
 namespace Microsoft.Maui.Controls
 {
+	/// <include file="../../docs/Microsoft.Maui.Controls/SwipeGestureRecognizer.xml" path="Type[@FullName='Microsoft.Maui.Controls.SwipeGestureRecognizer']/Docs/*" />
 	public sealed class SwipeGestureRecognizer : GestureRecognizer, ISwipeGestureController
 	{
 		// Default threshold in pixels before a swipe is detected.
@@ -10,32 +12,40 @@ namespace Microsoft.Maui.Controls
 
 		double _totalX, _totalY;
 
+		/// <summary>Bindable property for <see cref="Command"/>.</summary>
 		public static readonly BindableProperty CommandProperty = BindableProperty.Create(nameof(Command), typeof(ICommand), typeof(SwipeGestureRecognizer), null);
 
+		/// <summary>Bindable property for <see cref="CommandParameter"/>.</summary>
 		public static readonly BindableProperty CommandParameterProperty = BindableProperty.Create("CommandParameter", typeof(object), typeof(SwipeGestureRecognizer), null);
 
+		/// <summary>Bindable property for <see cref="Direction"/>.</summary>
 		public static readonly BindableProperty DirectionProperty = BindableProperty.Create("Direction", typeof(SwipeDirection), typeof(SwipeGestureRecognizer), default(SwipeDirection));
 
+		/// <summary>Bindable property for <see cref="Threshold"/>.</summary>
 		public static readonly BindableProperty ThresholdProperty = BindableProperty.Create("Threshold", typeof(uint), typeof(SwipeGestureRecognizer), DefaultSwipeThreshold);
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/SwipeGestureRecognizer.xml" path="//Member[@MemberName='Command']/Docs/*" />
 		public ICommand Command
 		{
 			get { return (ICommand)GetValue(CommandProperty); }
 			set { SetValue(CommandProperty, value); }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/SwipeGestureRecognizer.xml" path="//Member[@MemberName='CommandParameter']/Docs/*" />
 		public object CommandParameter
 		{
 			get { return GetValue(CommandParameterProperty); }
 			set { SetValue(CommandParameterProperty, value); }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/SwipeGestureRecognizer.xml" path="//Member[@MemberName='Direction']/Docs/*" />
 		public SwipeDirection Direction
 		{
 			get { return (SwipeDirection)GetValue(DirectionProperty); }
 			set { SetValue(DirectionProperty, value); }
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/SwipeGestureRecognizer.xml" path="//Member[@MemberName='Threshold']/Docs/*" />
 		public uint Threshold
 		{
 			get { return (uint)GetValue(ThresholdProperty); }
@@ -55,34 +65,53 @@ namespace Microsoft.Maui.Controls
 			var detected = false;
 			var threshold = Threshold;
 
+			var detectedDirection = (SwipeDirection)(0);
+
 			if (direction.IsLeft())
 			{
-				detected |= _totalX < -threshold;
+				if (_totalX < -threshold)
+				{
+					detected = true;
+					detectedDirection |= SwipeDirection.Left;
+				}
 			}
 
 			if (direction.IsRight())
 			{
-				detected |= _totalX > threshold;
+				if (_totalX > threshold)
+				{
+					detected = true;
+					detectedDirection |= SwipeDirection.Right;
+				}
 			}
 
 			if (direction.IsDown())
 			{
-				detected |= _totalY > threshold;
+				if (_totalY > threshold)
+				{
+					detected = true;
+					detectedDirection |= SwipeDirection.Down;
+				}
 			}
 
 			if (direction.IsUp())
 			{
-				detected |= _totalY < -threshold;
+				if (_totalY < -threshold)
+				{
+					detected = true;
+					detectedDirection |= SwipeDirection.Up;
+				}
 			}
 
 			if (detected)
 			{
-				SendSwiped(sender, direction);
+				SendSwiped(sender, detectedDirection);
 			}
 
 			return detected;
 		}
 
+		/// <include file="../../docs/Microsoft.Maui.Controls/SwipeGestureRecognizer.xml" path="//Member[@MemberName='SendSwiped']/Docs/*" />
 		public void SendSwiped(View sender, SwipeDirection direction)
 		{
 			ICommand cmd = Command;

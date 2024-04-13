@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Maui;
 using Microsoft.Maui.Hosting;
 
@@ -24,7 +23,7 @@ namespace Maui.Controls.Sample.Controls
 
 	class BordelessEntryServiceBuilder
 	{
-		internal static IMauiHandlersCollection HandlersCollection;
+		internal static IMauiHandlersCollection? HandlersCollection;
 		internal static readonly Dictionary<Type, Type> PendingHandlers = new();
 
 		public static void TryAddHandler<TType, TTypeRender>()

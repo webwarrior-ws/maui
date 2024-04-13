@@ -6,6 +6,7 @@ using System.Globalization;
 
 namespace Microsoft.Maui.Converters
 {
+	/// <inheritdoc/>
 	public class ThicknessTypeConverter : TypeConverter
 	{
 		public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
@@ -16,11 +17,14 @@ namespace Microsoft.Maui.Converters
 
 		public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
 		{
+			// IMPORTANT! Update ThicknessTypeDesignConverter.IsValid if making changes here
 			var strValue = value?.ToString();
+
 			if (strValue != null)
 			{
 				strValue = strValue.Trim();
-				if (strValue.Contains(","))
+
+				if (strValue.ContainsChar(','))
 				{ //Xaml
 					var thickness = strValue.Split(',');
 					switch (thickness.Length)
@@ -39,7 +43,7 @@ namespace Microsoft.Maui.Converters
 							break;
 					}
 				}
-				else if (strValue.Contains(" "))
+				else if (strValue.ContainsChar(' '))
 				{ //CSS
 					var thickness = strValue.Split(' ');
 					switch (thickness.Length)
@@ -78,7 +82,9 @@ namespace Microsoft.Maui.Converters
 		{
 			if (value is not Thickness t)
 				throw new NotSupportedException();
-			return $"{t.Left.ToString(CultureInfo.InvariantCulture)}, {t.Top.ToString(CultureInfo.InvariantCulture)}, {t.Right.ToString(CultureInfo.InvariantCulture)}, {t.Bottom.ToString(CultureInfo.InvariantCulture)}";
+
+			return $"{t.Left.ToString(CultureInfo.InvariantCulture)}, {t.Top.ToString(CultureInfo.InvariantCulture)}, " +
+				$"{t.Right.ToString(CultureInfo.InvariantCulture)}, {t.Bottom.ToString(CultureInfo.InvariantCulture)}";
 		}
 	}
 }

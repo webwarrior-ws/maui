@@ -1,17 +1,18 @@
 using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
-using Windows.UI.Core;
+using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Controls.Platform;
+using Microsoft.Maui.Graphics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.Maui.Controls.Internals;
+using Windows.UI.Core;
 using WBrush = Microsoft.UI.Xaml.Media.Brush;
 using WSelectionChangedEventArgs = Microsoft.UI.Xaml.Controls.SelectionChangedEventArgs;
-using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Controls.Platform;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class PickerRenderer : ViewRenderer<Picker, FormsComboBox>
 	{
 		bool _fontApplied;
@@ -83,7 +84,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			else if (e.PropertyName == Picker.HorizontalTextAlignmentProperty.PropertyName || e.PropertyName == VisualElement.FlowDirectionProperty.PropertyName)
 				UpdateHorizontalTextAlignment();
 			else if (e.PropertyName == Picker.VerticalTextAlignmentProperty.PropertyName)
-				UpdateVerticalTextAlignment();			
+				UpdateVerticalTextAlignment();
 		}
 
 		void ControlOnLoaded(object sender, RoutedEventArgs routedEventArgs)
@@ -191,7 +192,12 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			if (picker == null)
 				return;
 
-			bool pickerIsDefault = picker.FontFamily == null && picker.FontSize == Device.GetNamedSize(NamedSize.Default, typeof(Picker), true) && picker.FontAttributes == FontAttributes.None;
+			bool pickerIsDefault =
+				picker.FontFamily == null &&
+#pragma warning disable CS0612 // Type or member is obsolete
+				picker.FontSize == Device.GetNamedSize(NamedSize.Default, typeof(Picker), true) &&
+#pragma warning restore CS0612 // Type or member is obsolete
+				picker.FontAttributes == FontAttributes.None;
 
 			if (pickerIsDefault && !_fontApplied)
 				return;
@@ -224,7 +230,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		void UpdateTextColor()
 		{
 			Color color = Element.TextColor;
-			Control.Foreground = color.IsDefault() ? (_defaultBrush ?? color.ToNative()) : color.ToNative();
+			Control.Foreground = color.IsDefault() ? (_defaultBrush ?? color.ToPlatform()) : color.ToPlatform();
 		}
 
 		[PortHandler]
@@ -238,12 +244,12 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		[PortHandler]
 		void UpdateHorizontalTextAlignment()
 		{
-			Control.HorizontalContentAlignment = Element.HorizontalTextAlignment.ToNativeHorizontalAlignment();
+			Control.HorizontalContentAlignment = Element.HorizontalTextAlignment.ToPlatformHorizontalAlignment();
 		}
-        [PortHandler]
+		[PortHandler]
 		void UpdateVerticalTextAlignment()
 		{
-			Control.VerticalContentAlignment = Element.VerticalTextAlignment.ToNativeVerticalAlignment();
+			Control.VerticalContentAlignment = Element.VerticalTextAlignment.ToPlatformVerticalAlignment();
 		}
 	}
 }

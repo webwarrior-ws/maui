@@ -1,25 +1,43 @@
 using System.Threading.Tasks;
 
-namespace Microsoft.Maui.Essentials
+namespace Microsoft.Maui.ApplicationModel
 {
 	public static partial class Permissions
 	{
-		public partial class BasePlatformPermission : BasePermission
+		/// <summary>
+		/// Represents the platform-specific abstract base class for all permissions on this platform.
+		/// </summary>
+		public abstract partial class BasePlatformPermission : BasePermission
 		{
+			/// <summary>
+			/// Initializes a new instance of the <see cref="BasePlatformPermission"/> class.
+			/// </summary>
+			protected BasePlatformPermission()
+			{
+			}
+
+			/// <inheritdoc/>
 			public override Task<PermissionStatus> CheckStatusAsync() =>
 				throw ExceptionUtils.NotSupportedOrImplementedException;
 
+			/// <inheritdoc/>
 			public override Task<PermissionStatus> RequestAsync() =>
 				throw ExceptionUtils.NotSupportedOrImplementedException;
 
+			/// <inheritdoc/>
 			public override void EnsureDeclared() =>
 				throw ExceptionUtils.NotSupportedOrImplementedException;
 
+			/// <inheritdoc/>
 			public override bool ShouldShowRationale() =>
 				throw ExceptionUtils.NotSupportedOrImplementedException;
 		}
 
 		public partial class Battery : BasePlatformPermission
+		{
+		}
+
+		public partial class Bluetooth : BasePlatformPermission
 		{
 		}
 
@@ -71,6 +89,10 @@ namespace Microsoft.Maui.Essentials
 		{
 		}
 
+		public partial class NearbyWifiDevices : BasePlatformPermission
+		{
+		}
+
 		public partial class NetworkState : BasePlatformPermission
 		{
 		}
@@ -80,6 +102,14 @@ namespace Microsoft.Maui.Essentials
 		}
 
 		public partial class Photos : BasePlatformPermission
+		{
+		}
+
+		public partial class PhotosAddOnly : BasePlatformPermission
+		{
+		}
+
+		public partial class PostNotifications : BasePlatformPermission
 		{
 		}
 

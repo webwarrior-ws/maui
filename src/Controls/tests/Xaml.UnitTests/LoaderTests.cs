@@ -395,9 +395,7 @@ namespace Microsoft.Maui.Controls.Xaml.UnitTests
 		[Test]
 		public void StaticResourceLookForApplicationResources()
 		{
-			Device.PlatformServices = new MockPlatformServices();
 			Application.Current = null;
-
 			Application.Current = new MyApp();
 			var xaml = @"
 				<ContentView
@@ -802,7 +800,7 @@ namespace Microsoft.Maui.Controls.Xaml.UnitTests
 				AssemblyResolver = new MockAssemblyResolver(),
 				Kind = ModuleKind.Dll,
 			});
-			var bindingTypeRef = new XmlType("http://schemas.microsoft.com/dotnet/2021/maui", "Binding", null).GetTypeReference(module, null);
+			var bindingTypeRef = new XmlType("http://schemas.microsoft.com/dotnet/2021/maui", "Binding", null).GetTypeReference(new XamlCache(), module, null);
 			Assert.That(bindingType.FullName, Is.EqualTo("Microsoft.Maui.Controls.Xaml.BindingExtension"));
 		}
 	}

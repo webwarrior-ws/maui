@@ -3,11 +3,12 @@
   <Import Project="..\..\src\WindowsForms\build\Microsoft.AspNetCore.Components.WebView.WindowsForms.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0-windows</TargetFrameworks>
+    <TargetFrameworks>$(_MauiDotNetTfm)-windows</TargetFrameworks>
     <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
     <OutputType>WinExe</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
     <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,9 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Update="wwwroot\**">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" />
   </ItemGroup>
 
   <Import Project="..\..\src\WindowsForms\build\Microsoft.AspNetCore.Components.WebView.WindowsForms.targets" />

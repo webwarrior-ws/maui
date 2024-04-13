@@ -22,7 +22,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Material.Tizen
 		{
 			if (Control is MPicker mp)
 			{
-				// Microsoft.Maui.Controls using DateTime formatting (https://developer.xamarin.com/api/property/Microsoft.Maui.Controls.TimePicker.Format/)
+				// .NET MAUI using DateTime formatting (https://learn.microsoft.com/dotnet/api/microsoft.maui.controls.timepicker.format)
 				mp.Placeholder = new DateTime(Time.Ticks).ToString(Element.Format ?? _defaultFormat);
 			}
 		}
@@ -33,11 +33,11 @@ namespace Microsoft.Maui.Controls.Compatibility.Material.Tizen
 			{
 				if (Element.TextColor.IsDefault)
 				{
-					mp.PlaceholderColor = _defaultTitleColor.ToNative();
+					mp.PlaceholderColor = _defaultTitleColor.ToPlatform();
 				}
 				else
 				{
-					mp.PlaceholderColor = Element.TextColor.ToNative();
+					mp.PlaceholderColor = Element.TextColor.ToPlatform();
 				}
 			}
 		}

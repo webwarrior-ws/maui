@@ -57,7 +57,7 @@ namespace Maui.Controls.Sample.ViewModels
 			{
 				Items.Add(new RefreshItem
 				{
-					Color = Color.FromRgb(_random.Next(0, 255), _random.Next(0, 255), _random.Next(0, 255)),
+					Color = Color.FromRgb(_random.NextDouble(), _random.NextDouble(), _random.NextDouble()),
 					Name = $"Item {_itemNumber++}"
 				});
 			}
@@ -77,9 +77,9 @@ namespace Maui.Controls.Sample.ViewModels
 
 		#region INotifyPropertyChanged
 
-		public event PropertyChangedEventHandler PropertyChanged;
+		public event PropertyChangedEventHandler? PropertyChanged;
 
-		void OnPropertyChanged([CallerMemberName] string propertyName = null)
+		void OnPropertyChanged([CallerMemberName] string propertyName = "")
 		{
 			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 		}

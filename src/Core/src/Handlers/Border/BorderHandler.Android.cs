@@ -2,9 +2,9 @@
 
 namespace Microsoft.Maui.Handlers
 {
-	public partial class BorderHandler : ViewHandler<IBorder, ContentViewGroup>
+	public partial class BorderHandler : ViewHandler<IBorderView, ContentViewGroup>
 	{
-		protected override ContentViewGroup CreateNativeView()
+		protected override ContentViewGroup CreatePlatformView()
 		{
 			if (VirtualView == null)
 			{
@@ -13,8 +13,7 @@ namespace Microsoft.Maui.Handlers
 
 			var viewGroup = new ContentViewGroup(Context)
 			{
-				CrossPlatformMeasure = VirtualView.CrossPlatformMeasure,
-				CrossPlatformArrange = VirtualView.CrossPlatformArrange
+				CrossPlatformLayout = VirtualView
 			};
 
 			// We only want to use a hardware layer for the entering view because its quite likely
@@ -27,36 +26,43 @@ namespace Microsoft.Maui.Handlers
 		public override void SetVirtualView(IView view)
 		{
 			base.SetVirtualView(view);
+
 			_ = VirtualView ?? throw new InvalidOperationException($"{nameof(VirtualView)} should have been set by base class.");
-			_ = NativeView ?? throw new InvalidOperationException($"{nameof(NativeView)} should have been set by base class.");
+			_ = PlatformView ?? throw new InvalidOperationException($"{nameof(PlatformView)} should have been set by base class.");
 
-			NativeView.CrossPlatformMeasure = VirtualView.CrossPlatformMeasure;
-			NativeView.CrossPlatformArrange = VirtualView.CrossPlatformArrange;
+			PlatformView.CrossPlatformLayout = VirtualView;
 		}
 
-		void UpdateContent()
+		static partial void UpdateContent(IBorderHandler handler)
 		{
-			_ = NativeView ?? throw new InvalidOperationException($"{nameof(NativeView)} should have been set by base class.");
-			_ = MauiContext ?? throw new InvalidOperationException($"{nameof(MauiContext)} should have been set by base class.");
-			_ = VirtualView ?? throw new InvalidOperationException($"{nameof(VirtualView)} should have been set by base class.");
+			_ = handler.PlatformView ?? throw new InvalidOperationException($"{nameof(PlatformView)} should have been set by base class.");
+			_ = handler.MauiContext ?? throw new InvalidOperationException($"{nameof(MauiContext)} should have been set by base class.");
+			_ = handler.VirtualView ?? throw new InvalidOperationException($"{nameof(VirtualView)} should have been set by base class.");
 
-			NativeView.RemoveAllViews();
+			handler.PlatformView.RemoveAllViews();
 
-			if (VirtualView.PresentedContent is IView view)
-				NativeView.AddView(view.ToNative(MauiContext));
+			if (handler.VirtualView.PresentedContent is IView view)
+				handler.PlatformView.AddView(view.ToPlatform(handler.MauiContext));
 		}
 
-		public static void MapContent(BorderHandler handler, IBorder border)
+		public static partial void MapHeight(IBorderHandler handler, IBorderView border)
 		{
-			handler.UpdateContent();
+			handler.PlatformView?.UpdateHeight(border);
+			handler.PlatformView?.InvalidateBorderStrokeBounds();
 		}
 
-		protected override void DisconnectHandler(ContentViewGroup nativeView)
+		public static partial void MapWidth(IBorderHandler handler, IBorderView border)
 		{
-			// If we're being disconnected from the xplat element, then we should no longer be managing its chidren
-			nativeView.RemoveAllViews();
+			handler.PlatformView?.UpdateWidth(border);
+			handler.PlatformView?.InvalidateBorderStrokeBounds();
+		}
 
-			base.DisconnectHandler(nativeView);
+		protected override void DisconnectHandler(ContentViewGroup platformView)
+		{
+			// If we're being disconnected from the xplat element, then we should no longer be managing its children
+			platformView.RemoveAllViews();
+
+			base.DisconnectHandler(platformView);
 		}
 	}
 }

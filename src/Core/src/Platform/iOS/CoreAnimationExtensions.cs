@@ -37,10 +37,6 @@ namespace Microsoft.Maui
 			if (layer == null)
 				return new Matrix4x4();
 
-			var superLayer = layer.SuperLayer;
-			if (layer.Transform.IsIdentity && (superLayer == null || superLayer.Transform.IsIdentity))
-				return new Matrix4x4();
-
 			var superTransform = layer.SuperLayer?.GetChildTransform() ?? CATransform3D.Identity;
 
 			return layer.GetLocalTransform()

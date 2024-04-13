@@ -2,15 +2,14 @@
 using System.Diagnostics;
 using Maui.Controls.Sample.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Maui.Controls;
 
 namespace Maui.Controls.Sample.Pages
 {
 	public partial class MainPage
 	{
-		readonly IServiceProvider _services;
-		readonly MainViewModel _viewModel;
+		readonly IServiceProvider? _services;
+		readonly MainViewModel? _viewModel;
 
 		public MainPage(IServiceProvider services, MainViewModel viewModel)
 		{

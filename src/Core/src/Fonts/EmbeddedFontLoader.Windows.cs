@@ -6,10 +6,12 @@ using Windows.Storage;
 
 namespace Microsoft.Maui
 {
+	/// <inheritdoc/>
 	public partial class EmbeddedFontLoader
 	{
 		const string FontCacheFolderName = "fonts";
 
+		/// <inheritdoc/>
 		public string? LoadFont(EmbeddedFont font)
 		{
 			var tmpdir = ApplicationData.Current.LocalFolder.CreateFolderAsync(FontCacheFolderName, CreationCollisionOption.OpenIfExists).AsTask().Result;
@@ -34,7 +36,7 @@ namespace Microsoft.Maui
 			}
 			catch (Exception ex)
 			{
-				_logger?.LogWarning(ex, "Unable copy font {Font} to local file system.", font.FontName);
+				_serviceProvider?.CreateLogger<FontManager>()?.LogWarning(ex, "Unable copy font {Font} to local file system.", font.FontName);
 
 				if (newFile != null)
 					newFile.DeleteAsync().AsTask().Wait();

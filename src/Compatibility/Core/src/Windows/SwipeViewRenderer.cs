@@ -1,18 +1,19 @@
 using System;
-using System.Linq;
-using System.ComponentModel;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Linq;
+using Microsoft.Maui.Controls.Platform;
+using Microsoft.Maui.Graphics;
 using WSwipeBehaviorOnInvoked = Microsoft.UI.Xaml.Controls.SwipeBehaviorOnInvoked;
 using WSwipeControl = Microsoft.UI.Xaml.Controls.SwipeControl;
-using WSwipeItems = Microsoft.UI.Xaml.Controls.SwipeItems;
 using WSwipeItem = Microsoft.UI.Xaml.Controls.SwipeItem;
+using WSwipeItems = Microsoft.UI.Xaml.Controls.SwipeItems;
 using WSwipeMode = Microsoft.UI.Xaml.Controls.SwipeMode;
-using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Controls.Platform;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
 	public class SwipeViewRenderer : ViewRenderer<SwipeView, WSwipeControl>
 	{
 		bool _isDisposed;
@@ -126,13 +127,15 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			base.Dispose(disposing);
 		}
 
+
+		[PortHandler]
 		protected override void UpdateBackgroundColor()
 		{
 			Color backgroundColor = Element.BackgroundColor;
 
 			if (Control != null)
 			{
-				Control.Background = backgroundColor.IsDefault() ? null : backgroundColor.ToNative();
+				Control.Background = backgroundColor.IsDefault() ? null : backgroundColor.ToPlatform();
 			}
 
 			base.UpdateBackgroundColor();
@@ -147,7 +150,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				if (Element == null || availableSize.Width * availableSize.Height == 0)
 					return new global::Windows.Foundation.Size(0, 0);
 
-				Element.IsInNativeLayout = true;
+				Element.IsInPlatformLayout = true;
 
 				double width = Math.Max(0, Element.Width);
 				double height = Math.Max(0, Element.Height);
@@ -171,7 +174,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 					Control.Loaded += (sender, args) => { Control.Measure(new global::Windows.Foundation.Size(w, h)); };
 				}
 
-				Element.IsInNativeLayout = false;
+				Element.IsInPlatformLayout = false;
 
 				return result;
 			}
@@ -205,6 +208,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				UpdateSwipeItem(formsSwipeItem);
 		}
 
+		[PortHandler]
 		void UpdateContent()
 		{
 			if (Element.Content == null)
@@ -257,10 +261,10 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			{
 				windowsSwipeItem.Text = formsSwipeItem.Text;
 				windowsSwipeItem.IconSource = formsSwipeItem.IconImageSource.ToWindowsIconSource();
-				windowsSwipeItem.Background = formsSwipeItem.BackgroundColor.ToNative();
+				windowsSwipeItem.Background = formsSwipeItem.BackgroundColor.ToPlatform();
 
 				var textColor = GetSwipeItemColor(formsSwipeItem.BackgroundColor);
-				windowsSwipeItem.Foreground = textColor.ToNative();
+				windowsSwipeItem.Foreground = textColor.ToPlatform();
 			}
 		}
 
@@ -327,8 +331,8 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 					var windowsSwipeItem = new WSwipeItem
 					{
-						Background = formsSwipeItem.BackgroundColor.IsDefault() ? null : formsSwipeItem.BackgroundColor.ToNative(),
-						Foreground = textColor.ToNative(),
+						Background = formsSwipeItem.BackgroundColor.IsDefault() ? null : formsSwipeItem.BackgroundColor.ToPlatform(),
+						Foreground = textColor.ToPlatform(),
 						IconSource = formsSwipeItem.IconImageSource.ToWindowsIconSource(),
 						Text = !string.IsNullOrEmpty(formsSwipeItem.Text) ? formsSwipeItem.Text : string.Empty,
 						BehaviorOnInvoked = GetSwipeBehaviorOnInvoked(items.SwipeBehaviorOnInvoked)

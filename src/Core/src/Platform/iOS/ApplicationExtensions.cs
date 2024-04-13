@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Runtime.Versioning;
 using Foundation;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Handlers;
 using Microsoft.Maui.LifecycleEvents;
 using ObjCRuntime;
@@ -10,7 +13,9 @@ namespace Microsoft.Maui.Platform
 {
 	public static class ApplicationExtensions
 	{
-		public static void RequestNewWindow(this UIApplicationDelegate nativeApplication, IApplication application, OpenWindowRequest? args)
+		[SupportedOSPlatform("ios13.0")]
+		[SupportedOSPlatform("tvos13.0")]
+		public static void RequestNewWindow(this IUIApplicationDelegate platformApplication, IApplication application, OpenWindowRequest? args)
 		{
 			if (application.Handler?.MauiContext is not IMauiContext applicationContext || args is null)
 				return;
@@ -18,14 +23,27 @@ namespace Microsoft.Maui.Platform
 			var state = args?.State;
 			var userActivity = state.ToUserActivity(MauiUIApplicationDelegate.MauiSceneConfigurationKey);
 
-			UIApplication.SharedApplication.RequestSceneSessionActivation(
-				null,
-				userActivity,
-				null,
-				err => application.Handler?.MauiContext?.CreateLogger<IApplication>()?.LogError(new NSErrorException(err), err.Description));
+			Action<NSError> errorAction = err => application.Handler?.MauiContext?.CreateLogger<IApplication>()?.LogError(new NSErrorException(err), err.Description);
+#if NET8_0_OR_GREATER
+			if (OperatingSystem.IsIOSVersionAtLeast(17))
+			{
+				var request = UISceneSessionActivationRequest.Create();
+				request.UserActivity = userActivity;
+				UIApplication.SharedApplication.ActivateSceneSession(request, errorAction);
+			}
+			else
+#endif
+			if (OperatingSystem.IsIOSVersionAtLeast(13) || OperatingSystem.IsMacCatalystVersionAtLeast(13, 1))
+			{
+				UIApplication.SharedApplication.RequestSceneSessionActivation(
+					null,
+					userActivity,
+					null,
+					errorAction);
+			}
 		}
 
-		public static void CreateNativeWindow(this UIApplicationDelegate nativeApplication, IApplication application, UIApplication uiApplication, NSDictionary launchOptions)
+		public static void CreatePlatformWindow(this IUIApplicationDelegate platformApplication, IApplication application, UIApplication uiApplication, NSDictionary launchOptions)
 		{
 			// Find any userinfo/dictionaries we might pass into the activation state
 			var dicts = new List<NSDictionary>();
@@ -34,15 +52,17 @@ namespace Microsoft.Maui.Platform
 			if (launchOptions is not null)
 				dicts.Add(launchOptions);
 
-			var window = CreateNativeWindow(application, null, dicts.ToArray());
+			var window = CreatePlatformWindow(application, null, dicts.ToArray());
 			if (window is not null)
 			{
-				nativeApplication.Window = window;
-				nativeApplication.Window.MakeKeyAndVisible();
+				platformApplication.SetWindow(window);
+				platformApplication.GetWindow()?.MakeKeyAndVisible();
 			}
 		}
 
-		public static void CreateNativeWindow(this UIWindowSceneDelegate sceneDelegate, IApplication application, UIScene scene, UISceneSession session, UISceneConnectionOptions connectionOptions)
+		[SupportedOSPlatform("ios13.0")]
+		[SupportedOSPlatform("tvos13.0")]
+		public static void CreatePlatformWindow(this IUIWindowSceneDelegate sceneDelegate, IApplication application, UIScene scene, UISceneSession session, UISceneConnectionOptions connectionOptions)
 		{
 			// Find any userinfo/dictionaries we might pass into the activation state
 			var dicts = new List<NSDictionary>();
@@ -52,30 +72,41 @@ namespace Microsoft.Maui.Platform
 				dicts.Add(session.UserInfo);
 			if (session.StateRestorationActivity?.UserInfo is not null)
 				dicts.Add(session.StateRestorationActivity.UserInfo);
-			if (connectionOptions.UserActivities is not null)
+			try
 			{
-				foreach (var u in connectionOptions.UserActivities)
+				using var activities = connectionOptions.UserActivities;
+				if (activities is not null)
 				{
-					if (u is NSUserActivity userActivity && userActivity.UserInfo is not null)
-						dicts.Add(userActivity.UserInfo);
+					foreach (var u in activities)
+					{
+						if (u is NSUserActivity userActivity && userActivity.UserInfo is not null)
+							dicts.Add(userActivity.UserInfo);
+					}
 				}
 			}
+			catch (InvalidCastException)
+			{
+				// HACK: Workaround for https://github.com/xamarin/xamarin-macios/issues/13704
+				//       This only throws if the collection is empty.
+			}
 
-			var window = CreateNativeWindow(application, scene as UIWindowScene, dicts.ToArray());
+			var window = CreatePlatformWindow(application, scene as UIWindowScene, dicts.ToArray());
 			if (window is not null)
 			{
-				sceneDelegate.Window = window;
-				sceneDelegate.Window.MakeKeyAndVisible();
+				sceneDelegate.SetWindow(window);
+				sceneDelegate.GetWindow()?.MakeKeyAndVisible();
 			}
 		}
 
-		static UIWindow? CreateNativeWindow(IApplication application, UIWindowScene? windowScene, NSDictionary[]? states)
+		static UIWindow? CreatePlatformWindow(IApplication application, UIWindowScene? windowScene, NSDictionary[]? states)
 		{
 			if (application.Handler?.MauiContext is not IMauiContext applicationContext)
 				return null;
 
 			var uiWindow = windowScene is not null
+#pragma warning disable CA1416 // UIWindow(windowScene) is only supported on: ios 13.0 and later
 				? new UIWindow(windowScene)
+#pragma warning restore CA1416
 				: new UIWindow();
 
 			var mauiContext = applicationContext.MakeWindowScope(uiWindow, out var windowScope);
@@ -107,6 +138,33 @@ namespace Microsoft.Maui.Platform
 			userActivity.AddUserInfoEntries(userInfo);
 
 			return userActivity;
+		}
+
+		public static void UpdateUserInterfaceStyle(this IApplication application)
+		{
+			if (!OperatingSystem.IsIOSVersionAtLeast(13) && !OperatingSystem.IsMacCatalystVersionAtLeast(13, 1))
+				return;
+
+			if (application is null)
+				return;
+
+			var currentViewController = WindowStateManager.Default.GetCurrentUIViewController(false);
+
+			if (currentViewController is null)
+				return;
+
+			switch (application.UserAppTheme)
+			{
+				case AppTheme.Light:
+					currentViewController.OverrideUserInterfaceStyle = UIUserInterfaceStyle.Light;
+					break;
+				case AppTheme.Dark:
+					currentViewController.OverrideUserInterfaceStyle = UIUserInterfaceStyle.Dark;
+					break;
+				default:
+					currentViewController.OverrideUserInterfaceStyle = UIUserInterfaceStyle.Unspecified;
+					break;
+			}
 		}
 	}
 }

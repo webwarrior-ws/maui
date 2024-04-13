@@ -1,29 +1,20 @@
+using System;
 using System.ComponentModel;
+using Microsoft.Maui.Controls.Platform;
 using Microsoft.Maui.Graphics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.Maui.Controls.Platform;
 using WBorder = Microsoft.UI.Xaml.Controls.Border;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
+	[Obsolete("Use Microsoft.Maui.Controls.Handlers.Compatibility.FrameRenderer instead")]
 	public class FrameRenderer : ViewRenderer<Frame, WBorder>
 	{
 		public FrameRenderer()
 		{
 			AutoPackage = false;
-		}
-
-		protected override AutomationPeer OnCreateAutomationPeer()
-		{
-			// We need an automation peer so we can interact with this in automated tests
-			if (Control == null)
-			{
-				return new FrameworkElementAutomationPeer(this);
-			}
-
-			return new FrameworkElementAutomationPeer(Control);
 		}
 
 		protected override void OnElementChanged(ElementChangedEventArgs<Frame> e)
@@ -69,7 +60,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			if (Control != null)
 			{
 				Control.Background = backgroundColor.IsDefault() ?
-					new Microsoft.UI.Xaml.Media.SolidColorBrush((global::Windows.UI.Color)Resources["SystemAltHighColor"]) : backgroundColor.ToNative();
+					new Microsoft.UI.Xaml.Media.SolidColorBrush((global::Windows.UI.Color)Resources["SystemAltHighColor"]) : backgroundColor.ToPlatform();
 			}
 		}
 
@@ -82,7 +73,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			{
 				if (Brush.IsNullOrEmpty(background))
 					Control.Background = backgroundColor.IsDefault() ?
-						new Microsoft.UI.Xaml.Media.SolidColorBrush((global::Windows.UI.Color)Resources["SystemAltHighColor"]) : backgroundColor.ToNative();
+						new Microsoft.UI.Xaml.Media.SolidColorBrush((global::Windows.UI.Color)Resources["SystemAltHighColor"]) : backgroundColor.ToPlatform();
 				else
 					Control.Background = background.ToBrush();
 			}
@@ -101,12 +92,12 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		{
 			if (Element.BorderColor.IsNotDefault())
 			{
-				Control.BorderBrush = Element.BorderColor.ToNative();
+				Control.BorderBrush = Element.BorderColor.ToPlatform();
 				Control.BorderThickness = WinUIHelpers.CreateThickness(1);
 			}
 			else
 			{
-				Control.BorderBrush = new Color(0, 0, 0, 0).ToNative();
+				Control.BorderBrush = new Color(0, 0, 0, 0).ToPlatform();
 			}
 		}
 

@@ -1,22 +1,25 @@
 ﻿using System;
+using System.Threading.Tasks;
+using Android.App.Roles;
 using Android.Runtime;
 using Android.Views;
 using AndroidX.AppCompat.Widget;
 using AndroidX.DrawerLayout.Widget;
+using AndroidX.Fragment.App;
+using AndroidX.Lifecycle;
 
 namespace Microsoft.Maui.Handlers
 {
-
 	public partial class FlyoutViewHandler : ViewHandler<IFlyoutView, View>
 	{
 		View? _flyoutView;
-		View? _detailView;
 		const uint DefaultScrimColor = 0x99000000;
 		View? _navigationRoot;
 		LinearLayoutCompat? _sideBySideView;
-		DrawerLayout DrawerLayout => (DrawerLayout)NativeView;
+		DrawerLayout DrawerLayout => (DrawerLayout)PlatformView;
+		ScopedFragment? _detailViewFragment;
 
-		protected override View CreateNativeView()
+		protected override View CreatePlatformView()
 		{
 			var li = MauiContext?.GetLayoutInflater();
 			_ = li ?? throw new InvalidOperationException($"LayoutInflater cannot be null");
@@ -46,27 +49,64 @@ namespace Microsoft.Maui.Handlers
 			}
 		}
 
+		IDisposable? _pendingFragment;
 		void UpdateDetailsFragmentView()
 		{
-			_ = MauiContext ?? throw new InvalidOperationException($"{nameof(MauiContext)} should have been set by base class.");
-			var newDetailsView = VirtualView.Detail?.ToNative(MauiContext);
+			_pendingFragment?.Dispose();
+			_pendingFragment = null;
 
-			if (_detailView == newDetailsView)
+			_ = MauiContext ?? throw new InvalidOperationException($"{nameof(MauiContext)} should have been set by base class.");
+
+			if (_detailViewFragment is not null &&
+				_detailViewFragment?.DetailView == VirtualView.Detail &&
+				!_detailViewFragment.IsDestroyed)
+			{
+				return;
+			}
+
+			var context = MauiContext.Context;
+			if (context is null)
 				return;
 
-			if (newDetailsView != null)
-				newDetailsView.RemoveFromParent();
+			if (VirtualView.Detail?.Handler is IPlatformViewHandler pvh)
+				pvh.DisconnectHandler();
 
-			_detailView = newDetailsView;
+			var fragmentManager = MauiContext.GetFragmentManager();
 
-			if (_detailView != null)
+			if (VirtualView.Detail is null)
 			{
-				MauiContext
-					.GetFragmentManager()
-					.BeginTransaction()
-					.Replace(Resource.Id.navigationlayout_content, new ViewFragment(_detailView))
-					.SetReorderingAllowed(true)
-					.Commit();
+				if (_detailViewFragment is not null)
+				{
+					_pendingFragment =
+						fragmentManager
+							.RunOrWaitForResume(context, (fm) =>
+							{
+								if (_detailViewFragment is null)
+								{
+									return;
+								}
+
+								fm
+									.BeginTransactionEx()
+									.RemoveEx(_detailViewFragment)
+									.SetReorderingAllowed(true)
+									.Commit();
+							});
+				}
+			}
+			else
+			{
+				_pendingFragment =
+					fragmentManager
+						.RunOrWaitForResume(context, (fm) =>
+						{
+							_detailViewFragment = new ScopedFragment(VirtualView.Detail, MauiContext);
+							fm
+								.BeginTransaction()
+								.Replace(Resource.Id.navigationlayout_content, _detailViewFragment)
+								.SetReorderingAllowed(true)
+								.Commit();
+						});
 			}
 		}
 
@@ -78,9 +118,19 @@ namespace Microsoft.Maui.Handlers
 		void UpdateFlyout()
 		{
 			_ = MauiContext ?? throw new InvalidOperationException($"{nameof(MauiContext)} should have been set by base class.");
-			_ = VirtualView.Flyout.ToNative(MauiContext);
 
-			var newFlyoutView = VirtualView.Flyout.ToNative();
+			// Once this issue has been taken care of
+			// https://github.com/dotnet/maui/issues/8456
+			// we can remove this code
+			if (VirtualView.Flyout.Handler?.MauiContext != null &&
+				VirtualView.Flyout.Handler.MauiContext != MauiContext)
+			{
+				VirtualView.Flyout.Handler.DisconnectHandler();
+			}
+
+			_ = VirtualView.Flyout.ToPlatform(MauiContext);
+
+			var newFlyoutView = VirtualView.Flyout.ToPlatform();
 			if (_flyoutView == newFlyoutView)
 				return;
 
@@ -144,7 +194,7 @@ namespace Microsoft.Maui.Handlers
 
 			if (flyoutView.Parent != _sideBySideView)
 			{
-				// When the Flyout is acting as a flyout Android will set the Visibilty to GONE when it's off screen
+				// When the Flyout is acting as a flyout Android will set the Visibility to GONE when it's off screen
 				// This makes sure it's visible
 				flyoutView.Visibility = ViewStates.Visible;
 				flyoutView.RemoveFromParent();
@@ -157,8 +207,10 @@ namespace Microsoft.Maui.Handlers
 				_sideBySideView.AddView(flyoutView, 0, layoutParameters);
 			}
 
-			if (_sideBySideView.Parent != NativeView)
+			if (_sideBySideView.Parent != PlatformView)
 				DrawerLayout.AddView(_sideBySideView);
+			else
+				UpdateDetailsFragmentView();
 
 			if (VirtualView is IToolbarElement te && te.Toolbar?.Handler is ToolbarHandler th)
 				th.SetupWithDrawerLayout(null);
@@ -173,7 +225,7 @@ namespace Microsoft.Maui.Handlers
 			_sideBySideView?.RemoveAllViews();
 			_sideBySideView?.RemoveFromParent();
 
-			if (_navigationRoot.Parent != NativeView)
+			if (_navigationRoot.Parent != PlatformView)
 			{
 				_navigationRoot.RemoveFromParent();
 
@@ -183,10 +235,11 @@ namespace Microsoft.Maui.Handlers
 						LinearLayoutCompat.LayoutParams.MatchParent);
 
 				DrawerLayout.AddView(_navigationRoot, 0, layoutParameters);
-				UpdateDetailsFragmentView();
 			}
 
-			if (flyoutView.Parent != NativeView)
+			UpdateDetailsFragmentView();
+
+			if (flyoutView.Parent != PlatformView)
 			{
 				flyoutView.RemoveFromParent();
 
@@ -222,8 +275,7 @@ namespace Microsoft.Maui.Handlers
 		void UpdateFlyoutBehavior()
 		{
 			var behavior = VirtualView.FlyoutBehavior;
-			var details = _detailView;
-			if (details == null)
+			if (_detailViewFragment?.DetailView?.Handler?.PlatformView == null)
 				return;
 
 			switch (behavior)
@@ -241,64 +293,88 @@ namespace Microsoft.Maui.Handlers
 			LayoutViews();
 		}
 
-		protected override void ConnectHandler(View nativeView)
+		protected override void ConnectHandler(View platformView)
 		{
-			if (nativeView is DrawerLayout dl)
+			if (platformView is DrawerLayout dl)
+			{
 				dl.DrawerStateChanged += OnDrawerStateChanged;
+				dl.ViewAttachedToWindow += DrawerLayoutAttached;
+			}
 		}
 
-		protected override void DisconnectHandler(View nativeView)
+		protected override void DisconnectHandler(View platformView)
 		{
-			if (nativeView is DrawerLayout dl)
+			if (platformView is DrawerLayout dl)
+			{
 				dl.DrawerStateChanged -= OnDrawerStateChanged;
+				dl.ViewAttachedToWindow -= DrawerLayoutAttached;
+			}
+		}
+
+		void DrawerLayoutAttached(object? sender, View.ViewAttachedToWindowEventArgs e)
+		{
+			UpdateDetailsFragmentView();
 		}
 
 		void OnDrawerStateChanged(object? sender, DrawerLayout.DrawerStateChangedEventArgs e)
 		{
-			if (e.NewState == DrawerLayout.StateIdle && VirtualView.FlyoutBehavior == FlyoutBehavior.Flyout)
+			if (e.NewState == DrawerLayout.StateIdle && VirtualView.FlyoutBehavior == FlyoutBehavior.Flyout && _flyoutView != null)
 				VirtualView.IsPresented = DrawerLayout.IsDrawerVisible(_flyoutView);
 		}
 
-		public static void MapDetail(FlyoutViewHandler handler, IFlyoutView flyoutView)
+		public static void MapDetail(IFlyoutViewHandler handler, IFlyoutView flyoutView)
 		{
-			handler.UpdateDetail();
+			if (handler is FlyoutViewHandler platformHandler)
+				platformHandler.UpdateDetail();
 		}
 
-		public static void MapFlyout(FlyoutViewHandler handler, IFlyoutView flyoutView)
+		public static void MapFlyout(IFlyoutViewHandler handler, IFlyoutView flyoutView)
 		{
-			handler.UpdateFlyout();
+			if (handler is FlyoutViewHandler platformHandler)
+				platformHandler.UpdateFlyout();
 		}
 
-		public static void MapFlyoutBehavior(FlyoutViewHandler handler, IFlyoutView flyoutView)
+		public static void MapFlyoutBehavior(IFlyoutViewHandler handler, IFlyoutView flyoutView)
 		{
-			handler.UpdateFlyoutBehavior();
+			if (handler is FlyoutViewHandler platformHandler)
+				platformHandler.UpdateFlyoutBehavior();
 		}
 
-		public static void MapIsPresented(FlyoutViewHandler handler, IFlyoutView flyoutView)
+		public static void MapIsPresented(IFlyoutViewHandler handler, IFlyoutView flyoutView)
 		{
-			handler.UpdateIsPresented();
+			if (handler is FlyoutViewHandler platformHandler)
+				platformHandler.UpdateIsPresented();
 		}
 
-		public static void MapFlyoutWidth(FlyoutViewHandler handler, IFlyoutView flyoutView)
+		public static void MapFlyoutWidth(IFlyoutViewHandler handler, IFlyoutView flyoutView)
 		{
-			var nativeFlyoutView = handler._flyoutView;
-			if (nativeFlyoutView?.LayoutParameters == null)
-				return;
+			if (handler is FlyoutViewHandler platformHandler)
+			{
+				var nativeFlyoutView = platformHandler._flyoutView;
+				if (nativeFlyoutView?.LayoutParameters == null)
+					return;
 
-			nativeFlyoutView.LayoutParameters.Width = (int)handler.FlyoutWidth;
+				nativeFlyoutView.LayoutParameters.Width = (int)platformHandler.FlyoutWidth;
+			}
 		}
 
-		public static void MapToolbar(FlyoutViewHandler handler, IFlyoutView view)
+		public static void MapToolbar(IFlyoutViewHandler handler, IFlyoutView view)
 		{
 			ViewHandler.MapToolbar(handler, view);
 
-			if (handler.VirtualView.FlyoutBehavior == FlyoutBehavior.Flyout && handler.VirtualView is IToolbarElement te && te.Toolbar?.Handler is ToolbarHandler th)
-				th.SetupWithDrawerLayout(handler.DrawerLayout);
+			if (handler is FlyoutViewHandler platformHandler &&
+				handler.VirtualView.FlyoutBehavior == FlyoutBehavior.Flyout &&
+				handler.VirtualView is IToolbarElement te &&
+				te.Toolbar?.Handler is ToolbarHandler th)
+			{
+				th.SetupWithDrawerLayout(platformHandler.DrawerLayout);
+			}
 		}
 
-		public static void MapIsGestureEnabled(FlyoutViewHandler handler, IFlyoutView view)
+		public static void MapIsGestureEnabled(IFlyoutViewHandler handler, IFlyoutView view)
 		{
-			handler.UpdateFlyoutBehavior();
+			if (handler is FlyoutViewHandler platformHandler)
+				platformHandler.UpdateFlyoutBehavior();
 		}
 	}
 }

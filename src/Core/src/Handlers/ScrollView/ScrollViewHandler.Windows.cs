@@ -6,87 +6,82 @@ using System.Text;
 using Microsoft.Maui.Graphics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Windows.UI.Core;
 using static Microsoft.Maui.Layouts.LayoutExtensions;
 
 namespace Microsoft.Maui.Handlers
 {
-	public partial class ScrollViewHandler : ViewHandler<IScrollView, ScrollViewer>
+	public partial class ScrollViewHandler : ViewHandler<IScrollView, ScrollViewer>, ICrossPlatformLayout
 	{
-		const string InsetPanelTag = "MAUIContentInsetPanel";
+		const string ContentPanelTag = "MAUIScrollViewContentPanel";
 
-		protected override ScrollViewer CreateNativeView()
+		protected override ScrollViewer CreatePlatformView()
 		{
 			return new ScrollViewer();
 		}
 
-		protected override void ConnectHandler(ScrollViewer nativeView)
+		internal static void MapInvalidateMeasure(IScrollViewHandler handler, IView view, object? args)
 		{
-			base.ConnectHandler(nativeView);
-			nativeView.ViewChanged += ViewChanged;
-		}
+			handler.PlatformView.InvalidateMeasure(view);
 
-		protected override void DisconnectHandler(ScrollViewer nativeView)
-		{
-			base.DisconnectHandler(nativeView);
-			nativeView.ViewChanged -= ViewChanged;
-		}
-
-		public override Size GetDesiredSize(double widthConstraint, double heightConstraint)
-		{
-			var result = base.GetDesiredSize(widthConstraint, heightConstraint);
-
-			if (GetInsetPanel(NativeView) == null)
+			if (handler.PlatformView.Content is FrameworkElement content)
 			{
-				VirtualView.CrossPlatformMeasure(widthConstraint, heightConstraint);
+				content.InvalidateMeasure();
 			}
-
-			return result;
 		}
 
-		public static void MapContent(ScrollViewHandler handler, IScrollView scrollView)
+		protected override void ConnectHandler(ScrollViewer platformView)
 		{
-			if (handler.NativeView == null || handler.MauiContext == null)
+			base.ConnectHandler(platformView);
+			platformView.ViewChanged += ViewChanged;
+		}
+
+		protected override void DisconnectHandler(ScrollViewer platformView)
+		{
+			base.DisconnectHandler(platformView);
+			platformView.ViewChanged -= ViewChanged;
+		}
+
+		public static void MapContent(IScrollViewHandler handler, IScrollView scrollView)
+		{
+			if (handler.PlatformView == null || handler.MauiContext == null)
 				return;
 
-			if (NeedsInsetPanel(scrollView))
+			if (handler is not ICrossPlatformLayout crossPlatformLayout)
 			{
-				UpdateInsetPanel(scrollView, handler);
+				return;
 			}
-			else
-			{
-				var scrollViewer = handler.NativeView;
-				RemoveInsetPanel(scrollViewer);
-				scrollViewer.UpdateContent(scrollView.PresentedContent, handler.MauiContext);
-			}
+
+			UpdateContentPanel(scrollView, handler, crossPlatformLayout);
 		}
 
-		public static void MapHorizontalScrollBarVisibility(ScrollViewHandler handler, IScrollView scrollView)
+		public static void MapHorizontalScrollBarVisibility(IScrollViewHandler handler, IScrollView scrollView)
 		{
-			handler.NativeView?.UpdateScrollBarVisibility(scrollView.Orientation, scrollView.HorizontalScrollBarVisibility);
+			handler.PlatformView?.UpdateScrollBarVisibility(scrollView.Orientation, scrollView.HorizontalScrollBarVisibility);
 		}
 
-		public static void MapVerticalScrollBarVisibility(ScrollViewHandler handler, IScrollView scrollView)
+		public static void MapVerticalScrollBarVisibility(IScrollViewHandler handler, IScrollView scrollView)
 		{
-			handler.NativeView.VerticalScrollBarVisibility = scrollView.VerticalScrollBarVisibility.ToWindowsScrollBarVisibility();
+			handler.PlatformView.VerticalScrollBarVisibility = scrollView.VerticalScrollBarVisibility.ToWindowsScrollBarVisibility();
 		}
 
-		public static void MapOrientation(ScrollViewHandler handler, IScrollView scrollView)
+		public static void MapOrientation(IScrollViewHandler handler, IScrollView scrollView)
 		{
-			handler.NativeView?.UpdateScrollBarVisibility(scrollView.Orientation, scrollView.HorizontalScrollBarVisibility);
+			handler.PlatformView?.UpdateScrollBarVisibility(scrollView.Orientation, scrollView.HorizontalScrollBarVisibility);
 		}
 
-		public static void MapRequestScrollTo(ScrollViewHandler handler, IScrollView scrollView, object? args)
+		public static void MapRequestScrollTo(IScrollViewHandler handler, IScrollView scrollView, object? args)
 		{
 			if (args is ScrollToRequest request)
 			{
-				handler.NativeView.ChangeView(request.HoriztonalOffset, request.VerticalOffset, null, request.Instant);
+				handler.PlatformView.ChangeView(request.HorizontalOffset, request.VerticalOffset, null, request.Instant);
 			}
 		}
 
 		void ViewChanged(object? sender, ScrollViewerViewChangedEventArgs e)
 		{
-			VirtualView.VerticalOffset = NativeView.VerticalOffset;
-			VirtualView.HorizontalOffset = NativeView.HorizontalOffset;
+			VirtualView.VerticalOffset = PlatformView.VerticalOffset;
+			VirtualView.HorizontalOffset = PlatformView.HorizontalOffset;
 
 			if (e.IsIntermediate == false)
 			{
@@ -101,40 +96,21 @@ namespace Microsoft.Maui.Handlers
 			Problem 2: The ScrollViewer will force any content to start at the origin (0,0), even if we ask 
 			to arrange it at an offset. This defeats our content's Margin properties. 
 
-			To handle this, we detect whether the content has a Margin or the cross-platform ScrollView has a Padding;
-			if so, we insert a container ContentPanel which always lays out at the origin but provides both the Padding
-			and the Margin for the content. The extra layer is only inserted if necessary, and is removed if the Padding
-			and Margin are set to zero. The extra layer uses the native ContentPanel control we already provide
-			as the backing control for ContentView, Page, etc. 
+			To handle this, we insert a container ContentPanel which always lays out at the origin but provides both 
+			the Padding and the Margin for the content. The extra layer uses the native ContentPanel control we already 
+			provide as the backing control for ContentView, Page, etc. 
+
+			The extra layer also provides a place to call CrossPlatformArrange for the content, since we 
+			can't subclass ScrollViewer.
 
 			The methods below exist to support inserting/updating the padding/margin panel.
 		 */
 
-		static bool NeedsInsetPanel(IScrollView scrollView)
-		{
-			if (scrollView.PresentedContent == null)
-			{
-				return false;
-			}
-
-			if (scrollView.Padding != Thickness.Zero)
-			{
-				return true;
-			}
-
-			if (scrollView.PresentedContent.Margin != Thickness.Zero)
-			{
-				return true;
-			}
-
-			return false;
-		}
-
-		static ContentPanel? GetInsetPanel(ScrollViewer scrollViewer) 
+		static ContentPanel? GetContentPanel(ScrollViewer scrollViewer)
 		{
 			if (scrollViewer.Content is ContentPanel contentPanel)
 			{
-				if (contentPanel.Tag is string tag && tag == InsetPanelTag)
+				if (contentPanel.Tag is string tag && tag == ContentPanelTag)
 				{
 					return contentPanel;
 				}
@@ -143,43 +119,32 @@ namespace Microsoft.Maui.Handlers
 			return null;
 		}
 
-		static void RemoveInsetPanel(ScrollViewer scrollViewer) 
-		{
-			if (GetInsetPanel(scrollViewer) is ContentPanel currentPaddingLayer)
-			{
-				if (currentPaddingLayer.Children.Count > 0)
-				{
-					currentPaddingLayer.Children.Clear();
-					scrollViewer.Content = null;
-				}
-			}
-		}
-
-		static void UpdateInsetPanel(IScrollView scrollView, ScrollViewHandler handler)
+		static void UpdateContentPanel(IScrollView scrollView, IScrollViewHandler handler, ICrossPlatformLayout crossPlatformLayout)
 		{
 			if (scrollView.PresentedContent == null || handler.MauiContext == null)
 			{
 				return;
 			}
 
-			var scrollViewer = handler.NativeView;
-			var nativeContent = scrollView.PresentedContent.ToNative(handler.MauiContext);
+			var scrollViewer = handler.PlatformView;
+			var nativeContent = scrollView.PresentedContent.ToPlatform(handler.MauiContext);
 
-			if (GetInsetPanel(scrollViewer) is ContentPanel currentPaddingLayer)
+			if (GetContentPanel(scrollViewer) is ContentPanel currentPaddingLayer)
 			{
 				if (currentPaddingLayer.Children.Count == 0 || currentPaddingLayer.Children[0] != nativeContent)
 				{
 					currentPaddingLayer.Children.Clear();
 					currentPaddingLayer.Children.Add(nativeContent);
+
 				}
 			}
 			else
 			{
-				InsertInsetPanel(scrollViewer, scrollView, nativeContent);
+				InsertContentPanel(scrollViewer, scrollView, nativeContent, crossPlatformLayout);
 			}
 		}
 
-		static void InsertInsetPanel(ScrollViewer scrollViewer, IScrollView scrollView, FrameworkElement nativeContent)
+		static void InsertContentPanel(ScrollViewer scrollViewer, IScrollView scrollView, FrameworkElement nativeContent, ICrossPlatformLayout crossPlatformLayout)
 		{
 			if (scrollView.PresentedContent == null)
 			{
@@ -188,9 +153,8 @@ namespace Microsoft.Maui.Handlers
 
 			var paddingShim = new ContentPanel()
 			{
-				CrossPlatformMeasure = IncludeScrollViewInsets(scrollView.CrossPlatformMeasure, scrollView),
-				CrossPlatformArrange = scrollView.CrossPlatformArrange,
-				Tag = InsetPanelTag
+				CrossPlatformLayout = crossPlatformLayout,
+				Tag = ContentPanelTag
 			};
 
 			scrollViewer.Content = null;
@@ -198,16 +162,10 @@ namespace Microsoft.Maui.Handlers
 			scrollViewer.Content = paddingShim;
 		}
 
-		static Func<double, double, Size> IncludeScrollViewInsets(Func<double, double, Size> internalMeasure, IScrollView scrollView)
+		Size ICrossPlatformLayout.CrossPlatformMeasure(double widthConstraint, double heightConstraint)
 		{
-			return (widthConstraint, heightConstraint) =>
-			{
-				return InsetScrollView(widthConstraint, heightConstraint, internalMeasure, scrollView);
-			};
-		}
+			var scrollView = VirtualView;
 
-		static Size InsetScrollView(double widthConstraint, double heightConstraint, Func<double, double, Size> internalMeasure, IScrollView scrollView) 
-		{
 			var padding = scrollView.Padding;
 			var presentedContent = scrollView.PresentedContent;
 
@@ -220,7 +178,7 @@ namespace Microsoft.Maui.Handlers
 			var measurementWidth = widthConstraint - padding.HorizontalThickness;
 			var measurementHeight = heightConstraint - padding.VerticalThickness;
 
-			var result = internalMeasure.Invoke(measurementWidth, measurementHeight);
+			var result = (scrollView as ICrossPlatformLayout).CrossPlatformMeasure(measurementWidth, measurementHeight);
 
 			// ... and add the padding back in to the final result
 			var fullSize = new Size(result.Width + padding.HorizontalThickness, result.Height + padding.VerticalThickness);
@@ -236,7 +194,12 @@ namespace Microsoft.Maui.Handlers
 			}
 
 			// If the presented content has LayoutAlignment Fill, we'll need to adjust the measurement to account for that
-			return fullSize.AdjustForFill(new Rectangle(0, 0, widthConstraint, heightConstraint), presentedContent);
+			return fullSize.AdjustForFill(new Rect(0, 0, widthConstraint, heightConstraint), presentedContent);
+		}
+
+		Size ICrossPlatformLayout.CrossPlatformArrange(Rect bounds)
+		{
+			return (VirtualView as ICrossPlatformLayout).CrossPlatformArrange(bounds);
 		}
 	}
 }

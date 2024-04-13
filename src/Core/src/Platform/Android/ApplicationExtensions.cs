@@ -2,6 +2,8 @@
 using Android.App;
 using Android.Content;
 using Android.OS;
+using AndroidX.AppCompat.App;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Handlers;
 using Microsoft.Maui.LifecycleEvents;
 
@@ -9,7 +11,7 @@ namespace Microsoft.Maui.Platform
 {
 	public static class ApplicationExtensions
 	{
-		public static void RequestNewWindow(this Application nativeApplication, IApplication application, OpenWindowRequest? args)
+		public static void RequestNewWindow(this Application platformApplication, IApplication application, OpenWindowRequest? args)
 		{
 			if (application.Handler?.MauiContext is not IMauiContext applicationContext)
 				return;
@@ -17,18 +19,18 @@ namespace Microsoft.Maui.Platform
 			var state = args?.State;
 			var bundle = state.ToBundle();
 
-			var pm = nativeApplication.PackageManager!;
-			var intent = pm.GetLaunchIntentForPackage(nativeApplication.PackageName!)!;
+			var pm = platformApplication.PackageManager!;
+			var intent = pm.GetLaunchIntentForPackage(platformApplication.PackageName!)!;
 			intent.AddFlags(ActivityFlags.NewTask);
 			intent.AddFlags(ActivityFlags.MultipleTask);
-			if (NativeVersion.Supports(NativeApis.LaunchAdjacent))
+			if (OperatingSystem.IsAndroidVersionAtLeast(24))
 				intent.AddFlags(ActivityFlags.LaunchAdjacent);
 			intent.PutExtras(bundle);
 
-			nativeApplication.StartActivity(intent);
+			platformApplication.StartActivity(intent);
 		}
 
-		public static void CreateNativeWindow(this Activity activity, IApplication application, Bundle? savedInstanceState = null)
+		public static void CreatePlatformWindow(this Activity activity, IApplication application, Bundle? savedInstanceState = null)
 		{
 			if (application.Handler?.MauiContext is not IMauiContext applicationContext)
 				return;
@@ -42,6 +44,17 @@ namespace Microsoft.Maui.Platform
 			var activationState = new ActivationState(mauiContext, savedInstanceState);
 
 			var window = application.CreateWindow(activationState);
+
+			if (window.Handler?.PlatformView is Activity oldActivity && 
+				oldActivity != activity &&
+				!oldActivity.IsDestroyed)
+			{
+				throw new InvalidOperationException(
+					$"This window is already associated with an active Activity ({oldActivity.GetType()}). " + 
+					$"Please override CreateWindow on {application.GetType()} "  + 
+					$"to add support for multiple activities https://aka.ms/maui-docs-create-window"  + 
+					$"or set the LaunchMode to SingleTop on {activity.GetType()}.");
+			}
 
 			activity.SetWindowHandler(window, mauiContext);
 		}
@@ -59,6 +72,25 @@ namespace Microsoft.Maui.Platform
 			}
 
 			return userInfo;
+		}
+
+		public static void UpdateNightMode(this IApplication application)
+		{
+			if (application is null)
+				return;
+
+			switch (application.UserAppTheme)
+			{
+				case AppTheme.Light:
+					AppCompatDelegate.DefaultNightMode = AppCompatDelegate.ModeNightNo;
+					break;
+				case AppTheme.Dark:
+					AppCompatDelegate.DefaultNightMode = AppCompatDelegate.ModeNightYes;
+					break;
+				default:
+					AppCompatDelegate.DefaultNightMode = AppCompatDelegate.ModeNightFollowSystem;
+					break;
+			}
 		}
 	}
 }

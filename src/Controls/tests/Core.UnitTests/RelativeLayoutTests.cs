@@ -7,13 +7,28 @@ using System.Reflection;
 using Microsoft.Maui.Controls.Compatibility;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Graphics;
-using NUnit.Framework;
+using Xunit;
 
 namespace Microsoft.Maui.Controls.Core.UnitTests
 {
-	[TestFixture]
+
 	public class RelativeLayoutTests : BaseTestFixture
 	{
+		public RelativeLayoutTests()
+		{
+			ExpressionSearch.Default = new UnitExpressionSearch();
+		}
+
+		protected override void Dispose(bool disposing)
+		{
+			if (disposing)
+			{
+				ExpressionSearch.Default = new UnitExpressionSearch();
+			}
+
+			base.Dispose(disposing);
+		}
+
 		class UnitExpressionSearch : ExpressionVisitor, IExpressionSearch
 		{
 			List<object> results;
@@ -42,24 +57,16 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			}
 		}
 
-		[SetUp]
-		public override void Setup()
-		{
-			base.Setup();
-			ExpressionSearch.Default = new UnitExpressionSearch();
-		}
 
-		[TearDown]
-		public override void TearDown()
-		{
-			base.TearDown();
-			ExpressionSearch.Default = new UnitExpressionSearch();
-		}
 
-		[Test]
+
+
+
+
+		[Fact]
 		public void SimpleLayout()
 		{
-			var relativeLayout = new RelativeLayout
+			var relativeLayout = new Compatibility.RelativeLayout
 			{
 				IsPlatformEnabled = true
 			};
@@ -75,15 +82,15 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 								Constraint.RelativeToParent(parent => parent.Height / 2),
 								Constraint.RelativeToParent(parent => parent.Height / 4));
 
-			relativeLayout.Layout(new Rectangle(0, 0, 100, 100));
+			relativeLayout.Layout(new Rect(0, 0, 100, 100));
 
-			Assert.AreEqual(new Rectangle(30, 20, 50, 25), child.Bounds);
+			Assert.Equal(new Rect(30, 20, 50, 25), child.Bounds);
 		}
 
-		[Test]
+		[Fact]
 		public void LayoutIsUpdatedWhenConstraintsChange()
 		{
-			var relativeLayout = new RelativeLayout
+			var relativeLayout = new Compatibility.RelativeLayout
 			{
 				IsPlatformEnabled = true
 			};
@@ -99,32 +106,32 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 								Constraint.RelativeToParent(parent => parent.Height / 2),
 								Constraint.RelativeToParent(parent => parent.Height / 4));
 
-			relativeLayout.Layout(new Rectangle(0, 0, 100, 100));
+			relativeLayout.Layout(new Rect(0, 0, 100, 100));
 
-			Assert.AreEqual(new Rectangle(30, 20, 50, 25), child.Bounds);
+			Assert.Equal(new Rect(30, 20, 50, 25), child.Bounds);
 
 			RelativeLayout.SetXConstraint(child, Constraint.Constant(40));
 
-			Assert.AreEqual(new Rectangle(40, 20, 50, 25), child.Bounds);
+			Assert.Equal(new Rect(40, 20, 50, 25), child.Bounds);
 
 			RelativeLayout.SetYConstraint(child, Constraint.Constant(10));
 
-			Assert.AreEqual(new Rectangle(40, 10, 50, 25), child.Bounds);
+			Assert.Equal(new Rect(40, 10, 50, 25), child.Bounds);
 
 			RelativeLayout.SetWidthConstraint(child, Constraint.RelativeToParent(parent => parent.Height / 4));
 
-			Assert.AreEqual(new Rectangle(40, 10, 25, 25), child.Bounds);
+			Assert.Equal(new Rect(40, 10, 25, 25), child.Bounds);
 
 			RelativeLayout.SetHeightConstraint(child, Constraint.RelativeToParent(parent => parent.Height / 2));
 
-			Assert.AreEqual(new Rectangle(40, 10, 25, 50), child.Bounds);
+			Assert.Equal(new Rect(40, 10, 25, 50), child.Bounds);
 		}
 
-		[Test]
+		[Fact]
 		//https://github.com/xamarin/Microsoft.Maui.Controls/issues/2169
 		public void BoundsUpdatedIfConstraintsChangedWhileNotParented()
 		{
-			var relativeLayout = new RelativeLayout
+			var relativeLayout = new Compatibility.RelativeLayout
 			{
 				IsPlatformEnabled = true
 			};
@@ -135,20 +142,20 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 			};
 
 			relativeLayout.Children.Add(child, Constraint.Constant(30), Constraint.Constant(20));
-			relativeLayout.Layout(new Rectangle(0, 0, 100, 100));
-			Assert.That(child.Bounds, Is.EqualTo(new Rectangle(30, 20, 100, 20)));
+			relativeLayout.Layout(new Rect(0, 0, 100, 100));
+			Assert.Equal(child.Bounds, new Rect(30, 20, 100, 20));
 
 			relativeLayout.Children.Remove(child);
 			relativeLayout.Children.Add(child, Constraint.Constant(50), Constraint.Constant(40));
-			Assert.That(child.Bounds, Is.EqualTo(new Rectangle(50, 40, 100, 20)));
+			Assert.Equal(child.Bounds, new Rect(50, 40, 100, 20));
 
 
 		}
 
-		[Test]
+		[Fact]
 		public void SimpleExpressionLayout()
 		{
-			var relativeLayout = new RelativeLayout
+			var relativeLayout = new Compatibility.RelativeLayout
 			{
 				IsPlatformEnabled = true
 			};
@@ -164,15 +171,15 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 								() => relativeLayout.Height / 2,
 								() => relativeLayout.Height / 4);
 
-			relativeLayout.Layout(new Rectangle(0, 0, 100, 100));
+			relativeLayout.Layout(new Rect(0, 0, 100, 100));
 
-			Assert.AreEqual(new Rectangle(30, 20, 50, 25), child.Bounds);
+			Assert.Equal(new Rect(30, 20, 50, 25), child.Bounds);
 		}
 
-		[Test]
+		[Fact]
 		public void SimpleBoundsSizing()
 		{
-			var relativeLayout = new RelativeLayout
+			var relativeLayout = new Compatibility.RelativeLayout
 			{
 				IsPlatformEnabled = true
 			};
@@ -182,17 +189,17 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				IsPlatformEnabled = true
 			};
 
-			relativeLayout.Children.Add(child, () => new Rectangle(30, 20, relativeLayout.Height / 2, relativeLayout.Height / 4));
+			relativeLayout.Children.Add(child, () => new Rect(30, 20, relativeLayout.Height / 2, relativeLayout.Height / 4));
 
-			relativeLayout.Layout(new Rectangle(0, 0, 100, 100));
+			relativeLayout.Layout(new Rect(0, 0, 100, 100));
 
-			Assert.AreEqual(new Rectangle(30, 20, 50, 25), child.Bounds);
+			Assert.Equal(new Rect(30, 20, 50, 25), child.Bounds);
 		}
 
-		[Test]
+		[Fact]
 		public void UnconstrainedSize()
 		{
-			var relativeLayout = new RelativeLayout
+			var relativeLayout = new Compatibility.RelativeLayout
 			{
 				IsPlatformEnabled = true
 			};
@@ -206,15 +213,15 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 
 			relativeLayout.Children.Add(child, Constraint.Constant(30), Constraint.Constant(20));
 
-			relativeLayout.Layout(new Rectangle(0, 0, 100, 100));
+			relativeLayout.Layout(new Rect(0, 0, 100, 100));
 
-			Assert.AreEqual(new Rectangle(30, 20, 25, 50), child.Bounds);
+			Assert.Equal(new Rect(30, 20, 25, 50), child.Bounds);
 		}
 
-		[Test]
+		[Fact]
 		public void ViewRelativeLayout()
 		{
-			var relativeLayout = new RelativeLayout
+			var relativeLayout = new Compatibility.RelativeLayout
 			{
 				IsPlatformEnabled = true
 			};
@@ -241,16 +248,16 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 								Constraint.RelativeToView(child1, (layout, view) => view.Width),
 								Constraint.RelativeToView(child1, (layout, view) => view.Height));
 
-			relativeLayout.Layout(new Rectangle(0, 0, 100, 100));
+			relativeLayout.Layout(new Rect(0, 0, 100, 100));
 
-			Assert.AreEqual(new Rectangle(30, 20, 20, 10), child1.Bounds);
-			Assert.AreEqual(new Rectangle(60, 20, 20, 10), child2.Bounds);
+			Assert.Equal(new Rect(30, 20, 20, 10), child1.Bounds);
+			Assert.Equal(new Rect(60, 20, 20, 10), child2.Bounds);
 		}
 
-		[Test]
+		[Fact]
 		public void ViewRelativeLayoutWithExpressions()
 		{
-			var relativeLayout = new RelativeLayout
+			var relativeLayout = new Compatibility.RelativeLayout
 			{
 				IsPlatformEnabled = true
 			};
@@ -277,16 +284,16 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 								() => child1.Width,
 								() => child1.Height);
 
-			relativeLayout.Layout(new Rectangle(0, 0, 100, 100));
+			relativeLayout.Layout(new Rect(0, 0, 100, 100));
 
-			Assert.AreEqual(new Rectangle(30, 20, 20, 10), child1.Bounds);
-			Assert.AreEqual(new Rectangle(60, 20, 20, 10), child2.Bounds);
+			Assert.Equal(new Rect(30, 20, 20, 10), child1.Bounds);
+			Assert.Equal(new Rect(60, 20, 20, 10), child2.Bounds);
 		}
 
-		[Test]
+		[Fact]
 		public void ViewRelativeToMultipleViews()
 		{
-			var relativeLayout = new RelativeLayout
+			var relativeLayout = new Compatibility.RelativeLayout
 			{
 				IsPlatformEnabled = true
 			};
@@ -324,17 +331,17 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 								Constraint.RelativeToView(child1, (layout, view) => view.Width),
 								Constraint.RelativeToView(child2, (layout, view) => view.Height * 2));
 
-			relativeLayout.Layout(new Rectangle(0, 0, 100, 100));
+			relativeLayout.Layout(new Rect(0, 0, 100, 100));
 
-			Assert.AreEqual(new Rectangle(30, 20, 20, 10), child1.Bounds);
-			Assert.AreEqual(new Rectangle(30, 50, 25, 20), child2.Bounds);
-			Assert.AreEqual(new Rectangle(60, 50, 20, 40), child3.Bounds);
+			Assert.Equal(new Rect(30, 20, 20, 10), child1.Bounds);
+			Assert.Equal(new Rect(30, 50, 25, 20), child2.Bounds);
+			Assert.Equal(new Rect(60, 50, 20, 40), child3.Bounds);
 		}
 
-		[Test]
+		[Fact]
 		public void ExpressionRelativeToMultipleViews()
 		{
-			var relativeLayout = new RelativeLayout
+			var relativeLayout = new Compatibility.RelativeLayout
 			{
 				IsPlatformEnabled = true
 			};
@@ -372,17 +379,17 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 								() => child1.Width + child2.Width,
 								() => child1.Height * 2 + child2.Height);
 
-			relativeLayout.Layout(new Rectangle(0, 0, 100, 100));
+			relativeLayout.Layout(new Rect(0, 0, 100, 100));
 
-			Assert.AreEqual(new Rectangle(30, 20, 20, 10), child1.Bounds);
-			Assert.AreEqual(new Rectangle(30, 50, 25, 20), child2.Bounds);
-			Assert.AreEqual(new Rectangle(60, 20, 45, 40), child3.Bounds);
+			Assert.Equal(new Rect(30, 20, 20, 10), child1.Bounds);
+			Assert.Equal(new Rect(30, 50, 25, 20), child2.Bounds);
+			Assert.Equal(new Rect(60, 20, 45, 40), child3.Bounds);
 		}
 
-		[Test]
+		[Fact]
 		public void ThreePassLayout()
 		{
-			var relativeLayout = new RelativeLayout
+			var relativeLayout = new Compatibility.RelativeLayout
 			{
 				IsPlatformEnabled = true
 			};
@@ -431,18 +438,18 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 								Constraint.RelativeToView(child1, (layout, view) => view.Width),
 								Constraint.RelativeToView(child3, (layout, view) => view.Height * 2));
 
-			relativeLayout.Layout(new Rectangle(0, 0, 100, 100));
+			relativeLayout.Layout(new Rect(0, 0, 100, 100));
 
-			Assert.AreEqual(new Rectangle(30, 20, 20, 10), child1.Bounds);
-			Assert.AreEqual(new Rectangle(30, 50, 25, 20), child2.Bounds);
-			Assert.AreEqual(new Rectangle(60, 50, 20, 40), child3.Bounds);
-			Assert.AreEqual(new Rectangle(60, 50, 20, 80), child4.Bounds);
+			Assert.Equal(new Rect(30, 20, 20, 10), child1.Bounds);
+			Assert.Equal(new Rect(30, 50, 25, 20), child2.Bounds);
+			Assert.Equal(new Rect(60, 50, 20, 40), child3.Bounds);
+			Assert.Equal(new Rect(60, 50, 20, 80), child4.Bounds);
 		}
 
-		[Test]
+		[Fact]
 		public void ThreePassLayoutWithExpressions()
 		{
-			var relativeLayout = new RelativeLayout
+			var relativeLayout = new Compatibility.RelativeLayout
 			{
 				IsPlatformEnabled = true
 			};
@@ -491,18 +498,18 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 								width: () => child1.Width,
 								height: () => child3.Height * 2);
 
-			relativeLayout.Layout(new Rectangle(0, 0, 100, 100));
+			relativeLayout.Layout(new Rect(0, 0, 100, 100));
 
-			Assert.AreEqual(new Rectangle(30, 20, 20, 10), child1.Bounds);
-			Assert.AreEqual(new Rectangle(30, 50, 25, 20), child2.Bounds);
-			Assert.AreEqual(new Rectangle(60, 50, 20, 40), child3.Bounds);
-			Assert.AreEqual(new Rectangle(60, 50, 20, 80), child4.Bounds);
+			Assert.Equal(new Rect(30, 20, 20, 10), child1.Bounds);
+			Assert.Equal(new Rect(30, 50, 25, 20), child2.Bounds);
+			Assert.Equal(new Rect(60, 50, 20, 40), child3.Bounds);
+			Assert.Equal(new Rect(60, 50, 20, 80), child4.Bounds);
 		}
 
-		[Test]
+		[Fact]
 		public void ThrowsWithUnsolvableConstraints()
 		{
-			var relativeLayout = new RelativeLayout
+			var relativeLayout = new Compatibility.RelativeLayout
 			{
 				IsPlatformEnabled = true
 			};
@@ -529,10 +536,10 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 								() => child1.Width,
 								() => child1.Height);
 
-			Assert.Throws<UnsolvableConstraintsException>(() => relativeLayout.Layout(new Rectangle(0, 0, 100, 100)));
+			Assert.Throws<UnsolvableConstraintsException>(() => relativeLayout.Layout(new Rect(0, 0, 100, 100)));
 		}
 
-		[Test]
+		[Fact]
 		public void ChildAddedBeforeLayoutChildrenAfterInitialLayout()
 		{
 			var relativeLayout = new MockRelativeLayout
@@ -557,17 +564,17 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				Constraint.RelativeToParent(parent => parent.Height / 4));
 
 
-			relativeLayout.Layout(new Rectangle(0, 0, 100, 100));
+			relativeLayout.Layout(new Rect(0, 0, 100, 100));
 
-			Assert.IsTrue(relativeLayout.childAdded);
-			Assert.IsTrue(relativeLayout.added);
-			Assert.IsTrue(relativeLayout.layoutChildren);
+			Assert.True(relativeLayout.childAdded);
+			Assert.True(relativeLayout.added);
+			Assert.True(relativeLayout.layoutChildren);
 
 			relativeLayout.layoutChildren = relativeLayout.added = relativeLayout.childAdded = false;
 
-			Assert.IsFalse(relativeLayout.childAdded);
-			Assert.IsFalse(relativeLayout.added);
-			Assert.IsFalse(relativeLayout.layoutChildren);
+			Assert.False(relativeLayout.childAdded);
+			Assert.False(relativeLayout.added);
+			Assert.False(relativeLayout.layoutChildren);
 
 			relativeLayout.Children.Add(child1,
 				Constraint.Constant(30),
@@ -575,9 +582,9 @@ namespace Microsoft.Maui.Controls.Core.UnitTests
 				Constraint.RelativeToParent(parent => parent.Height / 2),
 				Constraint.RelativeToParent(parent => parent.Height / 4));
 
-			Assert.IsTrue(relativeLayout.childAdded);
-			Assert.IsTrue(relativeLayout.added);
-			Assert.IsTrue(relativeLayout.layoutChildren);
+			Assert.True(relativeLayout.childAdded);
+			Assert.True(relativeLayout.added);
+			Assert.True(relativeLayout.layoutChildren);
 
 		}
 	}

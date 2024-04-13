@@ -1,5 +1,7 @@
+#nullable disable
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Android.Content;
 using Android.Graphics.Drawables;
@@ -27,7 +29,7 @@ namespace Microsoft.Maui.Controls.Platform
 
 		public static Drawable CreateItemBackgroundDrawable()
 		{
-			var stateList = ColorStateList.ValueOf(Colors.Black.MultiplyAlpha(0.2f).ToNative());
+			var stateList = ColorStateList.ValueOf(Colors.Black.MultiplyAlpha(0.2f).ToPlatform());
 			var colorDrawable = new ColorDrawable(AColor.White);
 			return new RippleDrawable(stateList, colorDrawable, null);
 		}
@@ -36,6 +38,29 @@ namespace Microsoft.Maui.Controls.Platform
 		{
 			if (menuItem.IsEnabled != tabEnabled)
 				menuItem.SetEnabled(tabEnabled);
+		}
+
+		internal static Task SetupMenuItem(
+			(string title, ImageSource icon, bool tabEnabled) item,
+			IMenu menu,
+			int index,
+			int currentIndex,
+			BottomNavigationView bottomView,
+			IMauiContext mauiContext,
+			out IMenuItem menuItem)
+		{
+			Task returnValue;
+			using var title = new Java.Lang.String(item.title);
+			menuItem = menu.Add(0, index, 0, title);
+			returnValue = SetMenuItemIcon(menuItem, item.icon, mauiContext);
+			UpdateEnabled(item.tabEnabled, menuItem);
+			if (index == currentIndex)
+			{
+				menuItem.SetChecked(true);
+				bottomView.SelectedItemId = index;
+			}
+
+			return returnValue;
 		}
 
 		internal static async void SetupMenu(
@@ -47,29 +72,33 @@ namespace Microsoft.Maui.Controls.Platform
 			IMauiContext mauiContext)
 		{
 			Context context = mauiContext.Context;
-			menu.Clear();
+
+			while (items.Count < menu.Size())
+			{
+				menu.RemoveItem(menu.GetItem(menu.Size() - 1).ItemId);
+			}
+
 			int numberOfMenuItems = items.Count;
 			bool showMore = numberOfMenuItems > maxBottomItems;
 			int end = showMore ? maxBottomItems - 1 : numberOfMenuItems;
-
 
 			List<IMenuItem> menuItems = new List<IMenuItem>();
 			List<Task> loadTasks = new List<Task>();
 			for (int i = 0; i < end; i++)
 			{
 				var item = items[i];
-				using (var title = new Java.Lang.String(item.title))
+
+				IMenuItem menuItem;
+				if (i >= menu.Size())
+					loadTasks.Add(SetupMenuItem(item, menu, i, currentIndex, bottomView, mauiContext, out menuItem));
+				else
 				{
-					var menuItem = menu.Add(0, i, 0, title);
-					menuItems.Add(menuItem);
+					menuItem = menu.GetItem(i);
+					SetMenuItemTitle(menuItem, item.title);
 					loadTasks.Add(SetMenuItemIcon(menuItem, item.icon, mauiContext));
-					UpdateEnabled(item.tabEnabled, menuItem);
-					if (i == currentIndex)
-					{
-						menuItem.SetChecked(true);
-						bottomView.SelectedItemId = i;
-					}
 				}
+
+				menuItems.Add(menuItem);
 			}
 
 			if (showMore)
@@ -87,25 +116,35 @@ namespace Microsoft.Maui.Controls.Platform
 
 			if (loadTasks.Count > 0)
 				await Task.WhenAll(loadTasks);
-
-			foreach (var menuItem in menuItems)
-				menuItem.Dispose();
 		}
 
-		static async Task SetMenuItemIcon(IMenuItem menuItem, ImageSource source, IMauiContext context)
+		internal static void SetMenuItemTitle(IMenuItem menuItem, string title)
 		{
-			if (source == null)
+			using var jTitle = new Java.Lang.String(title);
+			menuItem.SetTitle(jTitle);
+		}
+
+		internal static async Task SetMenuItemIcon(IMenuItem menuItem, ImageSource source, IMauiContext context)
+		{
+			if (!menuItem.IsAlive())
+				return;
+
+			if (source is null)
 				return;
 
 			var services = context.Services;
 			var provider = services.GetRequiredService<IImageSourceServiceProvider>();
 			var imageSourceService = provider.GetRequiredImageSourceService(source);
-			var drawableResult = await imageSourceService.GetDrawableAsync(source, context.Context);
-			var drawable = drawableResult.Value;
-			menuItem.SetIcon(drawable);
-			drawable?.Dispose();
-		}
 
+			var result = await imageSourceService.GetDrawableAsync(
+				source,
+				context.Context);
+
+			if (menuItem.IsAlive())
+			{
+				menuItem.SetIcon(result?.Value);
+			}
+		}
 
 		public static BottomSheetDialog CreateMoreBottomSheet(
 			Action<int, BottomSheetDialog> selectCallback,
@@ -165,7 +204,7 @@ namespace Microsoft.Maui.Controls.Platform
 					image.LayoutParameters = lp;
 					lp.Dispose();
 
-					image.ImageTintList = ColorStateList.ValueOf(Colors.Black.MultiplyAlpha(0.6f).ToNative());
+					image.ImageTintList = ColorStateList.ValueOf(Colors.Black.MultiplyAlpha(0.6f).ToPlatform());
 
 					shellContent.icon.LoadImage(mauiContext, result =>
 					{
@@ -206,7 +245,7 @@ namespace Microsoft.Maui.Controls.Platform
 			try
 			{
 				var menuView = bottomNavigationView.GetChildAt(0) as BottomNavigationMenuView;
-				if (menuView == null)
+				if (menuView is null)
 				{
 					System.Diagnostics.Debug.WriteLine("Unable to find BottomNavigationMenuView");
 					return;

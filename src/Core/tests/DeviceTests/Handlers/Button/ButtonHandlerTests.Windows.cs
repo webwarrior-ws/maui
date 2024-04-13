@@ -30,35 +30,62 @@ namespace Microsoft.Maui.DeviceTests
 				return new
 				{
 					ViewValue = button.CharacterSpacing,
-					NativeViewValue = GetNativeCharacterSpacing(handler)
+					PlatformViewValue = GetNativeCharacterSpacing(handler)
 				};
 			});
 
 			Assert.Equal(xplatCharacterSpacing, values.ViewValue);
-			Assert.Equal(expectedValue, values.NativeViewValue);
+			Assert.Equal(expectedValue, values.PlatformViewValue);
 		}
 
-		[Fact(DisplayName = "Button Padding Initializing")]
-		public async Task PaddingInitializesCorrectly()
+		[Fact(DisplayName = "Corner radius is rounded by default")]
+		public async Task RoundedCornersDefault()
 		{
-			var expected = new Thickness(5, 10, 15, 20);
-
+			var flatCornerRadius = 0;
 			var button = new ButtonStub()
 			{
-				Text = "Test",
-				Padding = expected
+				// assign the default value
+				CornerRadius = -1
 			};
 
-			var actual = await GetValueAsync(button, GetNativePadding);
+			var values = await GetValueAsync(button, (handler) =>
+			{
+				return new
+				{
+					ViewValue = button.CornerRadius,
+					ContainsResource = handler.PlatformView.Resources.Keys.Contains("ControlCornerRadius")
+				};
+			});
 
-			Assert.Equal(expected.Left, actual.Left);
-			Assert.Equal(expected.Top, actual.Top);
-			Assert.Equal(expected.Right, actual.Right);
-			Assert.Equal(expected.Bottom, actual.Bottom);
+			Assert.False(values.ContainsResource);
+			Assert.NotEqual(flatCornerRadius, values.ViewValue);
+		}
+
+		[Fact(DisplayName = "Corner Radius Set Correctly")]
+		public async Task CornerRadiusSetCorrectly()
+		{
+			var cornerRadius = 8;
+			var button = new ButtonStub()
+			{
+				CornerRadius = cornerRadius
+			};
+
+			var values = await GetValueAsync(button, (handler) =>
+			{
+				var ret = new
+				{
+					ViewValue = button.CornerRadius,
+					ContainsResource = handler.PlatformView.Resources.Keys.Contains("ControlCornerRadius")
+				};
+				return ret;
+			});
+
+			Assert.True(values.ContainsResource);
+			Assert.Equal(cornerRadius, values.ViewValue);
 		}
 
 		UI.Xaml.Controls.Button GetNativeButton(ButtonHandler buttonHandler) =>
-			buttonHandler.NativeView;
+			buttonHandler.PlatformView;
 
 		string? GetNativeText(ButtonHandler buttonHandler) =>
 			GetNativeButton(buttonHandler).GetContent<TextBlock>()?.Text;
@@ -73,8 +100,8 @@ namespace Microsoft.Maui.DeviceTests
 		{
 			return InvokeOnMainThreadAsync(() =>
 			{
-				var nativeButton = GetNativeButton(CreateHandler(button));
-				var ap = new ButtonAutomationPeer(nativeButton);
+				var platformButton = GetNativeButton(CreateHandler(button));
+				var ap = new ButtonAutomationPeer(platformButton);
 				var ip = ap.GetPattern(PatternInterface.Invoke) as IInvokeProvider;
 				ip?.Invoke();
 			});
@@ -85,5 +112,8 @@ namespace Microsoft.Maui.DeviceTests
 
 		bool ImageSourceLoaded(ButtonHandler buttonHandler) =>
 			GetNativeButton(buttonHandler).GetContent<Image>()?.Source != null;
+
+		UI.Xaml.TextTrimming GetNativeLineBreakMode(ButtonHandler buttonHandler) =>
+			GetNativeButton(buttonHandler).GetContent<TextBlock>()?.TextTrimming ?? UI.Xaml.TextTrimming.None;
 	}
 }

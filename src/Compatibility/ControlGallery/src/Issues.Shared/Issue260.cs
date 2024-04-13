@@ -4,10 +4,13 @@ using System.Linq;
 using Microsoft.Maui.Controls.CustomAttributes;
 using Microsoft.Maui.Controls.Internals;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.Github, 260, "Layout issue for TableView", PlatformAffected.WinPhone)]
+#if UITEST
+	[NUnit.Framework.Category(Compatibility.UITests.UITestCategories.TableView)]
+#endif
 	public class Issue260 : ContentPage
 	{
 		public Issue260()

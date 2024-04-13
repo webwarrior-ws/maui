@@ -3,24 +3,25 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Threading.Tasks;
-using Windows.Devices.Input;
-using Windows.UI.Input;
+using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Controls.Platform;
+using Microsoft.Maui.Graphics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Animation;
+using Windows.Devices.Input;
 using Windows.UI.Core;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.Maui.Controls.Internals;
+using Windows.UI.Input;
 using static Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific.Page;
 using WBrush = Microsoft.UI.Xaml.Media.Brush;
 using WImageSource = Microsoft.UI.Xaml.Media.ImageSource;
-using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Controls.Platform;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
-	public class NavigationPageRenderer : IVisualElementRenderer, ITitleProvider, ITitleIconProvider, 
+	[System.Obsolete(Compatibility.Hosting.MauiAppBuilderExtensions.UseMapperInstead)]
+	public class NavigationPageRenderer : IVisualElementRenderer, ITitleProvider, ITitleIconProvider,
 		ITitleViewProvider, IToolbarProvider, IToolBarForegroundBinder
 	{
 		PageControl _container;
@@ -284,7 +285,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 			if (Element.BarBackgroundColor.IsDefault() && defaultColor != null)
 				return (WBrush)defaultColor;
-			return Element.BarBackgroundColor.ToNative();
+			return Element.BarBackgroundColor.ToPlatform();
 		}
 
 		WBrush GetBarBackgroundBrush()
@@ -306,7 +307,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			object defaultColor = Microsoft.UI.Xaml.Application.Current.Resources["ApplicationForegroundThemeBrush"];
 			if (Element.BarTextColor.IsDefault())
 				return (WBrush)defaultColor;
-			return Element.BarTextColor.ToNative();
+			return Element.BarTextColor.ToPlatform();
 		}
 
 		bool GetIsNavBarPossible()
@@ -515,7 +516,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		{
 			if (isAnimated && transition == null)
 			{
-				transition  = new EntranceThemeTransition();
+				transition = new EntranceThemeTransition();
 				_transition = (EntranceThemeTransition)transition;
 				_container.ContentTransitions = new TransitionCollection();
 			}
@@ -542,7 +543,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 		void UpdateContainerArea()
 		{
-			Element.ContainerArea = new Rectangle(0, 0, _container.ContentWidth, _container.ContentHeight);
+			Element.ContainerArea = new Rect(0, 0, _container.ContentWidth, _container.ContentHeight);
 		}
 
 		void UpdateNavigationBarBackgroundColor()
@@ -655,7 +656,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 
 			_container.ToolbarDynamicOverflowEnabled = Element.OnThisPlatform().GetToolbarDynamicOverflowEnabled();
 		}
-		
+
 
 		void UpdateShowTitle()
 		{

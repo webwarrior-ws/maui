@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 using System.Windows.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Maui;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Essentials;
 using Samples.ViewModel;
 
 namespace Samples.Model
@@ -37,7 +38,7 @@ namespace Samples.Model
 				}
 				catch (Exception ex)
 				{
-					MessagingCenter.Send<PermissionItem, Exception>(this, nameof(PermissionException), ex);
+					WeakReferenceMessenger.Default.Send(ex, nameof(PermissionException));
 				}
 			});
 
@@ -51,7 +52,7 @@ namespace Samples.Model
 				}
 				catch (Exception ex)
 				{
-					MessagingCenter.Send<PermissionItem, Exception>(this, nameof(PermissionException), ex);
+					WeakReferenceMessenger.Default.Send(ex, nameof(PermissionException));
 				}
 			});
 
@@ -65,7 +66,7 @@ namespace Samples.Model
 				}
 				catch (Exception ex)
 				{
-					MessagingCenter.Send<PermissionItem, Exception>(this, nameof(PermissionException), ex);
+					WeakReferenceMessenger.Default.Send(ex, nameof(PermissionException));
 				}
 			});
 	}

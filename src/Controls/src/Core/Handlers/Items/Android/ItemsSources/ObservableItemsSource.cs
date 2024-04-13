@@ -1,21 +1,28 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Collections;
 using System.Collections.Specialized;
 
 namespace Microsoft.Maui.Controls.Handlers.Items
 {
-	internal class ObservableItemsSource : IItemsViewSource
+	internal class ObservableItemsSource : IItemsViewSource, IObservableItemsViewSource
 	{
 		readonly IEnumerable _itemsSource;
+		readonly BindableObject _container;
 		readonly ICollectionChangedNotifier _notifier;
+		readonly WeakNotifyCollectionChangedProxy _proxy = new();
+		readonly NotifyCollectionChangedEventHandler _collectionChanged;
 		bool _disposed;
 
-		public ObservableItemsSource(IEnumerable itemSource, ICollectionChangedNotifier notifier)
-		{
-			_itemsSource = itemSource as IList ?? itemSource as IEnumerable;
-			_notifier = notifier;
+		~ObservableItemsSource() => _proxy.Unsubscribe();
 
-			((INotifyCollectionChanged)itemSource).CollectionChanged += CollectionChanged;
+		public ObservableItemsSource(IEnumerable itemSource, BindableObject container, ICollectionChangedNotifier notifier)
+		{
+			_itemsSource = itemSource;
+			_container = container;
+			_notifier = notifier;
+			_collectionChanged = CollectionChanged;
+			_proxy.Subscribe((INotifyCollectionChanged)itemSource, _collectionChanged);
 		}
 
 
@@ -25,6 +32,8 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 		public bool HasHeader { get; set; }
 		public bool HasFooter { get; set; }
+
+		public bool ObserveChanges { get; set; } = true;
 
 		public void Dispose()
 		{
@@ -89,15 +98,12 @@ namespace Microsoft.Maui.Controls.Handlers.Items
 
 		void CollectionChanged(object sender, NotifyCollectionChangedEventArgs args)
 		{
-			if (Device.IsInvokeRequired)
+			if (!ObserveChanges)
 			{
-				Device.BeginInvokeOnMainThread(() => CollectionChanged(args));
-			}
-			else
-			{
-				CollectionChanged(args);
+				return;
 			}
 
+			_container.Dispatcher.DispatchIfRequired(() => CollectionChanged(args));
 		}
 
 		void CollectionChanged(NotifyCollectionChangedEventArgs args)

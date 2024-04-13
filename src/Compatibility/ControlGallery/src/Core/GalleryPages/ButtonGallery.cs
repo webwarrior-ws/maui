@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Maui.Graphics;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
+namespace Microsoft.Maui.Controls.ControlGallery
 {
 	public class ButtonGallery : ContentPage
 	{
@@ -42,7 +42,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
 				case Device.Android:
 					fontName = "sans-serif-light";
 					break;
-				case Device.UWP:
+				case Device.WinUI:
 					fontName = "Comic Sans MS";
 					break;
 			}

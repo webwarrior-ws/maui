@@ -1,16 +1,23 @@
 using System;
+using System.Runtime.Versioning;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 #if __IOS__ || MACCATALYST
-using NativeView = UIKit.UIApplicationDelegate;
+using PlatformView = UIKit.IUIApplicationDelegate;
 #elif MONOANDROID
-using NativeView = Android.App.Application;
+using PlatformView = Android.App.Application;
 #elif WINDOWS
-using NativeView = Microsoft.UI.Xaml.Application;
+using PlatformView = Microsoft.UI.Xaml.Application;
+#elif TIZEN
+using PlatformView = Tizen.Applications.CoreApplication;
 #endif
 
 namespace Microsoft.Maui.Handlers
 {
+	/// <summary>
+	/// Represents the view handler for the abstract <see cref="IApplication"/> view and its platform-specific implementation.
+	/// </summary>
+	/// <seealso href="https://learn.microsoft.com/dotnet/maui/user-interface/handlers/">Conceptual documentation on handlers</seealso>
 	public partial class ApplicationHandler
 	{
 		internal const string TerminateCommandKey = "Terminate";
@@ -22,14 +29,21 @@ namespace Microsoft.Maui.Handlers
 		public static CommandMapper<IApplication, ApplicationHandler> CommandMapper = new(ElementCommandMapper)
 		{
 			[TerminateCommandKey] = MapTerminate,
+#pragma warning disable CA1416 // TODO: should we propagate SupportedOSPlatform("ios13.0") here
 			[nameof(IApplication.OpenWindow)] = MapOpenWindow,
 			[nameof(IApplication.CloseWindow)] = MapCloseWindow,
+#pragma warning restore CA1416
 		};
 
 		ILogger<ApplicationHandler>? _logger;
 
 		public ApplicationHandler()
 			: base(Mapper, CommandMapper)
+		{
+		}
+
+		public ApplicationHandler(IPropertyMapper? mapper)
+			: base(mapper ?? Mapper, CommandMapper)
 		{
 		}
 
@@ -41,9 +55,33 @@ namespace Microsoft.Maui.Handlers
 		ILogger? Logger =>
 			_logger ??= MauiContext?.Services.CreateLogger<ApplicationHandler>();
 
-#if !NETSTANDARD
-		protected override NativeView CreateNativeElement() =>
-			MauiContext?.Services.GetService<NativeView>() ?? throw new InvalidOperationException($"MauiContext did not have a valid application.");
+#if !(NETSTANDARD || !PLATFORM)
+		protected override PlatformView CreatePlatformElement() =>
+			MauiContext?.Services.GetService<PlatformView>() ?? throw new InvalidOperationException($"MauiContext did not have a valid application.");
 #endif
+
+		/// <summary>
+		/// Maps the abstract "Terminate" command to the platform-specific implementations.
+		/// </summary>
+		/// <param name="handler">The associated handler.</param>
+		/// <param name="application">The associated <see cref="IApplication"/> instance.</param>
+		/// <param name="args">The associated command arguments.</param>
+		public static partial void MapTerminate(ApplicationHandler handler, IApplication application, object? args);
+
+		/// <summary>
+		/// Maps the abstract <see cref="IApplication.OpenWindow"/> command to the platform-specific implementations.
+		/// </summary>
+		/// <param name="handler">The associated handler.</param>
+		/// <param name="application">The associated <see cref="IApplication"/> instance.</param>
+		/// <param name="args">The associated command arguments.</param>
+		public static partial void MapOpenWindow(ApplicationHandler handler, IApplication application, object? args);
+
+		/// <summary>
+		/// Maps the abstract <see cref="IApplication.CloseWindow"/> command to the platform-specific implementations.
+		/// </summary>
+		/// <param name="handler">The associated handler.</param>
+		/// <param name="application">The associated <see cref="IApplication"/> instance.</param>
+		/// <param name="args">The associated command arguments.</param>
+		public static partial void MapCloseWindow(ApplicationHandler handler, IApplication application, object? args);
 	}
 }

@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.Collections.Generic;
 
@@ -5,7 +6,7 @@ namespace Microsoft.Maui.Controls
 {
 	static class ResourcesExtensions
 	{
-		public static IEnumerable<KeyValuePair<string, object>> GetMergedResources(this IElement element)
+		public static IEnumerable<KeyValuePair<string, object>> GetMergedResources(this IElementDefinition element)
 		{
 			Dictionary<string, object> resources = null;
 			while (element != null)
@@ -13,7 +14,7 @@ namespace Microsoft.Maui.Controls
 				var ve = element as IResourcesProvider;
 				if (ve != null && ve.IsResourcesCreated)
 				{
-					resources = resources ?? new Dictionary<string, object>();
+					resources = resources ?? new(StringComparer.Ordinal);
 					foreach (KeyValuePair<string, object> res in ve.Resources.MergedResources)
 					{
 						// If a MergedDictionary value is overridden for a DynamicResource, 
@@ -32,7 +33,7 @@ namespace Microsoft.Maui.Controls
 				var app = element as Application;
 				if (app != null && app.SystemResources != null)
 				{
-					resources = resources ?? new Dictionary<string, object>(8);
+					resources = resources ?? new Dictionary<string, object>(8, StringComparer.Ordinal);
 					foreach (KeyValuePair<string, object> res in app.SystemResources)
 						if (!resources.ContainsKey(res.Key))
 							resources.Add(res.Key, res.Value);
@@ -48,7 +49,7 @@ namespace Microsoft.Maui.Controls
 			return resources;
 		}
 
-		public static bool TryGetResource(this IElement element, string key, out object value)
+		public static bool TryGetResource(this IElementDefinition element, string key, out object value)
 		{
 			while (element != null)
 			{

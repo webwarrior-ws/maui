@@ -1,9 +1,11 @@
 using System.Linq;
-using Microsoft.Maui.Essentials;
+using System.Threading.Tasks;
+using Microsoft.Maui.Networking;
 using Xunit;
 
 namespace Microsoft.Maui.Essentials.DeviceTests
 {
+	[Category("Connectivity")]
 	public class Connectivity_Tests
 	{
 		[Fact]
@@ -19,6 +21,32 @@ namespace Microsoft.Maui.Essentials.DeviceTests
 		{
 			var profiles = Connectivity.ConnectionProfiles;
 			Assert.Equal(profiles.Count(), profiles.Distinct().Count());
+		}
+
+		[Fact]
+		public async Task ConnectivityChanged_Does_Not_Crash()
+		{
+			Connectivity.ConnectivityChanged += Connectivity_ConnectivityChanged;
+
+			// just ensure there is no need for the OS to "respond" to a new subscription
+			await Task.Delay(1000);
+
+			Connectivity.ConnectivityChanged -= Connectivity_ConnectivityChanged;
+
+			static void Connectivity_ConnectivityChanged(object sender, ConnectivityChangedEventArgs e)
+			{
+				// do nothing
+			}
+		}
+
+		[Fact]
+		public async Task Test()
+		{
+			var current = Connectivity.Current.NetworkAccess;
+
+			var thread = await Task.Run(() => Connectivity.Current.NetworkAccess);
+
+			Assert.Equal(current, thread);
 		}
 	}
 }

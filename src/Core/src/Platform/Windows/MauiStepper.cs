@@ -2,14 +2,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Maui.Graphics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.Maui.Graphics;
 using WBrush = Microsoft.UI.Xaml.Media.Brush;
-using WVisualStateManager = Microsoft.UI.Xaml.VisualStateManager;
-using WVisualStateGroup = Microsoft.UI.Xaml.VisualStateGroup;
 using WVisualState = Microsoft.UI.Xaml.VisualState;
+using WVisualStateGroup = Microsoft.UI.Xaml.VisualStateGroup;
+using WVisualStateManager = Microsoft.UI.Xaml.VisualStateManager;
 
 namespace Microsoft.Maui.Platform
 {
@@ -120,7 +120,7 @@ namespace Microsoft.Maui.Platform
 			UpdateValue(+Increment);
 		}
 
-		VisualStateCache PseudoDisable(Control control)
+		static VisualStateCache PseudoDisable(Control control)
 		{
 			if (VisualTreeHelper.GetChildrenCount(control) == 0)
 				control.ApplyTemplate();
@@ -180,7 +180,7 @@ namespace Microsoft.Maui.Platform
 		cause, so this will have to suffice for now.
 		*/
 
-		void PsuedoEnable(Control control, ref VisualStateCache cache)
+		static void PsuedoEnable(Control control, ref VisualStateCache cache)
 		{
 			if (cache == null || VisualTreeHelper.GetChildrenCount(control) == 0)
 				return;
@@ -223,7 +223,7 @@ namespace Microsoft.Maui.Platform
 				return;
 			}
 
-			ButtonBackground = value.ToNative();
+			ButtonBackground = value.ToPlatform();
 			UpdateButtonBackground();
 		}
 

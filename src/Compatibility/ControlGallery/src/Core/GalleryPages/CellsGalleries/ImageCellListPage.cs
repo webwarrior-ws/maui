@@ -2,9 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Graphics;
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
+namespace Microsoft.Maui.Controls.ControlGallery
 {
 	[Preserve(AllMembers = true)]
 	public class ImageCellTest
@@ -23,7 +24,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
 		{
 			Title = "ImageCell List Gallery - Legacy";
 
-			if (Device.RuntimePlatform == Device.iOS && Device.Idiom == TargetIdiom.Tablet)
+			if (DeviceInfo.Platform == DevicePlatform.iOS && DeviceInfo.Idiom == DeviceIdiom.Tablet)
 				Padding = new Thickness(0, 0, 0, 60);
 
 			var dataTemplate = new DataTemplate(typeof(ImageCell));
@@ -75,7 +76,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
 	{
 		public UrlImageCellListPage()
 		{
-			if (Device.RuntimePlatform == Device.iOS && Device.Idiom == TargetIdiom.Tablet)
+			if (DeviceInfo.Platform == DevicePlatform.iOS && DeviceInfo.Idiom == DeviceIdiom.Tablet)
 				Padding = new Thickness(0, 0, 0, 60);
 
 			var dataTemplate = new DataTemplate(typeof(ImageCell));
@@ -95,7 +96,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery
 			var albums = new List<string>();
 			for (int i = 0; i < 30; i++)
 			{
-				albums.Add(string.Format("https://raw.githubusercontent.com/xamarin/Xamarin.Forms/main/Microsoft.Maui.Controls.Compatibility.ControlGallery/coffee.png?ticks={0}", i));
+				albums.Add(string.Format("https://raw.githubusercontent.com/xamarin/Xamarin.Forms/main/Microsoft.Maui.Controls.ControlGallery/coffee.png?ticks={0}", i));
 			}
 
 

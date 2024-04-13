@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 using System.Collections;
 using System.Collections.ObjectModel;
@@ -15,17 +16,21 @@ namespace Microsoft.Maui.Controls.Platform
 		readonly double _itemHeight;
 		readonly double _itemWidth;
 		readonly Thickness _itemSpacing;
-		readonly INotifyCollectionChanged _notifyCollectionChanged;
+		readonly NotifyCollectionChangedEventHandler _collectionChanged;
+		readonly WeakNotifyCollectionChangedProxy _proxy = new();
 
-		public ObservableItemTemplateCollection(IList itemsSource, DataTemplate itemTemplate, BindableObject container, 
+		bool _innerCollectionChange = false;
+		bool _observeChanges = true;
+
+		~ObservableItemTemplateCollection() => _proxy.Unsubscribe();
+
+		public ObservableItemTemplateCollection(IList itemsSource, DataTemplate itemTemplate, BindableObject container,
 			double? itemHeight = null, double? itemWidth = null, Thickness? itemSpacing = null, IMauiContext mauiContext = null)
 		{
 			if (!(itemsSource is INotifyCollectionChanged notifyCollectionChanged))
 			{
 				throw new ArgumentException($"{nameof(itemsSource)} must implement {nameof(INotifyCollectionChanged)}");
 			}
-
-			_notifyCollectionChanged = notifyCollectionChanged;
 
 			_itemsSource = itemsSource;
 			_itemTemplate = itemTemplate;
@@ -48,28 +53,88 @@ namespace Microsoft.Maui.Controls.Platform
 				Add(new ItemTemplateContext(itemTemplate, itemsSource[n], container, _itemHeight, _itemWidth, _itemSpacing, _mauiContext));
 			}
 
-			_notifyCollectionChanged.CollectionChanged += InnerCollectionChanged;
+			_collectionChanged = InnerCollectionChanged;
+			_proxy.Subscribe(notifyCollectionChanged, _collectionChanged);
+
+			CollectionChanged += TemplateCollectionChanged;
 		}
 
 		public void CleanUp()
 		{
-			_notifyCollectionChanged.CollectionChanged -= InnerCollectionChanged;
+			CollectionChanged -= TemplateCollectionChanged;
+			_proxy.Unsubscribe();
+		}
+
+		void TemplateCollectionChanged(object sender, NotifyCollectionChangedEventArgs args)
+		{
+			if (!_innerCollectionChange)
+			{
+				// When the template collection changes not as result of an inner collection change.
+				// The only time this happens is during a drag/drop item reorder (CanReorderItems).
+				// The ListView/GridView has notified us now we need to move those changes into the source.
+				// One might think it would be a "Move" event but it is actually a "Remove" followed by "Add".
+				_observeChanges = false;
+
+				switch (args.Action)
+				{
+					case NotifyCollectionChangedAction.Add:
+						AddToSource(args);
+						break;
+					case NotifyCollectionChangedAction.Remove:
+						RemoveFromSource(args);
+						break;
+					default:
+						break;
+				}
+
+				_observeChanges = true;
+			}
+		}
+
+		void AddToSource(NotifyCollectionChangedEventArgs args)
+		{
+			var startIndex = args.NewStartingIndex > -1 ? args.NewStartingIndex : IndexOf((ItemTemplateContext)args.NewItems[0]);
+
+			var count = args.NewItems.Count;
+
+			for (int n = 0; n < count; n++)
+			{
+				var newItem = (ItemTemplateContext)args.NewItems[n];
+				_itemsSource.Insert(startIndex, newItem.Item);
+			}
+		}
+
+		void RemoveFromSource(NotifyCollectionChangedEventArgs args)
+		{
+			var startIndex = args.OldStartingIndex;
+
+			if (startIndex < 0)
+			{
+				// INCC implementation isn't giving us enough information to know where the removed items were in the
+				return;
+			}
+
+			var count = args.OldItems.Count;
+
+			for (int n = startIndex + count - 1; n >= startIndex; n--)
+			{
+				_itemsSource.RemoveAt(n);
+			}
 		}
 
 		void InnerCollectionChanged(object sender, NotifyCollectionChangedEventArgs args)
 		{
-			if (Device.IsInvokeRequired)
+			if (!_observeChanges)
 			{
-				Device.BeginInvokeOnMainThread(() => InnerCollectionChanged(args));
+				return;
 			}
-			else
-			{
-				InnerCollectionChanged(args);
-			}
+
+			_container.Dispatcher.DispatchIfRequired(() => InnerCollectionChanged(args));
 		}
 
 		void InnerCollectionChanged(NotifyCollectionChangedEventArgs args)
 		{
+			_innerCollectionChange = true;
 			switch (args.Action)
 			{
 				case NotifyCollectionChangedAction.Add:
@@ -90,6 +155,7 @@ namespace Microsoft.Maui.Controls.Platform
 				default:
 					throw new ArgumentOutOfRangeException();
 			}
+			_innerCollectionChange = false;
 		}
 
 		void Add(NotifyCollectionChangedEventArgs args)
@@ -98,7 +164,7 @@ namespace Microsoft.Maui.Controls.Platform
 
 			var count = args.NewItems.Count;
 
-			for(int n = 0; n < count; n++)
+			for (int n = 0; n < count; n++)
 			{
 				Insert(startIndex, new ItemTemplateContext(_itemTemplate, args.NewItems[n], _container, _itemHeight, _itemWidth, _itemSpacing, _mauiContext));
 			}
@@ -118,7 +184,7 @@ namespace Microsoft.Maui.Controls.Platform
 				return;
 			}
 
-			for(int n = count - 1; n >= 0; n--)
+			for (int n = count - 1; n >= 0; n--)
 			{
 				Move(args.OldStartingIndex + n, args.NewStartingIndex + n);
 			}
@@ -138,7 +204,7 @@ namespace Microsoft.Maui.Controls.Platform
 
 			var count = args.OldItems.Count;
 
-			for(int n = startIndex + count - 1; n >= startIndex; n--)
+			for (int n = startIndex + count - 1; n >= startIndex; n--)
 			{
 				RemoveAt(n);
 			}

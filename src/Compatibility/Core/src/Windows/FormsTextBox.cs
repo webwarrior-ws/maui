@@ -1,16 +1,17 @@
 using System;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.System;
-using Windows.UI.Core;
+using Microsoft.Maui.Devices;
+using Microsoft.Maui.Graphics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Windows.System;
+using Windows.UI.Core;
 using WBrush = Microsoft.UI.Xaml.Media.Brush;
 using WVisualStateManager = Microsoft.UI.Xaml.VisualStateManager;
-using System.Text;
-using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 {
@@ -79,7 +80,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 		public bool ClearButtonVisible
 		{
 			get { return (bool)GetValue(ClearButtonVisibleProperty); }
-			set { SetValue(ClearButtonVisibleProperty, value);}
+			set { SetValue(ClearButtonVisibleProperty, value); }
 		}
 
 		public WBrush BackgroundFocusBrush
@@ -168,7 +169,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 				UpdateClearButtonVisible();
 			}
 
-			_scrollViewer= GetTemplateChild("ContentElement") as ScrollViewer;
+			_scrollViewer = GetTemplateChild("ContentElement") as ScrollViewer;
 		}
 
 		void OnSizeChanged(object sender, SizeChangedEventArgs e)
@@ -348,7 +349,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			if (IsPassword)
 			{
 				// If we are on the phone, we might need to delay obfuscating the last character
-				if (Device.Idiom == TargetIdiom.Phone)
+				if (DeviceInfo.Idiom == DeviceIdiom.Phone)
 				{
 					DelayObfuscation();
 					return;
@@ -399,7 +400,7 @@ namespace Microsoft.Maui.Controls.Compatibility.Platform.UWP
 			{
 				if (ClearButtonVisible && !states.Contains(visibleState))
 					states.Add(visibleState);
-				else if(!ClearButtonVisible)
+				else if (!ClearButtonVisible)
 					states.Remove(visibleState);
 			}
 		}

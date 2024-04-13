@@ -12,7 +12,7 @@ using Xamarin.UITest;
 using NUnit.Framework;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 #if UITEST
 	[Category(UITestCategories.Shape)]
@@ -23,8 +23,6 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 	{
 		public Issue10623()
 		{
-			Device.SetFlags(new List<string>(Device.Flags ?? new List<string>()) { "Shapes_Experimental" });
-
 			var layout = new StackLayout();
 
 			var instructions = new Label
@@ -257,7 +255,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 
 		private void UpdateTapGestureRecognizers()
 		{
-			foreach (var star in Children)
+			foreach (View star in Children)
 			{
 				if (!star.GestureRecognizers.Any())
 				{

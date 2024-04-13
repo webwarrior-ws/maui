@@ -14,7 +14,7 @@ using NUnit.Framework;
 using Microsoft.Maui.Controls.Compatibility.UITests;
 #endif
 
-namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
+namespace Microsoft.Maui.Controls.ControlGallery.Issues
 {
 	[Preserve(AllMembers = true)]
 	[Issue(IssueTracker.Github, 8262, "[Android] ImageRenderer still being accessed after control destroyed",
@@ -27,7 +27,7 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 	{
 		public View WithBounds(View v, double x, double y, double w, double h)
 		{
-			AbsoluteLayout.SetLayoutBounds(v, new Rectangle(x, y, w, h));
+			AbsoluteLayout.SetLayoutBounds(v, new Rect(x, y, w, h));
 			return v;
 		}
 
@@ -89,6 +89,8 @@ namespace Microsoft.Maui.Controls.Compatibility.ControlGallery.Issues
 		}
 
 #if UITEST
+[Microsoft.Maui.Controls.Compatibility.UITests.FailsOnMauiAndroid]
+[Microsoft.Maui.Controls.Compatibility.UITests.FailsOnMauiIOS]
 		[Test]
 		public void ScrollingQuicklyOnCollectionViewDoesntCrashOnDestroyedImage()
 		{

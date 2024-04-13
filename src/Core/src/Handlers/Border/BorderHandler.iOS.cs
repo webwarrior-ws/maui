@@ -1,51 +1,75 @@
 ﻿using System;
+using System.Formats.Asn1;
 using System.Linq;
-using NativeView = UIKit.UIView;
+using CoreAnimation;
+using Microsoft.Maui.Graphics;
+using PlatformView = UIKit.UIView;
 
 namespace Microsoft.Maui.Handlers
 {
-	public partial class BorderHandler : ViewHandler<IBorder, ContentView>
+	public partial class BorderHandler : ViewHandler<IBorderView, ContentView>
 	{
-		protected override ContentView CreateNativeView()
+		protected override ContentView CreatePlatformView()
 		{
 			_ = VirtualView ?? throw new InvalidOperationException($"{nameof(VirtualView)} must be set to create a {nameof(ContentView)}");
 			_ = MauiContext ?? throw new InvalidOperationException($"{nameof(MauiContext)} cannot be null");
 
 			return new ContentView
 			{
-				CrossPlatformMeasure = VirtualView.CrossPlatformMeasure,
-				CrossPlatformArrange = VirtualView.CrossPlatformArrange
+				CrossPlatformLayout = VirtualView
 			};
+		}
+
+		protected override void ConnectHandler(ContentView platformView)
+		{
+			base.ConnectHandler(platformView);
+		}
+
+		protected override void DisconnectHandler(ContentView platformView)
+		{
+			base.DisconnectHandler(platformView);
+
+			platformView.ClearSubviews();
 		}
 
 		public override void SetVirtualView(IView view)
 		{
 			base.SetVirtualView(view);
-			_ = NativeView ?? throw new InvalidOperationException($"{nameof(NativeView)} should have been set by base class.");
+
+			_ = PlatformView ?? throw new InvalidOperationException($"{nameof(PlatformView)} should have been set by base class.");
 			_ = VirtualView ?? throw new InvalidOperationException($"{nameof(VirtualView)} should have been set by base class.");
 
-			NativeView.View = view;
-			NativeView.CrossPlatformMeasure = VirtualView.CrossPlatformMeasure;
-			NativeView.CrossPlatformArrange = VirtualView.CrossPlatformArrange;
+			PlatformView.View = VirtualView;
+			PlatformView.CrossPlatformLayout = VirtualView;
 		}
 
-		void UpdateContent()
+		static partial void UpdateContent(IBorderHandler handler)
 		{
-			_ = NativeView ?? throw new InvalidOperationException($"{nameof(NativeView)} should have been set by base class.");
-			_ = VirtualView ?? throw new InvalidOperationException($"{nameof(VirtualView)} should have been set by base class.");
-			_ = MauiContext ?? throw new InvalidOperationException($"{nameof(MauiContext)} should have been set by base class.");
+			_ = handler.PlatformView ?? throw new InvalidOperationException($"{nameof(PlatformView)} should have been set by base class.");
+			_ = handler.VirtualView ?? throw new InvalidOperationException($"{nameof(VirtualView)} should have been set by base class.");
+			_ = handler.MauiContext ?? throw new InvalidOperationException($"{nameof(MauiContext)} should have been set by base class.");
 
-			//Cleanup the old view when reused
-			var oldChildren = NativeView.Subviews.ToList();
-			oldChildren.ForEach(x => x.RemoveFromSuperview());
+			// Cleanup the old view when reused
+			var platformView = handler.PlatformView;
+			platformView.ClearSubviews();
 
-			if (VirtualView.PresentedContent is IView view)
-				NativeView.AddSubview(view.ToNative(MauiContext));
+			if (handler.VirtualView.PresentedContent is IView content)
+			{
+				var platformContent = content.ToPlatform(handler.MauiContext);
+				platformContent.Tag = ContentView.ContentTag;
+				platformView.AddSubview(platformContent);
+			}
 		}
 
-		public static void MapContent(BorderHandler handler, IBorder border)
+		public override void PlatformArrange(Rect rect)
 		{
-			handler.UpdateContent();
+			// Disable the animation during arrange for the Border; otherwise, all resizing actions
+			// will animate, and it makes the Border lag behind its content.
+
+			CATransaction.Begin();
+			CATransaction.AnimationDuration = 0;
+			base.PlatformArrange(rect);
+			CATransaction.Commit();
 		}
 	}
 }

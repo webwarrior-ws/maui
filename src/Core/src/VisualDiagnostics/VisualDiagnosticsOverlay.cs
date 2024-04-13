@@ -5,6 +5,9 @@ using Microsoft.Maui.Graphics;
 
 namespace Microsoft.Maui
 {
+#if ANDROID
+	[System.Runtime.Versioning.SupportedOSPlatform("android23.0")]
+#endif
 	public partial class VisualDiagnosticsOverlay : WindowOverlay, IVisualDiagnosticsOverlay
 	{
 		bool _enableElementSelector;
@@ -148,8 +151,8 @@ namespace Microsoft.Maui
 			if (element is not IView view)
 				return;
 
-			var nativeView = view.GetNativeViewBounds();
-			parentScrollView.RequestScrollTo(nativeView.X, nativeView.Y, true);
+			var platformView = view.GetPlatformViewBounds();
+			parentScrollView.RequestScrollTo(platformView.X, platformView.Y, true);
 		}
 
 		/// <inheritdoc/>
@@ -183,7 +186,7 @@ namespace Microsoft.Maui
 			return base.Deinitialize();
 		}
 
-		IList<IScrollView> GetScrollViews()
+		List<IScrollView> GetScrollViews()
 		{
 			if (Window == null)
 				return new List<IScrollView>();
@@ -196,7 +199,7 @@ namespace Microsoft.Maui
 				.ToList();
 		}
 
-		IScrollView? GetParentScrollView(IVisualTreeElement element)
+		static IScrollView? GetParentScrollView(IVisualTreeElement element)
 		{
 			if (element == null)
 				return null;
