@@ -23,6 +23,9 @@ using Microsoft.Maui.Controls.Handlers.Compatibility;
 #elif TIZEN
 using Microsoft.Maui.Controls.Handlers.Compatibility;
 using Microsoft.Maui.Controls.Compatibility.Platform.Tizen;
+#elif GTK
+using Microsoft.Maui.Controls.Handlers.Compatibility;
+using Microsoft.Maui.Controls.Compatibility.Platform.Gtk;
 #endif
 
 namespace Microsoft.Maui.Controls.Hosting
@@ -124,7 +127,11 @@ namespace Microsoft.Maui.Controls.Hosting
 			handlersCollection.AddHandler(typeof(TableView), typeof(Handlers.Compatibility.TableViewRenderer));
 			handlersCollection.AddHandler(typeof(Frame), typeof(Handlers.Compatibility.FrameRenderer));
 #endif
-
+#if GTK
+			handlersCollection.AddHandler(typeof(TableView), typeof(Handlers.Compatibility.TableViewHandler));
+			handlersCollection.AddHandler(typeof(Frame), typeof(Handlers.Compatibility.FrameHandler));
+			handlersCollection.AddHandler(typeof(ListView), typeof(Handlers.Compatibility.ListViewHandler));
+#endif
 #if WINDOWS || MACCATALYST
 			handlersCollection.AddHandler(typeof(MenuFlyout), typeof(MenuFlyoutHandler));
 #endif
@@ -135,7 +142,7 @@ namespace Microsoft.Maui.Controls.Hosting
 			handlersCollection.AddHandler(typeof(FlyoutPage), typeof(Handlers.Compatibility.PhoneFlyoutPageRenderer));
 #endif
 
-#if ANDROID || IOS || MACCATALYST || TIZEN
+#if ANDROID || IOS || MACCATALYST || TIZEN || GTK
 			handlersCollection.AddHandler<SwipeItemView, SwipeItemViewHandler>();
 #if ANDROID || IOS || MACCATALYST
 			handlersCollection.AddHandler<Shell, ShellRenderer>();
@@ -145,7 +152,7 @@ namespace Microsoft.Maui.Controls.Hosting
 			handlersCollection.AddHandler<ShellSection, ShellSectionHandler>();
 #endif
 #endif
-#if WINDOWS || ANDROID || TIZEN
+#if WINDOWS || ANDROID || TIZEN || GTK
 			handlersCollection.AddHandler<NavigationPage, NavigationViewHandler>();
 			handlersCollection.AddHandler<Toolbar, ToolbarHandler>();
 			handlersCollection.AddHandler<FlyoutPage, FlyoutViewHandler>();
@@ -163,7 +170,7 @@ namespace Microsoft.Maui.Controls.Hosting
 
 		static MauiAppBuilder SetupDefaults(this MauiAppBuilder builder)
 		{
-#if WINDOWS || ANDROID || IOS || MACCATALYST || TIZEN
+#if WINDOWS || ANDROID || IOS || MACCATALYST || TIZEN || GTK
 			// initialize compatibility DependencyService
 			DependencyService.SetToInitialized();
 			DependencyService.Register<Xaml.ResourcesLoader>();

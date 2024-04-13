@@ -1,12 +1,12 @@
 <Project>
-  <Import Project="eng\Versions.props" />
+  <Import Project="eng\Versions.props"/>
 
   <PropertyGroup>
     <_MauiDotNetVersionMajor Condition="'$(_MauiDotNetVersionMajor)' == ''">8</_MauiDotNetVersionMajor>
     <_MauiDotNetVersionMinor Condition="'$(_MauiDotNetVersionMinor)' == ''">0</_MauiDotNetVersionMinor>
     <_MauiDotNetVersion Condition="'$(_MauiDotNetVersion)' == ''">$(_MauiDotNetVersionMajor).$(_MauiDotNetVersionMinor)</_MauiDotNetVersion>
     <_MauiDotNetTfm Condition="'$(_MauiDotNetTfm)' == ''">net$(_MauiDotNetVersion)</_MauiDotNetTfm>
-    
+
     <_MauiPreviousDotNetVersionMajor Condition="'$(_MauiPreviousDotNetVersionMajor)' == ''">7</_MauiPreviousDotNetVersionMajor>
     <_MauiPreviousDotNetVersionMinor Condition="'$(_MauiPreviousDotNetVersionMinor)' == ''">0</_MauiPreviousDotNetVersionMinor>
     <_MauiPreviousDotNetVersion Condition="'$(_MauiPreviousDotNetVersion)' == ''">$(_MauiPreviousDotNetVersionMajor).$(_MauiPreviousDotNetVersionMinor)</_MauiPreviousDotNetVersion>
@@ -30,6 +30,8 @@
     <_MauiTargetPlatformIsWindows Condition="$(_MauiTargetPlatformIdentifier.Contains('windows')) == 'True'">True</_MauiTargetPlatformIsWindows>
     <_MauiTargetPlatformIsTizen>false</_MauiTargetPlatformIsTizen>
     <_MauiTargetPlatformIsTizen Condition="'$(_MauiTargetPlatformIdentifier)' == 'tizen'">True</_MauiTargetPlatformIsTizen>
+    <_MauiTargetPlatformIsGtk>false</_MauiTargetPlatformIsGtk>
+    <_MauiTargetPlatformIsGtk Condition="'$(_MauiTargetPlatformIdentifier)' == 'gtk'">True</_MauiTargetPlatformIsGtk>
   </PropertyGroup>
 
   <!-- Try determine which .NET workloads are installed -->
@@ -47,9 +49,11 @@
 
     <DotNetMacOSWorkloadInstalledVersion Condition="Exists('$(DotNetWorkloadInstallLocation)microsoft.net.sdk.macos\WorkloadManifest.json')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(DotNetWorkloadInstallLocation)\microsoft.net.sdk.macos\WorkloadManifest.json')), '$(DotNetWorkloadVersionRegex)'))</DotNetMacOSWorkloadInstalledVersion>
     <DotNetTizenWorkloadInstalledVersion Condition="Exists('$(DotNetWorkloadInstallLocation)samsung.net.sdk.tizen\WorkloadManifest.json')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(DotNetWorkloadInstallLocation)\samsung.net.sdk.tizen\WorkloadManifest.json')), $(DotNetWorkloadVersionRegex)))</DotNetTizenWorkloadInstalledVersion>
+    <DotNetGtkWorkloadInstalledVersion Condition="Exists('$(DotNetWorkloadInstallLocation)GtkSharp.NET.Sdk.Gtk\WorkloadManifest.json')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(DotNetWorkloadInstallLocation)\GtkSharp.NET.Sdk.Gtk\WorkloadManifest.json')), $(DotNetWorkloadVersionRegex)))</DotNetGtkWorkloadInstalledVersion>
 
     <DotNetMacOSWorkloadIsInstalled Condition="Exists('$(DotNetWorkloadPacksInstallLocation)Microsoft.macOS.Sdk\$(DotNetMacOSWorkloadInstalledVersion)\Sdk\AutoImport.props')">true</DotNetMacOSWorkloadIsInstalled>
     <DotNetTizenWorkloadIsInstalled Condition="Exists('$(DotNetWorkloadPacksInstallLocation)Samsung.Tizen.Sdk\$(DotNetTizenWorkloadInstalledVersion)\Sdk\AutoImport.props')">true</DotNetTizenWorkloadIsInstalled>
+    <DotNetGtkWorkloadIsInstalled Condition="Exists('$(DotNetWorkloadPacksInstallLocation)GtkSharp.Sdk\$(DotNetGtkWorkloadInstalledVersion)\Sdk\Sdk.targets')">true</DotNetGtkWorkloadIsInstalled>
 
     <IncludeWindowsTargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows')) or '$(Packing)' == 'true'">true</IncludeWindowsTargetFrameworks>
     <IncludeMacOSTargetFrameworks Condition="'$(DotNetMacOSWorkloadIsInstalled)' == 'true'">true</IncludeMacOSTargetFrameworks>
@@ -57,6 +61,7 @@
     <IncludeAndroidTargetFrameworks>true</IncludeAndroidTargetFrameworks>
     <IncludeMacCatalystTargetFrameworks>true</IncludeMacCatalystTargetFrameworks>
     <IncludeIosTargetFrameworks>true</IncludeIosTargetFrameworks>
+    <IncludeGtkTargetFrameworks Condition="'$(DotNetGtkWorkloadIsInstalled)' == 'true'">true</IncludeGtkTargetFrameworks>
     <IncludeCompatibilityProjects>false</IncludeCompatibilityProjects>
     <IncludeCompatibilityProjects Condition="'$(SolutionFileName)' == 'Microsoft.Maui.sln'">true</IncludeCompatibilityProjects>
   </PropertyGroup>
@@ -92,9 +97,10 @@
     <WindowsTargetFrameworkVersion>10.0.19041.0</WindowsTargetFrameworkVersion>
     <Windows2TargetFrameworkVersion>10.0.20348.0</Windows2TargetFrameworkVersion>
     <TizenTargetFrameworkVersion>6.5</TizenTargetFrameworkVersion>
+    <GtkTargetFrameworkVersion>3.24.24.95</GtkTargetFrameworkVersion>
   </PropertyGroup>
 
-  <Import Condition="Exists('Directory.Build.Override.props')" Project="Directory.Build.Override.props" />
+  <Import Condition="Exists('Directory.Build.Override.props')" Project="Directory.Build.Override.props"/>
 
   <PropertyGroup>
     <!-- the real TFMs -->
@@ -105,6 +111,7 @@
     <MauiPlatforms Condition="'$(IncludeAndroidTargetFrameworks)' == 'true'">net$(_MauiDotNetVersion)-android;$(MauiPlatforms)</MauiPlatforms>
     <MauiPlatforms Condition="'$(IncludeMacCatalystTargetFrameworks)' == 'true'">net$(_MauiDotNetVersion)-maccatalyst;$(MauiPlatforms)</MauiPlatforms>
     <MauiPlatforms Condition="'$(IncludeIosTargetFrameworks)' == 'true'">net$(_MauiDotNetVersion)-ios;$(MauiPlatforms)</MauiPlatforms>
+    <MauiPlatforms Condition="'$(IncludeGtkTargetFrameworks)' == 'true'">net$(_MauiDotNetVersion)-gtk;$(MauiPlatforms)</MauiPlatforms>
 
     <WindowsMauiPreviousPlatforms Condition="'$(WindowsMauiPreviousPlatforms)' == ''">net$(_MauiPreviousDotNetVersion)-windows$(WindowsTargetFrameworkVersion);net$(_MauiPreviousDotNetVersion)-windows$(Windows2TargetFrameworkVersion)</WindowsMauiPreviousPlatforms>
     <MauiPreviousPlatforms Condition="'$(IncludeTizenTargetFrameworks)' == 'true'">net$(_MauiPreviousDotNetVersion)-tizen;$(MauiPreviousPlatforms)</MauiPreviousPlatforms>
@@ -173,19 +180,23 @@
     <PackageThirdPartyNoticesFile>$(MSBuildThisFileDirectory)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <DefaultPackageTags>dotnet-maui;dotnet;maui;cross-platform;ios;android;macos;maccatalyst;windows;winui;tizen</DefaultPackageTags>
     <ContinuousIntegrationBuild Condition=" '$(CI)' == 'true' ">true</ContinuousIntegrationBuild>
+    <NoWarn>$(NoWarn);RS0016;RS0017;CA1822;CA1805;CS0649;CS1589</NoWarn>
   </PropertyGroup>
   <!-- This target is replaced by GitInfo when restored. Allows Versions.targets to rely on it before restore. -->
-  <Target Name="GitVersion" />
-  <Target Name="GitInfo" />
-  <Import Condition="'$(EnvironmentBuildPropsImported)' != 'True'" Project="$(MSBuildThisFileDirectory)eng\Environment.Build.props" />
-  <Import Condition="'$(SampleProject)' != 'True' and '$(CI)' == 'true'" Project="$(MSBuildThisFileDirectory)eng\SourceLink.Build.props" />
+  <Target Name="GitVersion"/>
+  <Target Name="GitInfo"/>
+  <Import Condition="'$(EnvironmentBuildPropsImported)' != 'True'" Project="$(MSBuildThisFileDirectory)eng\Environment.Build.props"/>
+  <Import Condition="'$(SampleProject)' != 'True' and '$(CI)' == 'true'" Project="$(MSBuildThisFileDirectory)eng\SourceLink.Build.props"/>
   <ItemGroup Condition="'$(MSBuildVersion)' != '' AND '$(MSBuildVersion)' &lt; '16.7.0'  ">
-    <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="4.7.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="4.7.0" PrivateAssets="all"/>
   </ItemGroup>
   <PropertyGroup>
     <!-- We don't need to be warned that we are using a preview .NET -->
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <!-- Disables the transitive restore of packages like Microsoft.AspNetCore.App.Ref, Microsoft.WindowsDesktop.App.Ref -->
     <DisableTransitiveFrameworkReferenceDownloads>true</DisableTransitiveFrameworkReferenceDownloads>
+  </PropertyGroup>
+  <PropertyGroup>
+
   </PropertyGroup>
 </Project>

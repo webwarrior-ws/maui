@@ -94,6 +94,7 @@
     <XunitRunnerVisualStudioPackageVersion>2.4.5</XunitRunnerVisualStudioPackageVersion>
     <NSubstitutePackageVersion>4.3.0</NSubstitutePackageVersion>
     <CoverletCollectorPackageVersion>3.2.0</CoverletCollectorPackageVersion>
+    <GtkSharpPackageVersion>3.24.24.95</GtkSharpPackageVersion>
   </PropertyGroup>
   <PropertyGroup>
     <VersionBand Condition=" '$(VersionBand)' == '' ">$([System.Text.RegularExpressions.Regex]::Match($(MicrosoftDotnetSdkInternalPackageVersion), `^\d+\.\d+\.\d`))00</VersionBand>

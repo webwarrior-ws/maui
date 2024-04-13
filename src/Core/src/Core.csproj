@@ -8,7 +8,7 @@
     <IsTrimmable>false</IsTrimmable>
     <MauiGenerateResourceDesigner>true</MauiGenerateResourceDesigner>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591;RS0041;RS0026;RS0027</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;RS0041;RS0026;RS0027;CA1859</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -48,6 +48,9 @@
   <ItemGroup Condition="$(TargetFramework.Contains('-tizen'))">
     <PackageReference Include="Tizen.UIExtensions.NUI" />
     <ProjectReference Include="..\..\Graphics\src\Graphics.Skia\Graphics.Skia.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.Contains('-gtk'))">
+    <ProjectReference Include="..\..\Graphics\src\Graphics.Gtk\Graphics.Gtk.csproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Essentials\src\Essentials.csproj" />
