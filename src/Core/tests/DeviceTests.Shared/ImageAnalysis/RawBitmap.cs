@@ -116,9 +116,9 @@ namespace Microsoft.Maui.DeviceTests.ImageAnalysis
 			while (!AndroidX.Core.View.ViewCompat.IsLaidOut(view))
 				await Task.Delay(10); // Wait for Android to render the view
 			var bitmap = Android.Graphics.Bitmap.CreateBitmap(view.Width, view.Height, Android.Graphics.Bitmap.Config.Argb8888);
-			Android.Graphics.Canvas canvas = new (bitmap);
+			Android.Graphics.Canvas canvas = new(bitmap);
 			view.Draw(canvas);
-			int[] pixels = new int[bitmap.Width * bitmap.Height];        
+			int[] pixels = new int[bitmap.Width * bitmap.Height];
 			bitmap.GetPixels(pixels, 0, bitmap.Width, 0, 0, bitmap.Width, bitmap.Height);
 			return new RawBitmap
 			{

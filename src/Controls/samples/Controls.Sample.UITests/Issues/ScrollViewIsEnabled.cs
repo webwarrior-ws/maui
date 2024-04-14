@@ -22,7 +22,7 @@ namespace Maui.Controls.Sample.Issues
 			var initiallyEnabled = new Button { AutomationId = "InitiallyEnabled", Text = InitiallyEnabled };
 			initiallyEnabled.Clicked += (sender, args) => { Navigation.PushAsync(ScrollViewTestPage(true)); };
 
-			var initiallyNotEnabled = new Button { AutomationId= "InitiallyNotEnabled", Text = InitiallyNotEnabled };
+			var initiallyNotEnabled = new Button { AutomationId = "InitiallyNotEnabled", Text = InitiallyNotEnabled };
 			initiallyNotEnabled.Clicked += (sender, args) => { Navigation.PushAsync(ScrollViewTestPage(false)); };
 
 			var layout = new StackLayout { Children = { initiallyNotEnabled, initiallyEnabled } };
