@@ -21,11 +21,11 @@ namespace Microsoft.Maui.AppiumTests
 			this.IgnoreIfPlatforms(new TestDevice[] { TestDevice.Android },
 				"This test is failing, likely due to product issue");
 
-			App.WaitForElement ("Tap");
-			App.Screenshot ("At test page");
-			App.Click ("Tap");
+			App.WaitForElement("Tap");
+			App.Screenshot("At test page");
+			App.Click("Tap");
 
-			App.WaitForElement ("28570Target");
+			App.WaitForElement("28570Target");
 		}
 	}
 }

@@ -25,7 +25,7 @@ namespace Microsoft.Maui.Controls.Handlers.Compatibility
 		public FrameHandler(IPropertyMapper? mapper, CommandMapper? commandMapper)
 			: base(mapper ?? Mapper, commandMapper ?? CommandMapper) { }
 
-		
+
 		[MissingMapper]
 		protected override FrameView CreatePlatformView()
 		{

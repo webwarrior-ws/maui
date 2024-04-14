@@ -1,9 +1,9 @@
-﻿using Microsoft.Maui.Controls;
+﻿using System;
+using System.Linq;
+using Microsoft.Maui;
+using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Xaml;
 using Microsoft.Maui.Platform;
-using Microsoft.Maui;
-using System.Linq;
-using System;
 
 #if IOS
 using UIKit;
