@@ -135,11 +135,7 @@ namespace Microsoft.Maui
 		protected void Launch(EventArgs args)
 		{
 			Gtk.Application.Init();
-			Gtk.Application app;
-			if (ApplicationId == null)
-				app = new Gtk.Application(IntPtr.Zero);
-			else
-				app = new Gtk.Application(ApplicationId, GLib.ApplicationFlags.None);
+			var app = new Gtk.Application(ApplicationId, GLib.ApplicationFlags.NonUnique);
 
 			RegisterLifecycleEvents(app);
 
