@@ -10,6 +10,12 @@ namespace Microsoft.Maui
 {
 	public abstract class MauiGtkApplication : IPlatformApplication
 	{
+		/// <param name="enforceUniqueness">If true, only one instance of application can run at any moment.</param>
+		public MauiGtkApplication(bool enforceUniqueness = false)
+		{
+			EnforceUniqueness = enforceUniqueness;
+		}
+
 		protected abstract MauiApp CreateMauiApp();
 
 		static readonly Regex InvalidGtkApplicationIdElementCharRegex = new Regex("[^A-Za-z0-9_\\-]");
@@ -53,6 +59,7 @@ namespace Microsoft.Maui
 		public IServiceProvider Services { get; protected set; } = null!;
 
 		public IApplication Application { get; protected set; } = null!;
+		public bool EnforceUniqueness { get; }
 
 		public void Run(params string[] args)
 		{
@@ -135,7 +142,8 @@ namespace Microsoft.Maui
 		protected void Launch(EventArgs args)
 		{
 			Gtk.Application.Init();
-			var app = new Gtk.Application(ApplicationId, GLib.ApplicationFlags.None);
+			var flags = EnforceUniqueness ? GLib.ApplicationFlags.None : GLib.ApplicationFlags.NonUnique;
+			var app = new Gtk.Application(ApplicationId, flags);
 
 			RegisterLifecycleEvents(app);
 
