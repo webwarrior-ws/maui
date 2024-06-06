@@ -30,13 +30,25 @@ namespace Microsoft.Maui.Graphics.Platform.Gtk
 
 		public static (int width, int height) GetPixelSize(this Pango.Layout layout, string text, double desiredSize = -1d, bool heightForWidth = true)
 		{
+			layout.SetText(text);
 			desiredSize = double.IsInfinity(desiredSize) ? -1 : desiredSize;
 
 			if (desiredSize > 0)
 			{
 				if (heightForWidth)
 				{
-					layout.Width = desiredSize.ScaledToPango();
+					if (desiredSize > 1)
+						layout.Width = desiredSize.ScaledToPango();
+					else
+					{
+						// This means layout requested desired size with constraints (0, infinity).
+						// Instead of trying to fit the text by splitting it into as many lines as possible,
+						// try to approximate size of a square block of text.
+						layout.Width = -1;
+						layout.GetPixelSize(out var singleLineWidth, out var singleLineHeight);
+						var approximateWidth = Math.Sqrt(singleLineWidth / (singleLineHeight + 1)) * singleLineHeight;
+						layout.Width = approximateWidth.ScaledToPango();
+					}
 				}
 				else
 				{
@@ -44,7 +56,6 @@ namespace Microsoft.Maui.Graphics.Platform.Gtk
 				}
 			}
 
-			layout.SetText(text);
 			layout.GetPixelSize(out var textWidth, out var textHeight);
 
 			return (textWidth, textHeight);
