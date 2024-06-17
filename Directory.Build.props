@@ -58,16 +58,16 @@
     <IncludeWindowsTargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows')) or '$(Packing)' == 'true'">true</IncludeWindowsTargetFrameworks>
     <IncludeMacOSTargetFrameworks Condition="'$(DotNetMacOSWorkloadIsInstalled)' == 'true'">true</IncludeMacOSTargetFrameworks>
     <IncludeTizenTargetFrameworks Condition="'$(DotNetTizenWorkloadIsInstalled)' == 'true'">true</IncludeTizenTargetFrameworks>
-    <IncludeAndroidTargetFrameworks>true</IncludeAndroidTargetFrameworks>
-    <IncludeMacCatalystTargetFrameworks>true</IncludeMacCatalystTargetFrameworks>
-    <IncludeIosTargetFrameworks>true</IncludeIosTargetFrameworks>
+    <IncludeAndroidTargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">true</IncludeAndroidTargetFrameworks>
+    <IncludeMacCatalystTargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">true</IncludeMacCatalystTargetFrameworks>
+    <IncludeIosTargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">true</IncludeIosTargetFrameworks>
     <IncludeGtkTargetFrameworks Condition="'$(DotNetGtkWorkloadIsInstalled)' == 'true'">true</IncludeGtkTargetFrameworks>
     <IncludeCompatibilityProjects>false</IncludeCompatibilityProjects>
     <IncludeCompatibilityProjects Condition="'$(SolutionFileName)' == 'Microsoft.Maui.sln'">true</IncludeCompatibilityProjects>
   </PropertyGroup>
 
   <!-- this is CI, so everything should be there -->
-  <PropertyGroup Condition="'$(CI)' == 'true' or '$(TF_BUILD)' == 'true'">
+  <PropertyGroup Condition="('$(CI)' == 'true' or '$(TF_BUILD)' == 'true') and !$([MSBuild]::IsOSPlatform('linux'))">
     <IncludeWindowsTargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">true</IncludeWindowsTargetFrameworks>
     <IncludeTizenTargetFrameworks>true</IncludeTizenTargetFrameworks>
     <IncludeMacOSTargetFrameworks>true</IncludeMacOSTargetFrameworks>
