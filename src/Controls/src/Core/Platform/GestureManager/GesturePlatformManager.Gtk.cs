@@ -35,6 +35,7 @@ namespace Microsoft.Maui.Controls.Platform
 			if (_handler.PlatformView == null)
 				throw new ArgumentNullException(nameof(handler.PlatformView));
 
+			Element = (VisualElement)_handler.VirtualView;
 			Control = _handler.PlatformView;
 
 			if (_handler.ContainerView != null)
