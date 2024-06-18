@@ -4,7 +4,7 @@ namespace Microsoft.Maui.Platform;
 
 // https://docs.gtk.org/gtk3/class.Frame.html
 
-public class FrameView : Frame, ICrossPlatformLayoutBacking
+public class FrameView : EventBox, ICrossPlatformLayoutBacking
 {
 
 	public ICrossPlatformLayout? CrossPlatformLayout { get; set; }
