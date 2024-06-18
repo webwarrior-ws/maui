@@ -11,7 +11,7 @@ public static class FrameExtensions
 
 	static (string mainNode, string subNode)? _borderCssNode = default;
 
-	public static (string mainNode, string subNode) BorderCssNode(this Gtk.Frame platformView)
+	public static (string mainNode, string subNode) BorderCssNode(this Gtk.Container platformView)
 	{
 		if (_borderCssNode is { })
 			return _borderCssNode.Value;
@@ -23,19 +23,18 @@ public static class FrameExtensions
 		return _borderCssNode.Value;
 	}
 
-	public static void UpdateBorderColor(this Gtk.Frame platformView, Color? color)
+	public static void UpdateBorderColor(this Gtk.Container platformView, Color? color)
 	{
-		var (mainNode, subNode) = platformView.BorderCssNode();
-		platformView.SetStyleColor(color, mainNode, "border-color", subNode);
+		platformView.SetStyleValueNode($"1px solid {color.ToGdkRgba().ToString()}", platformView.CssMainNode(), "border");
 	}
 
-	public static void UpdateBorderWidth(this Gtk.Frame platformView, int width)
+	public static void UpdateBorderWidth(this Gtk.Container platformView, int width)
 	{
 		var (mainNode, subNode) = platformView.BorderCssNode();
-		platformView.SetStyleValueNode($"{width}px", mainNode, "border-width", subNode);
+		platformView.SetStyleValueNode($"{width}px", mainNode, "border-width");
 	}
 
-	public static void UpdateDashPattern(this Gtk.Frame platformView, float[]? strokeDashPattern)
+	public static void UpdateDashPattern(this Gtk.Container platformView, float[]? strokeDashPattern)
 	{
 		var (mainNode, subNode) = platformView.BorderCssNode();
 
@@ -54,7 +53,7 @@ public static class FrameExtensions
 	}
 
 	// border-top-left-radius, border-top-right-radius, border-bottom-right-radius, border-bottom-left-radius
-	public static void UpdateBorderRadius(this Gtk.Frame platformView, float radius, float? tr = default, float? br = default, float? bl = default)
+	public static void UpdateBorderRadius(this Gtk.Container platformView, float radius, float? tr = default, float? br = default, float? bl = default)
 	{
 		int Clamp(float r) => (int)(r < 0 ? 0 : r);
 
@@ -62,14 +61,14 @@ public static class FrameExtensions
 		if (tr is not { } || br is not { } || bl is not { } ||
 			(radius == tr && radius == br && radius == bl))
 		{
-			platformView.SetStyleValueNode($"{Clamp(radius)}px", mainNode, "border-radius", subNode);
+			platformView.SetStyleValueNode($"{Clamp(radius)}px", mainNode, "border-radius");
 			return;
 		}
 
-		platformView.SetStyleValueNode($"{Clamp(radius)}px", mainNode, "border-top-left-radius", subNode);
-		platformView.SetStyleValueNode($"{Clamp(tr.Value)}px", mainNode, "border-top-right-radius", subNode);
-		platformView.SetStyleValueNode($"{Clamp(br.Value)}px", mainNode, "border-bottom-right-radius", subNode);
-		platformView.SetStyleValueNode($"{Clamp(bl.Value)}px", mainNode, "border-bottom-left-radius", subNode);
+		platformView.SetStyleValueNode($"{Clamp(radius)}px", mainNode, "border-top-left-radius");
+		platformView.SetStyleValueNode($"{Clamp(tr.Value)}px", mainNode, "border-top-right-radius");
+		platformView.SetStyleValueNode($"{Clamp(br.Value)}px", mainNode, "border-bottom-right-radius");
+		platformView.SetStyleValueNode($"{Clamp(bl.Value)}px", mainNode, "border-bottom-left-radius");
 
 		// no effect:
 		platformView.SetStyleValueNode("padding-box", mainNode, "background-clip");
@@ -122,7 +121,7 @@ public static class FrameExtensions
 		return [cornerOffset(0), cornerOffset(1), cornerOffset(2), cornerOffset(3)];
 	}
 
-	public static void UpdateShape(this Gtk.Frame platformView, IShape? shape)
+	public static void UpdateShape(this Gtk.Container platformView, IShape? shape)
 	{
 		if (platformView is not { })
 			return;

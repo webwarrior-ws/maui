@@ -5,7 +5,7 @@ using Microsoft.Maui.Graphics;
 namespace Microsoft.Maui.Platform
 {
 
-	public class ContentView : Bin, ICrossPlatformLayoutBacking
+	public class ContentView : EventBox, ICrossPlatformLayoutBacking
 	{
 		public ContentView() : base() { }
 
