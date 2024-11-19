@@ -56,6 +56,9 @@
     <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
     <SystemMemoryPackageVersion>4.5.5</SystemMemoryPackageVersion>
     <SystemBuffersPackageVersion>4.5.1</SystemBuffersPackageVersion>
+    <SystemTextJsonPackageVersion>8.0.5</SystemTextJsonPackageVersion>
+    <SystemTextEncodingsWebPackageVersion>8.0.0</SystemTextEncodingsWebPackageVersion>
+    <MicrosoftBclAsyncInterfacesPackageVersion>8.0.0</MicrosoftBclAsyncInterfacesPackageVersion>
     <SystemIOUnmanagedMemoryStreamPackageVersion>4.3.0</SystemIOUnmanagedMemoryStreamPackageVersion>
     <SystemObjectModelPackageVersion>4.3.0</SystemObjectModelPackageVersion>
     <SystemRuntimeCompilerServicesUnsafePackageVersion>6.0.0</SystemRuntimeCompilerServicesUnsafePackageVersion>
