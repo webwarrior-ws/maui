@@ -4,7 +4,7 @@
     <TargetFrameworks>netstandard2.1;netstandard2.0;$(_MauiDotNetTfm);$(MauiPlatforms)</TargetFrameworks>
     <RootNamespace>Microsoft.Maui.Controls</RootNamespace>
     <AssemblyName>Microsoft.Maui.Controls</AssemblyName>
-    <PackageId>Microsoft.Maui.Controls.Core</PackageId>
+    <PackageId>Mali.Controls.Core</PackageId>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <IsTrimmable>false</IsTrimmable>
