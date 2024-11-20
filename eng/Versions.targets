@@ -67,6 +67,13 @@
       <VersionMetadata Condition="$(CI) and '$(BUILD_BUILDID)' != ''"
                        Include="azdo.$(BUILD_BUILDID)"/>
     </ItemGroup>
+    
+    <Exec Condition="$(CI) and '$(GitTag)' == '' "
+          Command="dotnet fsi nugetPreRelease.fsx $(GitSemVerMajor).$(GitSemVerMinor).$(GitSemVerPatch)"
+          WorkingDirectory="$(MSBuildThisFileDirectory)/.."
+          ConsoleToMSBuild="true" >
+      <Output TaskParameter="ConsoleOutput" PropertyName="PreReleasePackageVersion" />
+    </Exec>
 
     <PropertyGroup>
       <VersionMetadataLabel>@(VersionMetadata -> '%(Identity)', '-')</VersionMetadataLabel>
@@ -81,6 +88,8 @@
       <PackageVersion>$(PackageReferenceVersion)$(VersionMetadataPlusLabel)</PackageVersion>
       <!-- Generate stable release package for tags -->
       <PackageVersion Condition=" '$(GitTag)' != '' ">$(GitSemVerMajor).$(GitSemVerMinor).$(GitSemVerPatch)</PackageVersion>
+      <!-- Pre-release version for other cases -->
+      <PackageVersion Condition="$(CI) and '$(GitTag)' == '' ">$(PreReleasePackageVersion)</PackageVersion>
     </PropertyGroup>
 
     <PropertyGroup>
