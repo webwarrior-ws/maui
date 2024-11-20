@@ -10,10 +10,10 @@
   <PropertyGroup>
     <!-- NuGet package information -->
     <IsPackable>true</IsPackable>
-    <PackageId>Microsoft.AspNetCore.Components.WebView.Maui</PackageId>
+    <PackageId>Lima.AspNetCore.Components.WebView</PackageId>
     <PackageTags>$(DefaultPackageTags);blazor;webview;aspnet</PackageTags>
     <PackageIconFile>$(MauiRootDirectory)Assets\aspnet-icon.png</PackageIconFile>
-    <Description>Build .NET Multi-platform App UI (.NET MAUI) apps with Blazor web UI in the BlazorWebView control.</Description>
+    <Description>(LiMa is a fork of Maui with support for GTK) Build .NET Multi-platform App UI (.NET MAUI) apps with Blazor web UI in the BlazorWebView control.</Description>
   </PropertyGroup>
 
   <Import Project="$(MauiSrcDirectory)MultiTargeting.targets" />

@@ -154,8 +154,7 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-    <Company>Microsoft</Company>
-    <Product>Microsoft MAUI</Product>
+    <Product>Lima</Product>
     <ProduceReferenceAssembly Condition="'$(UsingMicrosoftNETSdk)' == 'True' AND '$(Configuration)' == 'Debug'">True</ProduceReferenceAssembly>
     <ProduceReferenceAssemblyInOutDir>True</ProduceReferenceAssemblyInOutDir>
     <Win2DWarnNoPlatform>false</Win2DWarnNoPlatform>
@@ -166,17 +165,16 @@
   <PropertyGroup>
     <!-- NuGet package information -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Authors>Microsoft</Authors>
+    <Authors>knocte,webwarrior-ws</Authors>
     <NeutralLanguage>en</NeutralLanguage>
-    <RepositoryUrl>https://github.com/dotnet/maui.git</RepositoryUrl>
+    <RepositoryUrl>https://github.com/nblockchain/Lima.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageProjectUrl>https://github.com/dotnet/maui</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/nblockchain/Lima/</PackageProjectUrl>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <PackageVersion>$(DotNetVersionBand)-dev</PackageVersion>
     <PackageOutputPath>$(MSBuildThisFileDirectory)artifacts</PackageOutputPath>
     <LicenseFile>$(MSBuildThisFileDirectory)LICENSE.TXT</LicenseFile>
-    <PackageIconFile>$(MSBuildThisFileDirectory)Assets\icon.png</PackageIconFile>
     <PackageThirdPartyNoticesFile>$(MSBuildThisFileDirectory)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <DefaultPackageTags>dotnet-maui;dotnet;maui;cross-platform;ios;android;macos;maccatalyst;windows;winui;tizen</DefaultPackageTags>
     <ContinuousIntegrationBuild Condition=" '$(CI)' == 'true' ">true</ContinuousIntegrationBuild>

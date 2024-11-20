@@ -1,0 +1,13 @@
+<Project>
+
+  <PropertyGroup>
+    <UsingMicrosoftMauiCoreSdk>true</UsingMicrosoftMauiCoreSdk>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)Lima.Core.Before.targets" />
+
+  <PropertyGroup>
+    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MSBuildThisFileDirectory)Lima.Core.After.targets</AfterMicrosoftNETSdkTargets>
+  </PropertyGroup>
+
+</Project>

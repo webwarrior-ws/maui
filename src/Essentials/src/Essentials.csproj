@@ -14,9 +14,9 @@
   <PropertyGroup>
     <!-- NuGet package information -->
     <IsPackable>true</IsPackable>
-    <PackageId>Microsoft.Maui.Essentials</PackageId>
+    <PackageId>Lima.Essentials</PackageId>
     <PackageTags>$(DefaultPackageTags);essentials;sensors</PackageTags>
-    <Description>.NET Multi-platform App UI (.NET MAUI) is a cross-platform framework for creating native mobile and desktop apps with C# and XAML. This package contains a collection of cross-platform APIs for working with device sensors and other features.</Description>
+    <Description>(LiMa is a fork of Maui with support for GTK) This package contains a collection of cross-platform APIs for working with device sensors and other features.</Description>
   </PropertyGroup>
   <Import Project="$(MauiSrcDirectory)MultiTargeting.targets" />
   <ItemGroup>
