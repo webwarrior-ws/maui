@@ -16,6 +16,7 @@ mv Microsoft.AspNetCore.Components.WebView.Maui.props Mali.AspNetCore.Components
 mv Microsoft.AspNetCore.Components.WebView.Maui.targets Mali.AspNetCore.Components.WebView.targets
 cd ../../../../..
     
+# first rename packages so that dependencies are correct
 echo "$PROJECTS_TO_PACK" | while read -r project; do
     [ -z "$project" ] && continue  # Skip if empty
     # change PackagIds to Mali.*
@@ -26,6 +27,10 @@ echo "$PROJECTS_TO_PACK" | while read -r project; do
     else
         sed -i -r 's/<AssemblyName>Microsoft.Maui.([^<]+)<\/AssemblyName>/<PackageId>Mali.\1<\/PackageId>\n&/g' "$project"
     fi
-    dotnet pack "$project" --no-build --no-restore
 done
 
+# then pack
+echo "$PROJECTS_TO_PACK" | while read -r project; do
+    [ -z "$project" ] && continue  # Skip if empty
+    dotnet pack "$project" --no-build --no-restore
+done
