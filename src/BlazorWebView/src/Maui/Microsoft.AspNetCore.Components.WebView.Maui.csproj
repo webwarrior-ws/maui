@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(_MauiDotNetTfm);$(MauiPlatforms)</TargetFrameworks>
+    <PackageId>Mali.AspNetCore.Components.WebView</PackageId>
     <Nullable>enable</Nullable>
     <Description>Build .NET MAUI applications with Blazor web UI in the BlazorWebView control.</Description>
     <DefineConstants>$(DefineConstants);WEBVIEW2_MAUI</DefineConstants>
