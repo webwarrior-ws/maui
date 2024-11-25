@@ -68,13 +68,6 @@
                        Include="azdo.$(BUILD_BUILDID)"/>
     </ItemGroup>
     
-    <Exec Condition="$(CI) and '$(GitTag)' == '' "
-          Command="dotnet fsi nugetPreRelease.fsx $(GitSemVerMajor).$(GitSemVerMinor).$(GitSemVerPatch)"
-          WorkingDirectory="$(MSBuildThisFileDirectory)/.."
-          ConsoleToMSBuild="true" >
-      <Output TaskParameter="ConsoleOutput" PropertyName="PreReleasePackageVersion" />
-    </Exec>
-
     <PropertyGroup>
       <VersionMetadataLabel>@(VersionMetadata -> '%(Identity)', '-')</VersionMetadataLabel>
       <VersionMetadataPlusLabel Condition="'$(VersionMetadataLabel)' != ''">0+$(VersionMetadataLabel)</VersionMetadataPlusLabel>
@@ -89,7 +82,8 @@
       <!-- Generate stable release package for tags -->
       <PackageVersion Condition=" '$(GitTag)' != '' ">$(GitSemVerMajor).$(GitSemVerMinor).$(GitSemVerPatch)</PackageVersion>
       <!-- Pre-release version for other cases -->
-      <PackageVersion Condition="$(CI) and '$(GitTag)' == '' ">$(PreReleasePackageVersion)</PackageVersion>
+      <PreReleaseVersionSuffix>$([System.IO.File]::ReadAllText($(MSBuildThisFileDirectory)../PreReleaseVersionSuffix.txt))</PreReleaseVersionSuffix>
+      <PackageVersion Condition="$(CI) and '$(GitTag)' == '' ">$(GitSemVerMajor).$(GitSemVerMinor).$(GitSemVerPatch)$(PreReleaseVersionSuffix)</PackageVersion>
     </PropertyGroup>
 
     <PropertyGroup>

@@ -27,6 +27,8 @@ jobs:
           dotnet-version: ${{ env.DotnetVersion }}
       - name: Install gtk workload
         run: ./install_gtk_workload.sh
+      - name: Generate pre-release version suffix
+        run: dotnet fsi nugetPreRelease.fsx "" > PreReleaseVersionSuffix.txt
       - name: Build MAUI
         run: |
             mv Directory.Build.Override.props.in Directory.Build.Override.props
