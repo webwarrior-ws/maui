@@ -9,7 +9,7 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <AssemblyName>Microsoft.Maui.Graphics</AssemblyName>
     <RootNamespace>Microsoft.Maui.Graphics</RootNamespace>
-    <PackageId>Microsoft.Maui.Graphics</PackageId>
+    <PackageId>Mali.Graphics</PackageId>
     <Product>Microsoft.Maui.Graphics</Product>
     <IsTrimmable>false</IsTrimmable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
