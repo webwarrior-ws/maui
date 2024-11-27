@@ -110,6 +110,8 @@
   <Target Name="VersionInfoReport" DependsOnTargets="SetVersions">
    <ItemGroup>
     <Message Importance="$(GitInfoReportImportance)" Text="Version Info:
+  GitTag:                 $(GitTag)
+  GitBaseTag:             $(GitBaseTag)
   AssemblyVersion:        $(AssemblyVersion)
   FileVersion:            $(FileVersion)
   InformationalVersion:   $(InformationalVersion)
