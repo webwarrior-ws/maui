@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Checkout MAUI repo
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 1 # needed to fetch tags
       - name: Setup .NET SDK ${{ env.DotnetVersion }}
         uses: actions/setup-dotnet@v1.7.2
         with:
