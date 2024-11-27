@@ -48,6 +48,7 @@
   </Target>
   <Target Name="SetVersions" BeforeTargets="$(SetVersionsBefore)" DependsOnTargets="$(SetVersionsDependsOn)" Returns="$(Version)">
     <PropertyGroup>
+      <GitTag Condition="$(GITHUB_REF_TYPE) == 'tag'">$(GITHUB_REF_NAME)</GitTag>
       <SemVerLabel>$([System.Text.RegularExpressions.Regex]::Match($(GitTag), $(RegexTag)))</SemVerLabel>
       <GitDefaultBranch>main</GitDefaultBranch>
       <GitIgnoreBranchVersion>true</GitIgnoreBranchVersion>
