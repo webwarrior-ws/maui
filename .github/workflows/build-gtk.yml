@@ -20,7 +20,9 @@ jobs:
         src/Graphics/src/Graphics/Graphics.csproj
     steps:
       - name: Checkout MAUI repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          fetch-tags: true
       - name: Setup .NET SDK ${{ env.DotnetVersion }}
         uses: actions/setup-dotnet@v1.7.2
         with:
