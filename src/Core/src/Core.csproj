@@ -64,7 +64,7 @@
   <Target Name="_CopyToBuildTasksDir" AfterTargets="Build">
     <ItemGroup>
       <_CopyItems Include="nuget\buildTransitive\**" Exclude="nuget\**\*.in.*" />
-      <_CopyItems Include="$(IntermediateOutputPath)Microsoft.Maui.Core.BundledVersions.targets" />
+      <_CopyItems Include="$(IntermediateOutputPath)Mali.Core.BundledVersions.targets" />
     </ItemGroup>
     <Copy SourceFiles="@(_CopyItems)" DestinationFolder="$(_MauiBuildTasksLocation)%(RecursiveDir)" ContinueOnError="true" Retries="0" />
   </Target>
@@ -78,30 +78,30 @@
   <Target Name="_GenerateBundledVersions"
     BeforeTargets="Build;AssignTargetPaths"
     DependsOnTargets="SetVersions"
-    Inputs="$(MSBuildProjectFile);$(MauiRootDirectory)eng\Versions.props;nuget\buildTransitive\Microsoft.Maui.Core.BundledVersions.in.targets"
-    Outputs="$(IntermediateOutputPath)Microsoft.Maui.Core.BundledVersions.targets">
+    Inputs="$(MSBuildProjectFile);$(MauiRootDirectory)eng\Versions.props;nuget\buildTransitive\Mali.Core.BundledVersions.in.targets"
+    Outputs="$(IntermediateOutputPath)Mali.Core.BundledVersions.targets">
     <ItemGroup>
       <_ValuesToReplace Include="VERSION" PropertyName="PackageReferenceVersion" />
     </ItemGroup>
     <Copy
-      SourceFiles="nuget\buildTransitive\Microsoft.Maui.Core.BundledVersions.in.targets"
-      DestinationFiles="$(IntermediateOutputPath)Microsoft.Maui.Core.BundledVersions.targets"
+      SourceFiles="nuget\buildTransitive\Mali.Core.BundledVersions.in.targets"
+      DestinationFiles="$(IntermediateOutputPath)Mali.Core.BundledVersions.targets"
       />
     <ReplaceText
-      Input="$(IntermediateOutputPath)Microsoft.Maui.Core.BundledVersions.targets"
-      Output="$(IntermediateOutputPath)Microsoft.Maui.Core.BundledVersions.targets"
+      Input="$(IntermediateOutputPath)Mali.Core.BundledVersions.targets"
+      Output="$(IntermediateOutputPath)Mali.Core.BundledVersions.targets"
       OldValue="@%(_ValuesToReplace.Identity)@"
       NewValue="$(%(_ValuesToReplace.PropertyName))"
       />
     <ItemGroup>
       <None
-        Include="$(IntermediateOutputPath)Microsoft.Maui.Core.BundledVersions.targets"
-        Link="nuget\buildTransitive\Microsoft.Maui.Core.BundledVersions.targets"
+        Include="$(IntermediateOutputPath)Mali.Core.BundledVersions.targets"
+        Link="nuget\buildTransitive\Mali.Core.BundledVersions.targets"
         Pack="true"
         PackagePath="buildTransitive"
         Visible="false"
         />
-      <FileWrites Include="$(IntermediateOutputPath)Microsoft.Maui.Core.BundledVersions.targets" />
+      <FileWrites Include="$(IntermediateOutputPath)Mali.Core.BundledVersions.targets" />
     </ItemGroup>
   </Target>
 
