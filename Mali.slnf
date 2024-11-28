@@ -9,7 +9,8 @@
       "src\\Core\\src\\Core.csproj",
       "src\\Compatibility\\Core\\src\\Compatibility.csproj",
       "src\\Controls\\Foldable\\src\\Controls.Foldable.csproj",
-      "src\\Graphics\\src\\Graphics\\Graphics.csproj"
+      "src\\Graphics\\src\\Graphics\\Graphics.csproj",
+      "src\\Graphics\\src\\Graphics.Gtk\\Graphics.Gtk.csproj"
     ]
   }
 }
