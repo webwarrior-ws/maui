@@ -10,6 +10,7 @@
 		<UseSystemResourceKeys>false</UseSystemResourceKeys>
 		<Copyright>Copyright © Redth</Copyright>
 		<PackageProjectUrl>https://github.com/nblockchain/Mali/tree/main/src/ZXing.Net.Maui</PackageProjectUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<RepositoryUrl>https://github.com/nblockchain/Mali/tree/main/src/ZXing.Net.Maui</RepositoryUrl>
 		<AssemblyFileVersion>$(PackageVersion)</AssemblyFileVersion>
@@ -17,6 +18,9 @@
 		<DebugType>portable</DebugType>
 		<OutputType>Library</OutputType>
 	</PropertyGroup>
+	<ItemGroup>
+		<None Include="..\README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="ZXing.Net" Version="0.16.8" />
 	</ItemGroup>

@@ -10,6 +10,7 @@
 		<UseSystemResourceKeys>false</UseSystemResourceKeys>
 		<Copyright>Copyright © Redth</Copyright>
 		<PackageProjectUrl>https://github.com/nblockchain/Mali/tree/main/src/ZXing.Net.Maui</PackageProjectUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<GitThisAssemblyMetadata>True</GitThisAssemblyMetadata>
 		<RepositoryUrl>$(GitRepositoryUrl)</RepositoryUrl>
@@ -27,6 +28,10 @@
 		<MauiPath>$(MSBuildProjectDirectory)\..\..\</MauiPath>
 		<_MauiBuildTasksLocation>$(MauiPath).nuspec\</_MauiBuildTasksLocation>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
 	
 	<ItemGroup Condition="$(TargetPlatformIdentifier) == 'gtk'">
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
