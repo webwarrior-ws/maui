@@ -14,7 +14,7 @@
     <!-- NuGet package information -->
     <IsPackable>True</IsPackable>
     <PackageTags>$(DefaultPackageTags);foldable;surface-duo</PackageTags>
-    <Description>Foldable or multi-screen device support for .NET Multi-platform App UI (.NET MAUI) apps.</Description>
+    <Description>(MALI is a fork of Maui with support for GTK) Foldable or multi-screen device support for .NET Multi-platform App UI (.NET MAUI) apps.</Description>
   </PropertyGroup>
   <Import Project="$(MauiSrcDirectory)MultiTargeting.targets" />
   <ItemGroup Condition=" '$(UseMaui)' != 'true' ">
