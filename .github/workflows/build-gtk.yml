@@ -37,7 +37,7 @@ jobs:
             dotnet build Microsoft.Maui.BuildTasks.slnf
             dotnet build -c Release Microsoft.Maui.Gtk.slnf
       - name: Pack MAUI
-        run: dotnet pack Microsoft.Maui.Gtk.slnf
+        run: dotnet pack Microsoft.Maui.Gtk.Packages.slnf
       - name: Upload binaries to nuget (if tag or main branch, and nugetKey is present)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
