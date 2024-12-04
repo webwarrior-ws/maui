@@ -40,6 +40,7 @@ jobs:
         run: dotnet pack Mali.slnf
       - name: Check package versions
         run: |
+          echo "40.0.1" > GitInfo.txt
           version_prefix=$(cat GitInfo.txt | tr -d '\n' | cut -d'-' -f1)
           # fail if at least one of *.nupkg files' names' version portion doesn't start with version string stored in GitInfo.txt
           # ( and ) have to be escaped when used in find command regex
