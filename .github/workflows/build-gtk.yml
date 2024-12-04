@@ -44,7 +44,10 @@ jobs:
           # fail if at least one of *.nupkg files' names' version portion doesn't start with version string stored in GitInfo.txt
           # ( and ) have to be escaped when used in find command regex
           count=$(find . -type f -name "*.nupkg" ! -regex "\(.*\/\)*\([a-zA-Z]+\.\)+${version_prefix}.*" | wc -l)
-          if [ "$count" -gt 0 ]; then exit 1; fi
+          if [ "$count" -gt 0 ]; then
+              echo "Packages have versions that are inconsistent with version stored in GitInfo.txt. Aborting."
+              exit 1
+          fi
       - name: Upload binaries to nuget (if tag or main branch, and nugetKey is present)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
